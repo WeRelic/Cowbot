@@ -4,9 +4,6 @@
 
     In this script we'll define a ControlSequence.
 
-    A ControlSequence acts as a superclass for HardSequence and SoftSequence.
-
-
 """
 
 import FrameInput
@@ -55,7 +52,7 @@ class ControlSequence:
 
     def Run( self, starting_frame ):
         print( "Running subroutine: {}".format( self.name ) )
-        Generate( starting_frame )
+        self.Generate( starting_frame )
         while True:
             result = self.GetFrame()
             if result != None:
