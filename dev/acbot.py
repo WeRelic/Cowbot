@@ -1,14 +1,11 @@
-from math import pi, cos, sin, atan2, sqrt
-from CowBotVec2 import Vector2
-import CowBotControlSequence
+import math
 
-
-URotationToRadians = pi / 32768.0
+URotationToRadians = math.pi / float(32768)
 
 # A control sequence allows a subroutine to take over planning for the agent
 # for a number of frames. This is useful for things like half-flipping, etc.
 class ControlSequence:
-    def __init__( self, num_frames, f ):
+    def __init__(self, num_frames, f):
         self.num_frames = num_frames
         self.f = f
         
@@ -20,210 +17,153 @@ class ControlSequence:
             self.num_frames -= 1
             return result
 
-
-    
-
 class Agent:
-    
-    # This is the boosts in order
-    boost_pills = [
-        Vector2(  61.5 * 50,  82 * 50 ),
-        Vector2( -61.5 * 50,  82 * 50 ), 
-        Vector2( -71.5 * 50,   0 * 50 ),
-        Vector2( -61.5 * 50, -82 * 50 ), 
-        Vector2(  61.5 * 50, -82 * 50 ),
-        Vector2(  71.5 * 50,   0 * 50 )
-    ]
-    steer_normalize_epsilon = 0.005
-    handbrake_cutoff        = 0.05
-    slowdown_cutoff         = 0.25
-    
     def __init__(self, name, team, index):
         self.name = name
         self.team = team  # 0 towards positive goal, 1 towards negative goal.
         self.index = index
-        self.waypoints = []
         
-        
+        # This is the boosts in order
+        self.waypoints = [Vector2(61.5 * 50, 82 * 50), Vector2(-61.5 * 50, 82 * 50), Vector2(-71.5 * 50,0 * 50), Vector2(-61.5 * 50, -82 * 50), Vector2(61.5 * 50,-82 * 50), Vector2(71.5 * 50,0 * 50)]
         # This should test the ability to make 180-degree turns
-        # self.waypoints = [
-        #    Vector2(61.5 * 50, 82 * 50),
-        #    Vector2(-61.5 * 50, 82 * 50)
-        # ]
+        #self.waypoints = [Vector2(61.5 * 50, 82 * 50), Vector2(-61.5 * 50, 82 * 50)]
         self.control_sequence = None
         
         # define some control sequences
         self.CTRLSEQ_HALF_FLIP = ControlSequence(30, self.CTRLSEQ_HALF_FLIP_f)
-
-
-    def Dampen( self, steer, turn ):
-        # Dampen the ringing.
-        if ( abs(steer) > self.__class__.slowdown_cutoff ):
-            return turn * 1.0
+        
+    # define some control sequence functions
+    def CTRLSEQ_HALF_FLIP_f(self, frame_num):
+        if (frame_num == 15):
+            return [
+                0.0,      # throttle
+                0.0,      # steer
+                0.0,       # pitch
+                0.0,       # yaw
+                0.0,       # roll
+                1,         # jump
+                0,         # boost
+                0          # handbrake
+                ]
         else:
-            return turn * ( abs(steer) / self.__class__.slowdown_cutoff )
-
-
-
-
-    def NormalizeSteer( self, steer ):
-        #May be using improper nomenclature
-        if steer > self.__class__.steer_normalize_epsilon:
-            return -1.0
-        elif steer < self.__class__.steer_normalize_epsilon:
-            return 1.0
-        else:
-            return 0.0
-
-
-
-
-    def Require_Half_Flip( self, steer ):
-        #self.control_sequence = self.CTRLSEQ_HALF_FLIP
-        #result = self.control_sequence.get_output_vector()
-        #print("first frame of half-flip: " + str(result))
-        #return result
-        return steer > pi / 2 and steer < 3 * pi / 2
-            
-
-
-
-    def Require_Handbrake( self, steer ):
-        # determine conditions required for handbraking.
-        if ( abs( steer ) > self.__class__.handbrake_cutoff ):
-            return 1
-        else:
-            return 0
-
-
-
-
-
-##    # define some control sequence functions
-##    def CTRLSEQ_HALF_FLIP_f( self, frame_num ):
-##        if (frame_num == 15):
-##            return [
-##                0.0,       # throttle
-##                0.0,       # steer
-##                0.0,       # pitch
-##                0.0,       # yaw
-##                0.0,       # roll
-##                1,         # jump
-##                0,         # boost
-##                0          # handbrake
-##                ]
-##        else:
-##            return  [
-##                0.0,      # throttle
-##                0.0,      # steer
-##                0.0,       # pitch
-##                0.0,       # yaw
-##                0.0,       # roll
-##                0,         # jump
-##                0,         # boost
-##                0          # handbrake
-##                ]
-
-
-
-    def GetCarData( self, game_tick_packet, destination ):
+            return  [
+                0.0,      # throttle
+                0.0,      # steer
+                0.0,       # pitch
+                0.0,       # yaw
+                0.0,       # roll
+                0,         # jump
+                0,         # boost
+                0          # handbrake
+                ]
+        
+    # Returns the controls to get to a particular spot. Returns None if already there.
+    def path_to_position(self, game_tick_packet, destination):
         car = game_tick_packet.gamecars[self.index]
-        car_location = Vector2( car.Location.X, car.Location.Y )
+        car_location = Vector2(car.Location.X, car.Location.Y)
         car_direction = get_car_facing_vector(car)
         car_to_destination = destination - car_location
-        return ( car, car_location, car_direction, car_to_destination )
         
-
-
-    def GetCarDirection( self, game_tick_packet ):
-        return get_car_facing_vector( game_tick_packet.gamecars[self.index] )
-
-
-    def GetCarLocation( self, car ):
-        car = game_tick_packet.gamecars[self.index]
-        return Vector2( car.Location.X, car.Location.Y )
-
-
-    def GetCarToDestination( self, location, destination ):
-        return destination - location
-
-
-        
-    def path_to_position(self, game_tick_packet, destination):
-        """
-            Returns the controls to get to a particular spot.
-            Returns None if already there.
-        """
-        car = game_tick_packet.gamecars[self.index]
-        ##        car_location = Vector2( car.Location.X, car.Location.Y )
-        ##        car_direction = get_car_facing_vector(car)
-        ##        car_to_destination = destination - car_location
-        
-        steer_correction_radians = self.GetCarDirection( game_tick_packet ).correction_to( self.GetCarToDestination( game_tick_packet ) )
-
+        steer_correction_radians = car_direction.correction_to(car_to_destination)
         
         # If we need to turn more than pi/2 radians but less than 3pi/2 radians, half flip first
-        if self.RequireHalfFlip():
+        if (steer_correction_radians > math.pi/2 and 
+            steer_correction_radians < 3 * math.pi/2):
+            #self.control_sequence = self.CTRLSEQ_HALF_FLIP
             print("Should half flip here!")
-            self.control_sequence = self.CTRLSEQ_HALF_FLIP
-
+            #result = self.control_sequence.get_output_vector()
+            #print("first frame of half-flip: " + str(result))
+            #return result
+        
+        epsilon = 0.005
+        if steer_correction_radians > epsilon:
+            turn_direction = -1.0
+        elif steer_correction_radians < epsilon:
+            turn_direction = 1.0
+        else:
+            turn_direction = 0.0
+        
+        # Dampen the ringing.
+        slowdown_cutoff = 0.25
+        if (abs(steer_correction_radians) > slowdown_cutoff):
+            turn = turn_direction * 1.0
+        else:
+            turn = turn_direction * (abs(steer_correction_radians)/slowdown_cutoff)
+            
+        # To speed up turns, we can engage the handbrake
+        handbrake_cutoff = 0.5
+        if (abs(steer_correction_radians) > handbrake_cutoff):
+            handbrake = 1
+        else:
+            handbrake = 0
         
         return [
-            # Throttle:
-            1.0,
-
-            # Steer:
-            self.Dampen( steer_correction_radians, self.NormalizeSteer( steer_correction_radians ) ),
-
-            # Pitch:
-            0.0,
-
-            # Yaw:
-            0.0,
-
-            # Roll:
-            0.0,
-
-            # Jump:
-            0,
-
-            # Boost:
-            1,
-
-            # Handbrake
-            self.RequireHandbrake( steer_corretion_radians )
+            1.0,       # throttle
+            turn,      #steer
+            0.0,       # pitch
+            0.0,       # yaw
+            0.0,       # roll
+            0,         # jump
+            1,         # boost
+            handbrake  # handbrake
         ]
-
-
-
         
     def get_output_vector(self, game_tick_packet):
     
         # handle control sequences
         """
-        if ( self.control_sequence != None ):
+        if (self.control_sequence != None):
             outvec = self.control_sequence.get_output_vector()
-            if ( outvec == None ):
+            if (outvec == None):
                 self.control_sequence = None
             else:
-                print( "Outputting from a control sequence: {}".format( outvec ) )
+                print("Outputting from a control sequence: " + str(outvec))
                 return outvec
         """
     
         # Navigate to the next waypoint
         car = game_tick_packet.gamecars[self.index]
-        car_location = Vector2( car.Location.X, car.Location.Y )
+        car_location = Vector2(car.Location.X, car.Location.Y)
         delta = car_location - self.waypoints[0]
             
         epsilon = 300
-        distance = sqrt( delta.x ** 2 + delta.y ** 2 )
+        distance = math.sqrt(delta.x ** 2 + delta.y ** 2)
         if (distance < epsilon):
-            self.waypoints = self.waypoints[1:] + [ self.waypoints[0] ]
-            print( "Updating boost target to: {}".format( self.waypoints[0] ) )
+            self.waypoints = self.waypoints[1:] + [self.waypoints[0]]
+            print("Updating boost target to: " + str(self.waypoints[0]))
             
         return self.path_to_position(game_tick_packet, self.waypoints[0])
     
 
+class Vector2:
+    def __init__(self, x = 0, y = 0):
+        self.x = float(x)
+        self.y = float(y)
+
+    def __add__(self, val):
+        return Vector2( self.x + val.x, self.y + val.y)
+
+    def __sub__(self,val):
+        return Vector2( self.x - val.x, self.y - val.y)
+        
+    def __str__(self):
+        return '{' + str(self.x) + ', ' + str(self.y) + '}'
+
+    def correction_to(self, ideal):
+        # The in-game axes are left handed, so use -x
+        current_in_radians = math.atan2(self.y, -self.x)
+        ideal_in_radians = math.atan2(ideal.y, -ideal.x)
+
+        correction = ideal_in_radians - current_in_radians
+
+        # Make sure we go the 'short way'
+        if abs(correction) > math.pi:
+            if correction < 0:
+                correction += 2 * math.pi
+            else:
+                correction -= 2 * math.pi
+
+        return correction
 
 
 def get_car_facing_vector(car):
