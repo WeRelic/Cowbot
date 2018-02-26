@@ -26,7 +26,7 @@ class ControlSequence:
         self.inputs      = []
         self.name        = name
         self.script      = script
-        self.input_index = 0
+        self.generated   = False
 
     def Generate( self, starting_frame ):
         """
@@ -34,32 +34,36 @@ class ControlSequence:
 
             Hardcoded inputs will be put into the input queue.
         """
-        self.inputs = self.hardcoded
-        if self.script != None:
-            result = self.script( starting_frame )
-            if result != None:
-                self.inputs.append( result )
-
+        if !self.generated:
+            self.inputs = self.hardcoded
+            for x in self.inputs:
+                x.frameid = x.frameid + starting_frame
+            if self.script != None:
+                result = self.script( starting_frame )
+                while result != None:
+                    self.inputs.append( result )
+                    result = self.script( starting_frame )
+            self.generated = True
+        
 
     def GetFrame( self ):
         try:
-            result = self.inputs[ self.input_index ]
-            self.input_index += 1
-            return result
+            return self.inputs.pop(0)
         except IndexError:
-            self.input_index = 0
             return None
         
 
-    def Run( self ):
+    def Run( self, starting_frame ):
         print( "Running subroutine: {}".format( self.name ) )
-        Generate()
+        Generate( starting_frame )
         while True:
             result = self.GetFrame()
             if result != None:
                 yield result
             else:
                 break
-        return None
+        self.inputs = []
+        self.generated = False
+        yield None
         
 
