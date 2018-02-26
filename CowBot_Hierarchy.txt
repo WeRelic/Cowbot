@@ -1,0 +1,12 @@
+CowBot Package Hierarchy:
+
+CowBot {
+    CowBot_Control {};
+    
+    CowBot_Tactical {};
+    
+    CowBot_Strategic {};
+
+    CowBot_Interface {};
+
+};
