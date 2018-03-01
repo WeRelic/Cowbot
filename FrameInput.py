@@ -40,8 +40,29 @@ class FrameInput:
         return "Frame({})".format( data.format( self ) )
 
 
+    def ToList( self ):
+        """
+            Return a list containing the values of the FrameInput.
+            This is to interface with RLBot.py
+        """
+        return [
+                self.throttle,
+                self.steer,
+                self.pitch,
+                self.yaw,
+                self.roll,
+                self.jump,
+                self.boost,
+                self.brake                
+            ]
+
     
     def FromStr( self, string ):
+        """
+            Extract a FrameInput value from a string and change this objects values.
+
+            This function is brittle. A regex solution would be more robust.
+        """
         data = string.split("(")[1].split(")")[0].split(",")
         
         self.frameid  = int( data[0] )
@@ -57,6 +78,11 @@ class FrameInput:
 
     @classmethod
     def FromStr( cls, string ):
+        """
+            Extract a FrameInput value from a string and create a new FrameInput object.
+
+            This function is brittle. A Regex solution would be more robust.
+        """
         data = string.split("(")[1].split(")")[0].split(",")
 
         data[0] = int( data[0] )
