@@ -7,6 +7,9 @@
     Have fun, Lie!    
 """
 
+from CowBotControlSequence import *
+from FrameInput import *
+
 DIAG_KICKOFF_L = ControlSequence( "Left Diagonal Kickoff", [
         FrameInput() # Hardcode inputs here.
     ] )

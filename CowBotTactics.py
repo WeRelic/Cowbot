@@ -6,13 +6,13 @@
     This system is built on the various implemented control sequences.
 
 """
-
+from CowBotControlSequence import *
 from CowBot_HalfFlip import *
 from CowBot_Kickoffs import *
-from enum import enum
+from enum import Enum
 
 
-class KickoffType( enum ):
+class KickoffType( Enum ):
     KICKOFF_LDIAG  = 0,
     KICKOFF_RDIAG  = 1,
     KICKOFF_LSIDE  = 2,
@@ -20,13 +20,13 @@ class KickoffType( enum ):
     KICKOFF_GOALIE = 4
     
 
-class DefenceSequenceType( enum ):
+class DefenceSequenceType( Enum ):
     DEF_TYPE_SHADOW          = 0,
     DEF_TYPE_BACKBOARD       = 1,
     DEF_TYPE_MIDFIELD        = 2
 
 
-class OffenceSequenceType( enum ):
+class OffenceSequenceType( Enum ):
     OFF_TYPE_FLICK     = 0,
     OFF_TYPE_DRIBBLE   = 1,
     OFF_TYPE_AERIAL    = 2,
@@ -34,7 +34,7 @@ class OffenceSequenceType( enum ):
     OFF_TYPE_BACKBOARD = 4,
 
 
-class GeneralSequenceType( enum ):
+class GeneralSequenceType( Enum ):
     GEN_TYPE_DEMO              = 0,
     GEN_TYPE_STARVE            = 1,
     GEN_TYPE_GROUND_CHALLENGE  = 2,
@@ -44,7 +44,7 @@ class GeneralSequenceType( enum ):
     GEN_TYPE_BOOST_ROTATE      = 6
     
 
-class ControlSequenceType( enum ):
+class ControlSequenceType( Enum ):
     CTRL_TYPE_DEFENCE = 0,
     CTRL_TYPE_KICKOFF = 1,
     CTRL_TYPE_OFFENCE = 2,

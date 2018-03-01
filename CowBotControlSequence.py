@@ -31,7 +31,7 @@ class ControlSequence:
 
             Hardcoded inputs will be put into the input queue.
         """
-        if !self.generated:
+        if not self.generated:
             self.inputs = self.hardcoded
 
             # Adjust frame offsets of hardcoded inputs

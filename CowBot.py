@@ -1,9 +1,8 @@
-import CowBotControl, CowBotTactics, CowBotStrategies, CowBotInterface
 
 from math import pi, cos, sin, atan2, sqrt
 from CowBotVec2 import Vector2
-import CowBotControlSequence
-
+from CowBotControlSequence import ControlSequence
+from CowBotTactics import *
 
 URotationToRadians = pi / 32768.0
 

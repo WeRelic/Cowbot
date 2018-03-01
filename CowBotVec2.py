@@ -21,7 +21,7 @@ class Vector2:
         return Vector2( self.x - val.x, self.y - val.y)
         
     def __str__(self):
-        return "{" + "{0.x},{0.y}".format(self) + "}
+        return "{" + "{0.x},{0.y}".format(self) + "}"
 
     def correction_to(self, ideal):
         # The in-game axes are left handed, so use -x
