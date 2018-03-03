@@ -1,21 +1,6 @@
 import math
 
 URotationToRadians = math.pi / float(32768)
-
-# A control sequence allows a subroutine to take over planning for the agent
-# for a number of frames. This is useful for things like half-flipping, etc.
-class ControlSequence:
-    def __init__(self, num_frames, f):
-        self.num_frames = num_frames
-        self.f = f
-        
-    def get_output_vector(self):
-        if (self.num_frames == 0):
-            return None
-        else:
-            result = self.f(self.num_frames)
-            self.num_frames -= 1
-            return result
             
 class Waypoint:
 
@@ -41,42 +26,20 @@ class Agent:
         self.name = name
         self.team = team  # 0 towards positive goal, 1 towards negative goal.
         self.index = index
+        self.framecnt = 0
         
-        # This is the boosts in order
-        #self.waypoints = [Vector2(61.5 * 50, 82 * 50), Vector2(-61.5 * 50, 82 * 50), Vector2(-71.5 * 50,0 * 50), Vector2(-61.5 * 50, -82 * 50), Vector2(61.5 * 50,-82 * 50), Vector2(71.5 * 50,0 * 50)]
-        # This should test the ability to make 180-degree turns
-        #self.waypoints = [Vector2(61.5 * 50, 82 * 50), Vector2(-61.5 * 50, 82 * 50)]
         self.waypoints = [Waypoint(0,0,0,"ball")]
-        self.control_sequence = None
-        
-        # define some control sequences
-        self.CTRLSEQ_HALF_FLIP = ControlSequence(30, self.CTRLSEQ_HALF_FLIP_f)
-        
-    # define some control sequence functions
-    def CTRLSEQ_HALF_FLIP_f(self, frame_num):
-        if (frame_num == 15):
-            return [
-                0.0,      # throttle
-                0.0,      # steer
-                0.0,       # pitch
-                0.0,       # yaw
-                0.0,       # roll
-                1,         # jump
-                0,         # boost
-                0          # handbrake
-                ]
+        self.control_sequences = [self.ctrlseq_front_flip]
+    
+    #  Control sequences return None to release control
+    def ctrlseq_front_flip(self, game_tick_packet, framecnt):
+        if (framecnt > 0 and framecnt < 10):
+            return [0.0, 0.0, 0.0, 0.0, 0.0, 1, 0, 0]
+        elif (framecnt < 20):
+            return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
         else:
-            return  [
-                0.0,      # throttle
-                0.0,      # steer
-                0.0,       # pitch
-                0.0,       # yaw
-                0.0,       # roll
-                0,         # jump
-                0,         # boost
-                0          # handbrake
-                ]
-        
+            return None
+            
     # Returns the controls to get to a particular spot.
     def path_to_position(self, game_tick_packet, destination):
         car = game_tick_packet.gamecars[self.index]
@@ -118,6 +81,8 @@ class Agent:
         else:
             handbrake = 0
         
+        return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
+        """
         return [
             1.0,       # throttle
             turn,      # steer
@@ -128,19 +93,24 @@ class Agent:
             1,         # boost
             handbrake  # handbrake
         ]
+        """
         
     def get_output_vector(self, game_tick_packet):
     
         # handle control sequences
-        if (self.control_sequence != None):
-            outvec = self.control_sequence.get_output_vector()
+        if (len(self.control_sequences) > 0):
+            outvec = self.control_sequences[0](self, self.framecnt)
+            # If the return value is None, then the control sequence is releasing control
             if (outvec == None):
-                self.control_sequence = None
+                #self.control_sequences = self.control_sequences[1:] # DEBUG: do the first one over and over again.
+                self.framecnt = 0
             else:
+                self.framecnt += 1
                 print("Outputting from a control sequence: " + str(outvec))
                 return outvec
+                
     
-        # Navigate to the next waypoint
+        # If we don't have a control sequence, navigate to the next waypoint
         car = game_tick_packet.gamecars[self.index]
         car_location = Vector3(car.Location.X, car.Location.Y, car.Location.Z)
         delta = car_location - self.waypoints[0].get_destination(game_tick_packet)
@@ -149,11 +119,11 @@ class Agent:
         distance = math.sqrt(delta.x ** 2 + delta.y ** 2)
         if (distance < epsilon):
             self.waypoints = self.waypoints[1:] + [self.waypoints[0]]
-            print("Updating boost target to: " + str(self.waypoints[0]))
+            #print("Updating boost target to: " + str(self.waypoints[0]))
             
         return self.path_to_position(game_tick_packet, self.waypoints[0].get_destination(game_tick_packet))
-    
 
+    
 class Vector2:
     def __init__(self, x = 0, y = 0):
         self.x = float(x)
