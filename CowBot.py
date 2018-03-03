@@ -227,5 +227,6 @@ def get_car_facing_vector(car):
 
     facing_x = math.cos(pitch * URotationToRadians) * math.cos(yaw * URotationToRadians)
     facing_y = math.cos(pitch * URotationToRadians) * math.sin(yaw * URotationToRadians)
+    facing_z = math.sin(0.5 * pitch * URotationToRadians)
 
-    return Vector2(facing_x, facing_y)
+    return Vector3(facing_x, facing_y, facing_z)
