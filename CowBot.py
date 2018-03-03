@@ -81,8 +81,7 @@ class Agent:
         else:
             handbrake = 0
         
-        return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
-        """
+        
         return [
             1.0,       # throttle
             turn,      # steer
@@ -93,7 +92,7 @@ class Agent:
             1,         # boost
             handbrake  # handbrake
         ]
-        """
+        
         
     def get_output_vector(self, game_tick_packet):
     
@@ -104,6 +103,7 @@ class Agent:
             if (outvec == None):
                 #self.control_sequences = self.control_sequences[1:] # DEBUG: do the first one over and over again.
                 self.framecnt = 0
+                return(self.get_output_vector(game_tick_packet))
             else:
                 self.framecnt += 1
                 print("Outputting from a control sequence: " + str(outvec))
