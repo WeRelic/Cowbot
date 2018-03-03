@@ -1,4 +1,4 @@
-import math
+import math, random
 
 URotationToRadians = math.pi / float(32768)
             
@@ -29,14 +29,44 @@ class Agent:
         self.framecnt = 0
         
         self.waypoints = [Waypoint(0,0,0,"ball")]
-        self.control_sequences = [self.ctrlseq_front_flip]
+        self.control_sequences = [self.ctrlseq_wildly_throw_self]
     
-    #  Control sequences return None to release control
+    #####################################################
+    #  Control sequences return None to release control #
+    #####################################################
     def ctrlseq_front_flip(self, game_tick_packet, framecnt):
-        if (framecnt > 0 and framecnt < 10):
-            return [0.0, 0.0, 0.0, 0.0, 0.0, 1, 0, 0]
+        if (framecnt >= 0 and framecnt < 10):
+            return [1.0, 0.0, 1.0, 0.0, 0.0, 1, 0, 0]
+        elif (framecnt == 10):
+            return [1.0, 0.0, 1.0, 0.0, 0.0, 0, 0, 0]
+        elif (framecnt == 11):
+            return [1.0, 0.0, 1.0, 0.0, 0.0, 1, 0, 0]
         elif (framecnt < 20):
+            return [1.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
+        else:
+            return None
+            
+    def ctrlseq_wildly_throw_self(self, game_tick_packet, framecnt):
+    
+        # Set a single random value
+        if (framecnt == 0):
+            self.STATE_random_pitch = random.uniform(-1.0, 1.0)
+            self.STATE_random_yaw   = random.uniform(-1.0, 1.0)
+            self.STATE_random_roll  = random.uniform(-1.0, 1.0)
+        
+        # Do something based on the current frame
+        if (framecnt >= 0 and framecnt <= 10):
+            return [0.0, 0.0, 0.0, 0.0, 0.0, 1, 0, 0]
+        elif (framecnt == 11):
             return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
+        elif (framecnt > 11 and framecnt < 20):
+            return [0.0, 0.0, 0.0, 0.0, 0.0, 1, 0, 0]
+        elif (framecnt >= 20 and framecnt < 50):
+            return [0.0, 0.0, 1.0, 0.0, 0.0, 0, 0, 0]
+        elif (framecnt >= 50 and framecnt < 150):
+            return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 1, 0]
+        elif (framecnt >= 150 and framecnt < 200):
+            return [0.0, 0.0, self.STATE_random_pitch, self.STATE_random_yaw, self.STATE_random_roll, 0, 0, 0]
         else:
             return None
             
@@ -96,17 +126,20 @@ class Agent:
         
     def get_output_vector(self, game_tick_packet):
     
+        # Don't try to start anything until you have control
+        if (not game_tick_packet.gameInfo.bRoundActive):
+            return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
+    
         # handle control sequences
         if (len(self.control_sequences) > 0):
             outvec = self.control_sequences[0](self, self.framecnt)
             # If the return value is None, then the control sequence is releasing control
             if (outvec == None):
-                #self.control_sequences = self.control_sequences[1:] # DEBUG: do the first one over and over again.
+                self.control_sequences = self.control_sequences[1:] # DEBUG: do the first one over and over again.
                 self.framecnt = 0
                 return(self.get_output_vector(game_tick_packet))
             else:
                 self.framecnt += 1
-                print("Outputting from a control sequence: " + str(outvec))
                 return outvec
                 
     
