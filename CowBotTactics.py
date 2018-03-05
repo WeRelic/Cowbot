@@ -13,17 +13,22 @@ from enum import Enum
 
 
 class KickoffType( Enum ):
-    KICKOFF_LDIAG  = 0,
-    KICKOFF_RDIAG  = 1,
-    KICKOFF_LSIDE  = 2,
-    KICKOFF_RSIDE  = 3,
-    KICKOFF_GOALIE = 4
+    KICKOFF_LDIAG       = 0,
+    KICKOFF_FAST_RDIAG  = 1,
+    KICKOFF_RDIAG       = 2,
+    KICKOFF_FAST_RDIAG  = 3,
+    KICKOFF_LSIDE       = 4,
+    KICKOFF_FAST_LSIDE  = 5,
+    KICKOFF_RSIDE       = 6,
+    KICKOFF_FAST_RSIDE  = 7,
+    KICKOFF_GOALIE      = 8,
+    KICKOFF_FAST_GOALIE = 9
     
 
 class DefenceSequenceType( Enum ):
-    DEF_TYPE_SHADOW          = 0,
-    DEF_TYPE_BACKBOARD       = 1,
-    DEF_TYPE_MIDFIELD        = 2
+    DEF_TYPE_SHADOW     = 0,
+    DEF_TYPE_BACKBOARD  = 1,
+    DEF_TYPE_MIDFIELD   = 2
 
 
 class OffenceSequenceType( Enum ):
@@ -51,7 +56,7 @@ class ControlSequenceType( Enum ):
     CTRL_TYPE_GENERAL = 3
 
 
-def SelectControlSequence( seq_type = None ):
+def SelectControlSequence( seq_type = None, sequence_value = None ):
     """
         Use this function to select the general type of control sequence you want.
     """

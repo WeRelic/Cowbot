@@ -59,10 +59,11 @@ class InputWatcher:
             events = inputs.get_gamepad()
             for e in events:
                 s = "Type: {}\nCode: {}\nState: {}\n\n".format( e.ev_type, e.code, e.state )
+                print( s ) 
                 self.inputs.append( InputEvent( s ) )
         
 if __name__ == "__main__":
     watcher = InputWatcher()
     watcher.start_watching()
-    time.sleep( 20 )
+    time.sleep( 10 )
     watcher.cease_watching()
