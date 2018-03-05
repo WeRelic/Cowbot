@@ -5,17 +5,6 @@ events = inputs.get_gamepad()
 ms_time = lambda: int(round(time.time() * 1000))
 
 
-class InputEvent:
-    def __init__( self, data ):
-        self.data      = data
-        self.timestamp = ms_time()
-
-
-    def __str__( self ):
-        return "< {} @ {} >".format( self.button, self.timestamp )
-
-    
-
 class InputWatcher:
     def __init__( self, flushfile = None ):
         if flushfile != None:
