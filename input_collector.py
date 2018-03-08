@@ -1,17 +1,71 @@
-"""Simple example showing how to get gamepad events."""
+"""
+    input_collector.py
+    
+    Record and translate controller inputs into a valid format for RLBot.
+
+    TODO:
+        - Frame interpolation:
+            Currently, if a frame finds that there is acceleration in one frame,
+            it doesn't carry over to the next (or until there is deceleration).
+
+            This applies to "Boost" and "Brake" as well.
+
+"""
 
 from inputs import get_gamepad
-from FrameInput import *
 from enum import Enum
+from threading import Thread, Lock
+from time import sleep
+from FrameInput import *
 
-"""
-Codes:
-    BTN_TL = L Bumper
-    BTN_TR = R Bumper
-    
-"""
+
+
+# Set for 120 FPS resolution
+frame_timelimit = 0.0083333333333
 
 ms_time = lambda: int( round( time.time() * 1000 ) )
+bindings = {
+        "Throttle" : "RT",
+        "Steer"    : "LSX",
+        "Pitch"    : "LSY",
+        "Yaw"      : "LSX",
+        "Roll"     : "LB",
+        "Boost"    : "RB",
+        "Brake"    : "LB",
+        "Jump"     : "X",
+        "Accel"    : "RT",
+        "Decel"    : "LT"
+    }
+
+
+
+def input_listener_thread( flag, eventlist ):
+    local_binds = {
+        "ABS_Y"     : "LSY",
+        "ABS_X"     : "LSX",
+        "BTN_TL"    : "LB",
+        "BTN_TR"    : "RB",
+        "ABS_Z"     : "LT",
+        "ABS_RZ"    : "RT",
+        "BTN_WEST"  : "X"
+    }
+    while not flag.acquire(False):
+        events = get_gamepad()
+        for event in events:
+            if event.code in local_binds.keys():
+                print( "\t\tEvent: {}".format( local_binds[event.code] ) )
+                eventlist.append(
+                    InputEvent(
+                        local_binds[event.code],
+                        event.timestamp,
+                        event.state
+                    ) )
+
+
+
+
+
+
 
 class InputEvent:
     def __init__( self, code, timestamp, state = None ):
@@ -20,146 +74,163 @@ class InputEvent:
         self.state = state
 
     def is_earlier_than( self, other ):
-        
+        return self.timestamp < other.timestamp
+
+    def is_same_code( self, other ):
+        return self.code == other.code
+
+    def is_same_state( self, other ):
+        return self.state == other.state
+
+    def __str__( self ):
+        return "Code: {0.code}, Time: {0.timestamp}, State: {0.state}".format( self )
+
+    def __lt__( self, other ):
+        return self.timestamp < other.timestamp
+    
 
 class SequenceFrame:
-    bindings = {
-            "Throttle" : "RTRIGGER",
-            "Steer"    : "LSTICK_X",
-            "Pitch"    : "
-
-        }
-    
     def __init__( self, frameid, input_list = [] ):
         self.inputlist = input_list
         self.frameid   = frameid
 
-    def parse_throttle( self, value = 0 ):
-        throttle_events = [  ]
+    def __str__( self ):
+        framedata = ""
+        for inp in self.inputlist:
+            framedata = "{}\n\t\t{}".format( framedata, inp )
+        return "SeqFrame:\n\tOffset:{}\n\tInputs:{}".format( self.frameid, framedata )
+
+    def get_latest_event( self, code ):
+        latest = 0.0
+        ev = None
+        for event in self.inputlist:
+            if event.code == code:
+                if event.timestamp >= latest:
+                    latest = event.timestamp
+                    ev = event
+        return event
+
+    def get_valid_time( self ):
+        return self.inputlist[-1].timestamp
+
+    def to_FrameInput( self ):
+        # Getting the latest event of each binding.
+        latest = {}
+        for k, v  in bindings.items():
+            latest_ts = 0.0
+            ev = None
+            for event in self.inputlist:
+                if event.code == v:
+                    if event.timestamp >= latest_ts:
+                        latest_ts = event.timestamp
+                        ev = event
+            latest[k] = ev
+
+        for k,v in latest.items():
+            
+            if k in [ "Throttle", "Steer", "Pitch",
+                      "Yaw", "Roll", "Accel", "Decel" ] and v == None:
+                latest[k] = InputEvent( k, self.get_valid_time(), 0.0 )
+            elif k in [ "Brake", "Boost", "Jump" ] and v == None:
+                latest[k] = InputEvent( k, self.get_valid_time(), 0 )
+
+            print( "{}:\n\t{}".format( k, v ) )
+
+        # Accounting for throttle being controlled by two buttons:
+        latest["Throttle"].state = latest["Accel"].state - latest["Decel"].state
+        # Editing value states to comform with RLBot's interface:
+        # Love me some magic numbers... Sorry.
+        return FrameInput(
+            self.frameid,
+            latest["Throttle"].state / 255.0,
+            latest["Steer"].state / 32767.0,
+            latest["Pitch"].state / 32767.0,
+            latest["Yaw"].state / 32767.0,
+            latest["Roll"].state / 32767.0,
+            latest["Jump"].state,
+            latest["Boost"].state,
+            latest["Brake"].state,
+            )
         
-    
     
     def add_input( self, inp = None ):
         self.inputlist.append( inp )
 
-
-    def clean( self ):
-        x = 0
-
-        while x < len( self.inputlist ):
-            # Remove NULL inputs:
-            if self.inputlist[ x ] == None:
-                self.inputlist.pop( x )
-
-            # Retain the latest input of the following controls:
-            # Steer:
-            
-            
-            x += 1
-            
-    def rlbot_interface( self ):
-        """
-            Convert this SequenceFrame into an FrameInput.
-        """
-        frame = FrameInput(
-                self.frameid,
-                
-            )
-        return frame
-
-
-
-
-class InputSequence:
-    def __init__( self, framelist = [] ):
-        self.framelist = framelist
-
-
-
-    def add_frame( self, inp = SequenceFrame() ):
-        if len( frame.inputlist ) > 0:
-            self.inputlist.append( inp )
-
     
 
 
-if __name__ == "__main__":
-    inputlist = []
-    while 1:
-        events = get_gamepad()
-        for event in events:
-            # Ignoring sync report events.
-            if event.ev_type == "Sync":
-                pass
+class InputListener:
+    def __init__( self ):
+        self.events = []
+        self.frames = []
+        self.listening = Lock()
+        self.worker = Thread(
+            target = input_listener_thread,
+            name = "Listener Thread",
+            args = ( self.listening, self.events )
+        )
 
-            # Ignoring irrelevant input codes:
-            elif event.code in [ "ABS_RX", "ABS_RY", "BTN_START", "BTN_SELECT", "ABS_HAT0X" ]:
-                pass
+    def within_frame( self, timestamp, frametime, frametime_limit ):
+        upper_bound = frametime + frametime_limit
+        return timestamp >= frametime and timestamp <= upper_bound
+        
+    
 
+    def generate_frames( self ):
+        """
+            Iterates event list and generates a list of SequenceFrame objects.
+            Returns the number of frames generated.
+        """
+        print( "Sorting events by timestamp..." )
+        # Get earliest and latest events
+        e = sorted( self.events, key = lambda x : x.timestamp )
 
+        print( "Found earliest and latest events..." )
+        early, late = e[0].timestamp, e[-1].timestamp
+        framelist = []
+        frametime = early
+        while frametime <= late:
+            # Append any event in the valid time range for this frame.
+            print( "\tFinding events between {} and {}".format( frametime, frametime + frame_timelimit ) )
+            framelist.append(
+                [ x for x in e if self.within_frame( x.timestamp, frametime, frame_timelimit ) ]
+            )
+            frametime += frame_timelimit
 
-
-            # Handling the Left joystick:
-            elif event.code in [ "ABS_Y", "ABS_X" ]:
-                if event.code == "ABS_Y":
-                    print( "LSTICK_Y@{}={}".format( event.timestamp, event.state ) )
-                elif event.code == "ABS_X":
-                    print( "LSTICK_X@{}={}".format( event.timestamp, event.state ) )
-                    
-            
-
-
-            # Handling the Left and Right Triggers:                
-            elif event.code == "ABS_Z":
-                print( "LTRIGGER@{}={}".format( event.timestamp, event.state ) )
-            elif event.code == "ABS_RZ":
-                print( "RTRIGGER@{}={}".format( event.timestamp, event.state ) )
-
-
-
-            # Handling the Left Bumper:
-            elif event.code == "BTN_TL" and event.state == 1:
-                print( "LB_DOWN@{}".format( event.timestamp ) )
-            elif event.code == "BTN_TL" and event.state == 0:
-                print( "LB_UP@{}".format( event.timestamp ) )
-
-            # Handling the Right Bumper:
-            elif event.code == "BTN_TR" and event.state == 1:
-                print( "RB_DOWN@{}".format( event.timestamp ) )
-            elif event.code == "BTN_TR" and event.state == 0:
-                print( "RB_UP@{}".format( event.timestamp ) )
-                          
-                
-
-            # Handling the "Y" Button:
-            elif event.code == "BTN_NORTH" and event.state == 1:
-                print( "Y_DOWN@{}".format( event.timestamp ) )
-            elif event.code == "BTN_NORTH" and event.state == 0:
-                print( "Y_UP@{}".format( event.timestamp ) )
-                
-            
-            # Handling the "B" Button:
-            elif event.code == "BTN_EAST" and event.state == 1:
-                print( "B_DOWN@{}".format( event.timestamp ) )
-            elif event.code == "BTN_EAST" and event.state == 0:
-                print( "B_DOWN@{}".formaT( event.timestamp ) )
-                
-
-            # Handling the "A" Button:
-            elif event.code == "BTN_SOUTH" and event.state == 1:
-                print( "A_DOWN@{}".format( event.timestamp ) )
-            elif event.code == "BTN_SOUTH" and event.state == 0:
-                print( "A_UP@{}".format( event.timestamp ) )
-
-
-            # Handling the "X" Button:
-            elif event.code == "BTN_WEST" and event.state == 1:
-                print( "X_DOWN@{}".format( event.timestamp ) )
-            elif event.code == "BTN_WEST" and event.state == 0:
-                print( "X_UP@{}".format( event.timestamp ) )
-
-                
-            
+        # Generating Sequence Frame Objects...
+        print( "Generating Sequence Frame Objects..." )
+        frameid = 0
+        for frame in framelist:
+            print( "Generating SequenceFrame with offset of {}:".format( frameid ) )
+            if len( frame ) > 0:
+                print( "\tGenerated frame with {} inputs...".format( len( frame ) ) )
+                self.frames.append( SequenceFrame( frameid, frame ) )
             else:
-                print( event.ev_type, event.code, event.state )
+                print( "\tGenerated empty frame..." )
+            frameid += 1
+        return len( framelist )
+
+
+
+    def begin_listening( self ):
+        print( "Listening for controller inputs..." )
+        self.listening.acquire()
+        self.worker.start()
+
+    def cease_listening( self ):
+        print( "No longer listening for controller inputs; Joining listener thread..." )
+        self.listening.release()
+        self.worker.join()
+        print( "Generating frames..." ) 
+        self.generate_frames()
+        
+                    
+if __name__ == "__main__":
+    listener = InputListener()
+    listener.begin_listening()
+    sleep( 5 )
+    listener.cease_listening()
+    for frame in listener.frames:
+        print( frame.to_FrameInput() )
+    
         
