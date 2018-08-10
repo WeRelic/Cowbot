@@ -23,6 +23,7 @@ from FrameInput import *
 # Set for 120 FPS resolution
 frame_timelimit = 0.0083333333333
 
+
 ms_time = lambda: int( round( time.time() * 1000 ) )
 bindings = {
         "Throttle" : "RT",
@@ -41,13 +42,13 @@ bindings = {
 
 def input_listener_thread( flag, eventlist ):
     local_binds = {
-        "ABS_Y"     : "LSY",
-        "ABS_X"     : "LSX",
-        "BTN_TL"    : "LB",
-        "BTN_TR"    : "RB",
-        "ABS_Z"     : "LT",
-        "ABS_RZ"    : "RT",
-        "BTN_WEST"  : "X"
+        "ABS_Y"     : "LSY",        # Left stick up/down
+        "ABS_X"     : "LSX",        # Left stick left/right
+        "BTN_TL"    : "LB",         # Left bumper
+        "BTN_TR"    : "RB",         # Right bumper
+        "ABS_Z"     : "LT",         # Left trigger
+        "ABS_RZ"    : "RT",         # Right trigger
+        "BTN_WEST"  : "X"           # X Button
     }
     while not flag.acquire(False):
         events = get_gamepad()
@@ -133,7 +134,7 @@ class SequenceFrame:
                 latest[k] = InputEvent( k, self.get_valid_time(), 0.0 )
             elif k in [ "Brake", "Boost", "Jump" ] and v == None:
                 latest[k] = InputEvent( k, self.get_valid_time(), 0 )
-
+                
             print( "{}:\n\t{}".format( k, v ) )
 
         # Accounting for throttle being controlled by two buttons:
@@ -169,6 +170,12 @@ class InputListener:
             name = "Listener Thread",
             args = ( self.listening, self.events )
         )
+        self.interp_states = {
+            "boost" : False,
+            "brake" : False,
+            "jump"  : False
+        }
+        
 
     def within_frame( self, timestamp, frametime, frametime_limit ):
         upper_bound = frametime + frametime_limit
@@ -203,8 +210,10 @@ class InputListener:
         for frame in framelist:
             print( "Generating SequenceFrame with offset of {}:".format( frameid ) )
             if len( frame ) > 0:
+                if ( 
                 print( "\tGenerated frame with {} inputs...".format( len( frame ) ) )
                 self.frames.append( SequenceFrame( frameid, frame ) )
+                
             else:
                 print( "\tGenerated empty frame..." )
             frameid += 1
