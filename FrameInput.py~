@@ -5,11 +5,9 @@
 
     TODO:
         Implement regex search for FrameInput so we can hardcode frame inputs
-        e.g:
+        i.e:
             Frame(100,1.0,0.0,0.0,0.0,0.0,1,1,0)
             means the bot jumps and boosts on frame 100)
-
-I changed "brake" to "drift" to avoid potential confusion with negative throttle.
 """
 
 class FrameInput:
@@ -25,7 +23,7 @@ class FrameInput:
             roll     = 0.0,
             jump     = 0,
             boost    = 0,
-            drift    = 0 ):
+            brake    = 0 ):
         self.frameid  = frameid
         self.throttle = throttle
         self.steer    = steer
@@ -34,11 +32,11 @@ class FrameInput:
         self.roll     = roll
         self.jump     = jump
         self.boost    = boost
-        self.drift    = drift
+        self.brake    = brake
         
         
     def __str__( self ):
-        data = "{0.frameid},{0.throttle},{0.steer},{0.pitch},{0.yaw},{0.roll},{0.jump},{0.boost},{0.drift}"
+        data = "{0.frameid},{0.throttle},{0.steer},{0.pitch},{0.yaw},{0.roll},{0.jump},{0.boost},{0.brake}"
         return "Frame({})".format( data.format( self ) )
 
 
@@ -55,13 +53,13 @@ class FrameInput:
                 self.roll,
                 self.jump,
                 self.boost,
-                self.drift                
+                self.brake                
             ]
 
     
     def FromStr( self, string ):
         """
-            Extract a FrameInput value from a string and change this object's values.
+            Extract a FrameInput value from a string and change this objects values.
 
             This function is brittle. A regex solution would be more robust.
         """
@@ -75,7 +73,7 @@ class FrameInput:
         self.roll     = float( data[5] )
         self.jump     = int( data[6] )
         self.boost    = int( data[7] )
-        self.drift    = int( data[8] )
+        self.brake    = int( data[8] )
 
 
     @classmethod
@@ -99,7 +97,7 @@ class FrameInput:
         
         return FrameInput( *data )
         
-#I don't know what this is for
+
 if __name__ == "__main__":
     test_object1 = FrameInput(15)
     test_object2 = FrameInput()

@@ -1,232 +1,156 @@
-import math, random
+import math
+from FrameInput import *
+from CowBotVector import *
 
-URotationToRadians = math.pi / float(32768)
-            
-class Waypoint:
+from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
+from rlbot.utils.structures.game_data_struct import GameTickPacket
 
-    def __init__(self, x, y, z, ref_frame="pitch"):
-        self.destination = Vector3(x, y, z)
-        self.ref_frame = ref_frame
+
+
+class BooleanAlgebraCow(BaseAgent):
+
+    def initialize_agent(self):
+        #This runs once before the bot starts up
+        self.controller_state = SimpleControllerState()
         
-    def get_destination(self, game_tick_packet):
-        """
-        Returns a Vec3 relative to a reference frame.
-        """
-        if (self.ref_frame == "pitch"):
-            return self.destination
-        elif (self.ref_frame == "ball"):
-            ball = game_tick_packet.gameball
-            ball_pos = Vector3(ball.Location.X, ball.Location.Y, ball.Location.Z)
-            return ball_pos + self.destination
-        else:
-            return self.destination # default case
+    def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
 
-class Agent:
-    def __init__(self, name, team, index):
-        self.name = name
-        self.team = team  # 0 towards positive goal, 1 towards negative goal.
+        #Game state info
+        field_info = self.get_field_info()
+        game_info = GameState(packet, field_info)
+
+        if not game_info.big_boosts[0].is_active:
+            print( '{' + ', '.join([str(game_info.big_boosts[0].pos.x),
+                                    str(game_info.big_boosts[0].pos.y),
+                                    str(game_info.big_boosts[0].pos.z)]) + '}' , game_info.me.pos)
+
+        #Decide on what to do
+#        controller_input = FrameInput()
+
+        #Translation for a frame of controller input.
+#        self.controller_state.throttle = controller_input.throttle
+#        self.controller_state.steer = controller_input.steer
+#        self.controller_state.pitch = controller_input.pitch
+#        self.controller_state.yaw = controller_input.yaw
+#        self.controller_state.roll = controller_input.roll
+#        self.controller_state.jump = controller_input.jump
+#        self.controller_state.boost = controller_input.boost
+#        self.controller_state.brake = controller_input.drift
+
+        return self.controller_state
+
+def find_self_and_teams(packet):
+    #This feels about as wrong as it can be, but it should work.
+    #I shouldn't be doing this every frame :/
+    #I also shouldn't need to hard code the bot name
+    for i in range(packet.num_cars):
+        if packet.game_cars[i].name == "Boolean Algebra Cow":
+            my_index = i
+            my_team = packet.game_cars[i].team
+            break
+        
+    teammate_indices = []
+    opponent_indices = []
+    
+    for i in range(packet.num_cars):
+        if i == my_index:
+            pass
+        elif packet.game_cars[i].team == my_team:
+            teammate_indices.append(i)
+        else:
+            opponent_indices.append(i)
+
+    return my_index, my_team, teammate_indices, opponent_indices
+
+class GameState:
+
+    def __init__(self, packet, field_info):
+
+        #Find self and teams
+        team_info = find_self_and_teams(packet)
+        self.my_index = team_info[0]
+        self.my_team = team_info[1]
+        self.teammate_indices = team_info[2]
+        self.opponent_indices = team_info[3]
+
+        #Ball info
+        self.ball = Ball(packet)
+
+        #Info for own car
+        self.me = Car(packet, self.my_index)
+
+        #Info for other cars
+        self.teammates = []
+        self.opponents = []
+        
+        for i in range(packet.num_cars):
+            if i != self.my_index:
+                if i in self.teammate_indices:
+                    self.teammates.append(Car(packet, i))
+                else:
+                    self.opponents.append(Car(packet,i))
+
+        self.big_boosts = []
+        self.small_boosts = []
+        for i in range(field_info.num_boosts):
+            pad = field_info.boost_pads[i]
+            if pad.is_full_boost:
+                self.big_boosts.append(Boostpad(i, pad.location, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
+
+
+class Ball(GameState):
+
+    def __init__(self, packet):
+        self.pos = Vec3( packet.game_ball.physics.location.x,
+                         packet.game_ball.physics.location.y,
+                         packet.game_ball.physics.location.z )
+
+        #TODO: get this in quaternion format
+        #Note: ball rotation is only useful in snow day
+        self.rot = [ packet.game_ball.physics.rotation.pitch,
+                     packet.game_ball.physics.rotation.yaw,
+                     packet.game_ball.physics.rotation.roll ]
+        
+        self.vel = Vec3( packet.game_ball.physics.velocity.x,
+                         packet.game_ball.physics.velocity.y,
+                         packet.game_ball.physics.velocity.z )
+        
+        self.omega = Vec3( packet.game_ball.physics.angular_velocity.x,
+                           packet.game_ball.physics.angular_velocity.y,
+                           packet.game_ball.physics.angular_velocity.z )
+        
+
+class Car(GameState):
+
+    def __init__(self, packet, index):
+        
+        this_car = packet.game_cars[index]
+        self.pos = Vec3( this_car.physics.location.x,
+                         this_car.physics.location.y,
+                         this_car.physics.location.z )
+
+        #TODO: get this in quaternion format
+        self.rot = [ this_car.physics.rotation.pitch,
+                     this_car.physics.rotation.yaw,
+                     this_car.physics.rotation.roll ]
+        
+        self.vel = Vec3( this_car.physics.velocity.x,
+                         this_car.physics.velocity.y,
+                         this_car.physics.velocity.z )
+        
+        self.omega = Vec3( this_car.physics.angular_velocity.x,
+                           this_car.physics.angular_velocity.y,
+                           this_car.physics.angular_velocity.z )
+
+
+class Boostpad(GameState):
+
+    def __init__(self, index, pos, is_active, timer):
         self.index = index
-        self.framecnt = 0
-        
-        self.waypoints = [Waypoint(0,0,0,"ball")]
-        self.control_sequences = [self.ctrlseq_wildly_throw_self]
+        self.pos = pos
+        self.is_active = is_active
+        self.timer = timer
     
-    #####################################################
-    #  Control sequences return None to release control #
-    #####################################################
-    def ctrlseq_front_flip(self, game_tick_packet, framecnt):
-        if (framecnt >= 0 and framecnt < 10):
-            return [1.0, 0.0, 1.0, 0.0, 0.0, 1, 0, 0]
-        elif (framecnt == 10):
-            return [1.0, 0.0, 1.0, 0.0, 0.0, 0, 0, 0]
-        elif (framecnt == 11):
-            return [1.0, 0.0, 1.0, 0.0, 0.0, 1, 0, 0]
-        elif (framecnt < 20):
-            return [1.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
-        else:
-            return None
-            
-    def ctrlseq_wildly_throw_self(self, game_tick_packet, framecnt):
-    
-        # Set a single random value
-        if (framecnt == 0):
-            self.STATE_random_pitch = random.uniform(-1.0, 1.0)
-            self.STATE_random_yaw   = random.uniform(-1.0, 1.0)
-            self.STATE_random_roll  = random.uniform(-1.0, 1.0)
-        
-        # Do something based on the current frame
-        if (framecnt >= 0 and framecnt <= 10):
-            return [0.0, 0.0, 0.0, 0.0, 0.0, 1, 0, 0]
-        elif (framecnt == 11):
-            return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
-        elif (framecnt > 11 and framecnt < 20):
-            return [0.0, 0.0, 0.0, 0.0, 0.0, 1, 0, 0]
-        elif (framecnt >= 20 and framecnt < 50):
-            return [0.0, 0.0, 1.0, 0.0, 0.0, 0, 0, 0]
-        elif (framecnt >= 50 and framecnt < 150):
-            return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 1, 0]
-        elif (framecnt >= 150 and framecnt < 200):
-            return [0.0, 0.0, self.STATE_random_pitch, self.STATE_random_yaw, self.STATE_random_roll, 0, 0, 0]
-        else:
-            return None
-            
-    # Returns the controls to get to a particular spot.
-    def path_to_position(self, game_tick_packet, destination):
-        car = game_tick_packet.gamecars[self.index]
-        car_location = Vector3(car.Location.X, car.Location.Y, car.Location.Z)
-        car_direction = get_car_facing_vector(car)
-        car_to_destination = destination - car_location
-        
-        steer_correction_radians = car_direction.correction_to(car_to_destination)
-        
-        # If we need to turn more than pi/2 radians but less than 3pi/2 radians, half flip first
-        if (steer_correction_radians > math.pi/2 and 
-            steer_correction_radians < 3 * math.pi/2):
-            #self.control_sequence = self.CTRLSEQ_HALF_FLIP
-            print("Should half flip here!")
-            #result = self.control_sequence.get_output_vector()
-            #print("first frame of half-flip: " + str(result))
-            #return result
-        
-        # Convert steering correction to a turning direction
-        epsilon = 0.005
-        if steer_correction_radians > epsilon:
-            turn_direction = -1.0
-        elif steer_correction_radians < epsilon:
-            turn_direction = 1.0
-        else:
-            turn_direction = 0.0
-        
-        # Dampen the ringing.
-        slowdown_cutoff = 0.25
-        if (abs(steer_correction_radians) > slowdown_cutoff):
-            turn = turn_direction * 1.0
-        else:
-            turn = turn_direction * (abs(steer_correction_radians)/slowdown_cutoff)
-            
-        # To speed up turns, we can engage the handbrake
-        handbrake_cutoff = 0.5
-        if (abs(steer_correction_radians) > handbrake_cutoff):
-            handbrake = 1
-        else:
-            handbrake = 0
-        
-        
-        return [
-            1.0,       # throttle
-            turn,      # steer
-            0.0,       # pitch
-            0.0,       # yaw
-            0.0,       # roll
-            0,         # jump
-            1,         # boost
-            handbrake  # handbrake
-        ]
-        
-        
-    def get_output_vector(self, game_tick_packet):
-    
-        # Don't try to start anything until you have control
-        if (not game_tick_packet.gameInfo.bRoundActive):
-            return [0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0]
-    
-        # handle control sequences
-        if (len(self.control_sequences) > 0):
-            outvec = self.control_sequences[0](self, self.framecnt)
-            # If the return value is None, then the control sequence is releasing control
-            if (outvec == None):
-                self.control_sequences = self.control_sequences[1:] # DEBUG: do the first one over and over again.
-                self.framecnt = 0
-                return(self.get_output_vector(game_tick_packet))
-            else:
-                self.framecnt += 1
-                return outvec
-                
-    
-        # If we don't have a control sequence, navigate to the next waypoint
-        car = game_tick_packet.gamecars[self.index]
-        car_location = Vector3(car.Location.X, car.Location.Y, car.Location.Z)
-        delta = car_location - self.waypoints[0].get_destination(game_tick_packet)
-            
-        epsilon = 300
-        distance = math.sqrt(delta.x ** 2 + delta.y ** 2)
-        if (distance < epsilon):
-            self.waypoints = self.waypoints[1:] + [self.waypoints[0]]
-            #print("Updating boost target to: " + str(self.waypoints[0]))
-            
-        return self.path_to_position(game_tick_packet, self.waypoints[0].get_destination(game_tick_packet))
-
-    
-class Vector2:
-    def __init__(self, x = 0, y = 0):
-        self.x = float(x)
-        self.y = float(y)
-
-    def __add__(self, val):
-        return Vector2( self.x + val.x, self.y + val.y)
-
-    def __sub__(self,val):
-        return Vector2( self.x - val.x, self.y - val.y)
-        
-    def __str__(self):
-        return '{' + str(self.x) + ', ' + str(self.y) + '}'
-
-    def correction_to(self, ideal):
-        # The in-game axes are left handed, so use -x
-        current_in_radians = math.atan2(self.y, -self.x)
-        ideal_in_radians = math.atan2(ideal.y, -ideal.x)
-
-        correction = ideal_in_radians - current_in_radians
-
-        # Make sure we go the 'short way'
-        if abs(correction) > math.pi:
-            if correction < 0:
-                correction += 2 * math.pi
-            else:
-                correction -= 2 * math.pi
-
-        return correction
-        
-class Vector3:
-    def __init__(self, x = 0, y = 0, z = 0):
-        self.x = float(x)
-        self.y = float(y)
-        self.z = float(z)
-        
-    def __add__(self, val):
-        return Vector3(self.x + val.x, self.y + val.y, self.z + val.z)
-    
-    def __sub__(self, val):
-        return Vector3(self.x - val.x, self.y - val.y, self.z - val.z)
-        
-    def __str__(self):
-        return '{' + ', '.join([self.x, self.y, self.z]) + '}'
-        
-    # TODO: this is slightly more interesting in 3D, so keeping the 2D version for now
-    def correction_to(self, ideal):
-        # The in-game axes are left handed, so use -x
-        current_in_radians = math.atan2(self.y, -self.x)
-        ideal_in_radians = math.atan2(ideal.y, -ideal.x)
-
-        correction = ideal_in_radians - current_in_radians
-
-        # Make sure we go the 'short way'
-        if abs(correction) > math.pi:
-            if correction < 0:
-                correction += 2 * math.pi
-            else:
-                correction -= 2 * math.pi
-
-        return correction
 
 
-def get_car_facing_vector(car):
 
-    pitch = float(car.Rotation.Pitch)
-    yaw = float(car.Rotation.Yaw)
-
-    facing_x = math.cos(pitch * URotationToRadians) * math.cos(yaw * URotationToRadians)
-    facing_y = math.cos(pitch * URotationToRadians) * math.sin(yaw * URotationToRadians)
-    facing_z = math.sin(0.5 * pitch * URotationToRadians)
-
-    return Vector3(facing_x, facing_y, facing_z)

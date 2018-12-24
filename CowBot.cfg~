@@ -3,7 +3,7 @@
 looks_config = ./appearance.cfg
 
 # Path to python file. Can use relative path from here.
-python_file = ./CowBot.py
+python_file = ./cowbot.py
 
 # Name of the bot in-game
 name = Boolean Algebra Cow
