@@ -87,6 +87,11 @@ class CarState(GameState):
         self.vel = vel
         self.omega = omega
 
+        if self.rot != None:
+            self.pitch = rot[0]
+            self.yaw = rot[1]
+            self.roll = rot[2]
+            
 
 class Boostpad(GameState):
 

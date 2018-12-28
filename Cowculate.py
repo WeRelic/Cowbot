@@ -2,7 +2,7 @@ from GameState import *
 from CowBotVector import *
 from rlbot.agents.base_agent import SimpleControllerState
 from NaiveSteering import *
-
+from Testing import *
 
 def Cowculate(game_info):
     '''
@@ -43,4 +43,4 @@ def find_destination(game_info):
     If a property (e.g., angular velocity) is "None", it means we don't care about the end result of that property.
     '''
 
-    return blindly_chase_ball(game_info)
+    return less_blindly_chase_ball(game_info)

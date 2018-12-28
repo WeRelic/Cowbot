@@ -1,4 +1,4 @@
-from math import pi, atan2
+from math import pi, atan2, sin, cos
 from CowBotVector import *
 from GameState import *
 
@@ -12,9 +12,29 @@ def blindly_chase_ball(game_info):
              None,
              None )
 
+
+
+def less_blindly_chase_ball(game_info):
+    '''
+    If a simple accelerate and turn will hit the ball, do that.
+    Otherwise drive away from the ball until it will.
+    '''
+
+    if can_we_hit_ball(game_info.me, game_info.ball):
+        return CarState( game_info.ball.pos,
+                         None,
+                         None,
+                         None )
+    else:
+        return CarState( game_info.me.pos + game_info.me.pos - game_info.ball.pos,
+                         None,
+                         None,
+                         None )
+        
+
 def naive_turn(current_state, target_state, controller_input):
     '''
-    Returns a controller state that turns the car towards the ball while holding accelerate.
+    Returns a controller state that turns the car towards the target while holding accelerate.
     There are a few parameters to eliminate wiggle and improve accuracy and efficiency.
     '''
 
@@ -52,3 +72,51 @@ def naive_turn(current_state, target_state, controller_input):
             controller_input.steer = - 2*correction_angle
             
     return controller_input
+
+
+
+def can_we_hit_ball(car, ball):
+    relative_circle_center_1 = Vec3( 0,
+                                     640,
+                                     0 )
+    relative_circle_center_2 = Vec3( 0,
+                                     -640,
+                                     0 )
+    circle_center_1 = relative_to_absolute(relative_circle_center_1, car)
+    circle_center_2 = relative_to_absolute(relative_circle_center_2, car)
+
+    #Check if the ball is in either of our turning circles
+    #incorporated half the width of the octane, 42uu, to remove some false negatives.
+    if (ball.pos.x - circle_center_1.x)**2 + (ball.pos.y - circle_center_1.y)**2 <= (640-42)**2:
+        return False
+    elif (ball.pos.x - circle_center_2.x)**2 + (ball.pos.y - circle_center_2.y)**2 <= (640-42)**2:
+        return False
+    else:
+        return True
+
+
+def relative_to_absolute(rel_pos, car):
+    '''
+    Takes a coordinate, rel_pos, relative to car's position and orientation
+    and transforms it into the absolute field coordinates.
+    For now this only works with 2d coordinates on the ground.
+    '''
+
+    #rel_pos is +x in the direction of the car, +y clockwise by pi
+    #car.yaw of zero means the car is facing in the +x direction.
+    #yaw increases in the clockwise direction
+    return Vec3( car.pos.x + rel_pos.x * cos(car.yaw) - rel_pos.y * sin(car.yaw),
+                 car.pos.y + rel_pos.x * sin(car.yaw) + rel_pos.y * cos(car.yaw)    ,
+                 car.pos.z )
+
+
+
+
+
+
+
+
+
+
+
+

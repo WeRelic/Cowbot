@@ -1,3 +1,5 @@
+from CowBotVector import *
+
 class GameState:
 
     def __init__(self, packet, field_info):
@@ -33,7 +35,6 @@ class GameState:
             if pad.is_full_boost:
                 self.big_boosts.append(Boostpad(i, pad.location, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
 
-
 class Ball(GameState):
 
     def __init__(self, packet):
@@ -54,29 +55,37 @@ class Ball(GameState):
         self.omega = Vec3( packet.game_ball.physics.angular_velocity.x,
                            packet.game_ball.physics.angular_velocity.y,
                            packet.game_ball.physics.angular_velocity.z )
-        
 
-class Car(GameState):
+def Car(packet,index):
+        
+    this_car = packet.game_cars[index]
+    pos = Vec3( this_car.physics.location.x,
+                this_car.physics.location.y,
+                this_car.physics.location.z )
+    
+    #TODO: get this in quaternion format?
+    rot = [ this_car.physics.rotation.pitch,
+            this_car.physics.rotation.yaw,
+            this_car.physics.rotation.roll ]
+    
+    vel = Vec3( this_car.physics.velocity.x,
+                this_car.physics.velocity.y,
+                this_car.physics.velocity.z )
+    
+    omega = Vec3( this_car.physics.angular_velocity.x,
+                  this_car.physics.angular_velocity.y,
+                  this_car.physics.angular_velocity.z )
 
-    def __init__(self, packet, index):
-        
-        this_car = packet.game_cars[index]
-        self.pos = Vec3( this_car.physics.location.x,
-                         this_car.physics.location.y,
-                         this_car.physics.location.z )
+    return CarState(pos, rot, vel, omega)
 
-        #TODO: get this in quaternion format?
-        self.rot = [ this_car.physics.rotation.pitch,
-                     this_car.physics.rotation.yaw,
-                     this_car.physics.rotation.roll ]
-        
-        self.vel = Vec3( this_car.physics.velocity.x,
-                         this_car.physics.velocity.y,
-                         this_car.physics.velocity.z )
-        
-        self.omega = Vec3( this_car.physics.angular_velocity.x,
-                           this_car.physics.angular_velocity.y,
-                           this_car.physics.angular_velocity.z )
+
+class CarState(GameState):
+
+    def __init__(self, pos, rot, vel, omega):
+        self.pos = pos
+        self.rot = rot
+        self.vel = vel
+        self.omega = omega
 
 
 class Boostpad(GameState):

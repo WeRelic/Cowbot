@@ -1,0 +1,9 @@
+from GameState import *
+from CowBotVector import *
+
+
+def find_position(GameState):
+    '''
+    Print the location of the opposing car (human control, in practice)
+    when it jumps
+    '''
