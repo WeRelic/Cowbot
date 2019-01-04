@@ -3,10 +3,11 @@ from CowBotVector import *
 from rlbot.agents.base_agent import SimpleControllerState
 from NaiveSteering import *
 from Testing import *
+from Aerial_Rotations import *
 
-def Cowculate(game_info):
+def Cowculate(game_info, old_game_info):
     '''
-    The main control function for BAC.  
+    The main control function for BAC, Cowculate() returns the final input.
     It takes a GameState object and returns a controller_state object.
     Cowculate will be the framework of all decision making, and will be the highest level of abstraction.
     '''
@@ -19,8 +20,24 @@ def Cowculate(game_info):
     if plan == "Move":
         #Starting and target states for our car
         current_state = game_info.me
-        target_state = find_destination(game_info)
-        controller_input = naive_turn(current_state, target_state, controller_input)
+
+        #target_state = find_destination(game_info)
+
+        time = game_info.time
+
+        #Previous frame information
+        if old_game_info != None:
+            old_state = old_game_info.me
+            old_time = old_game_info.time
+        else:
+            #This might be wrong
+            old_time = -1/120
+
+
+        #This is the actual control function.
+        #Currently a slot for testing functions.
+
+        controller_input = aerial_rotations(current_state, 0, old_state, time, old_time)
 
     return controller_input
  

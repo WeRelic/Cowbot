@@ -2,32 +2,26 @@ from CowBotVector import *
 
 class GameState:
 
-    def __init__(self, packet, field_info):
-
-        #Find self and teams
-        team_info = find_self_and_teams(packet)
-        self.my_index = team_info[0]
-        self.my_team = team_info[1]
-        self.teammate_indices = team_info[2]
-        self.opponent_indices = team_info[3]
+    def __init__(self, packet, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices):
 
         #Ball info
         self.ball = Ball(packet)
 
         #Info for own car
-        self.me = Car(packet, self.my_index)
+        self.me = Car(packet, my_index)
 
         #Info for other cars
         self.teammates = []
         self.opponents = []
         
         for i in range(packet.num_cars):
-            if i != self.my_index:
-                if i in self.teammate_indices:
+            if i != my_index:
+                if i in teammate_indices:
                     self.teammates.append(Car(packet, i))
                 else:
                     self.opponents.append(Car(packet,i))
 
+        #Boost info
         self.big_boosts = []
         self.small_boosts = []
         for i in range(field_info.num_boosts):
@@ -35,7 +29,10 @@ class GameState:
             if pad.is_full_boost:
                 self.big_boosts.append(Boostpad(i, pad.location, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
 
-class Ball(GameState):
+        #Game time elapsed
+        self.time = packet.game_info.seconds_elapsed
+
+class Ball:
 
     def __init__(self, packet):
         self.pos = Vec3( packet.game_ball.physics.location.x,
@@ -56,8 +53,14 @@ class Ball(GameState):
                            packet.game_ball.physics.angular_velocity.y,
                            packet.game_ball.physics.angular_velocity.z )
 
+
+
+
 def Car(packet,index):
-        
+    '''
+    Gets the game info for a given car, and returns the values.  Should be fed into a CarState object.
+    '''
+
     this_car = packet.game_cars[index]
     pos = Vec3( this_car.physics.location.x,
                 this_car.physics.location.y,
@@ -76,12 +79,19 @@ def Car(packet,index):
                   this_car.physics.angular_velocity.y,
                   this_car.physics.angular_velocity.z )
 
-    return CarState(pos, rot, vel, omega)
+    demo = this_car.is_demolished
+    wheel_contact = this_car.has_wheel_contact
+    supersonic = this_car.is_super_sonic
+    jumped = this_car.jumped
+    double_jumped = this_car.double_jumped
+    boost = this_car.boost
+
+    return CarState(pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost)
 
 
 class CarState(GameState):
 
-    def __init__(self, pos, rot, vel, omega):
+    def __init__(self, pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost):
         self.pos = pos
         self.rot = rot
         self.vel = vel
@@ -91,7 +101,14 @@ class CarState(GameState):
             self.pitch = rot[0]
             self.yaw = rot[1]
             self.roll = rot[2]
-            
+ 
+        self.demo = demo
+        self.wheel_contact = wheel_contact
+        self.supersonic = supersonic
+        self.jumped = jumped
+        self.double_jumped = double_jumped
+        self.boost = boost
+
 
 class Boostpad(GameState):
 
@@ -101,24 +118,4 @@ class Boostpad(GameState):
         self.is_active = is_active
         self.timer = timer
 
-def find_self_and_teams(packet):
-    #I shouldn't be doing this every frame :/
-    #I also shouldn't need to hard code the bot name
-    for i in range(packet.num_cars):
-        if packet.game_cars[i].name == "Boolean Algebra Cow":
-            my_index = i
-            my_team = packet.game_cars[i].team
-            break
-        
-    teammate_indices = []
-    opponent_indices = []
-    
-    for i in range(packet.num_cars):
-        if i == my_index:
-            pass
-        elif packet.game_cars[i].team == my_team:
-            teammate_indices.append(i)
-        else:
-            opponent_indices.append(i)
 
-    return my_index, my_team, teammate_indices, opponent_indices
