@@ -3,9 +3,12 @@ from CowBotVector import *
 from rlbot.agents.base_agent import SimpleControllerState
 from NaiveSteering import *
 from Testing import *
-from Aerial_Rotations import *
+from AerialRotations import *
+from BallPrediction import *
 
-def Cowculate(game_info, old_game_info):
+
+
+def Cowculate(game_info, old_game_info, renderer):
     '''
     The main control function for BAC, Cowculate() returns the final input.
     It takes a GameState object and returns a controller_state object.
@@ -15,7 +18,7 @@ def Cowculate(game_info, old_game_info):
     #Initialize a controller state object.
     controller_input = SimpleControllerState()
 
-    plan = make_plan(game_info)
+    plan = make_plan(game_info, renderer)
 
     if plan == "Move":
         #Starting and target states for our car
@@ -42,13 +45,17 @@ def Cowculate(game_info, old_game_info):
     return controller_input
  
 #Eventually this will have more options, but I want to get basic movement controls down before I worry about that
-def make_plan(game_info):
+def make_plan(game_info, renderer):
     '''
     make_plan returns a str to describe the highest-level plan for BAC.
     "Move" - change the position, orientation, and (angular) momentum of the car
     I plan to make something like "Move" be a last-resort goal.
     Goals should be higher level strategy than "Move", but more specific than "Defend", ideally.
     '''
+
+    ball_prediction = make_ball_prediction(game_info.ball)
+
+    draw_debug(renderer, game_info.me, game_info.ball, action_display = None)
 
     return "Move"
 
@@ -61,3 +68,16 @@ def find_destination(game_info):
     '''
 
     return less_blindly_chase_ball(game_info)
+
+
+
+
+def draw_debug(renderer, car, ball, action_display = None):
+    renderer.begin_rendering()
+    # draw the expected path of the ball
+    ball_path = make_ball_prediction(ball)
+    renderer.draw_polyline_3d(ball_path, renderer.white())
+    # print the action that the bot is taking
+    #renderer.draw_string_3d(car.physics.location, 2, 2, action_display, renderer.white())
+    renderer.end_rendering()
+

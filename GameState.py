@@ -89,7 +89,7 @@ def Car(packet,index):
     return CarState(pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost)
 
 
-class CarState(GameState):
+class CarState:
 
     def __init__(self, pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost):
         self.pos = pos
@@ -110,7 +110,7 @@ class CarState(GameState):
         self.boost = boost
 
 
-class Boostpad(GameState):
+class Boostpad:
 
     def __init__(self, index, pos, is_active, timer):
         self.index = index

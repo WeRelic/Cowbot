@@ -39,8 +39,7 @@ class BooleanAlgebraCow(BaseAgent):
                               self.teammate_indices, self.opponent_indices)
 
 
-        return Cowculate(self.game_info, self.old_game_info)
-
+        return Cowculate(self.game_info, self.old_game_info, self.renderer)
 
 
 

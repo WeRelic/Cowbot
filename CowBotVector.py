@@ -24,7 +24,12 @@ class Vec3:
     def __str__(self):
         return '{' + ', '.join([str(self.x), str(self.y), str(self.z)]) + '}'
     
-    
+    def __list__(self):
+        return [self.x, self.y, self.z]
+
+
+
+
     #Still broken
     #This will need an (angle, axis) pair.
     #Alternatively we could use two angles.
