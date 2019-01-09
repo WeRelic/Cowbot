@@ -35,6 +35,7 @@ def Cowculate(game_info, old_game_info, renderer):
         else:
             #This might be wrong
             old_time = -1/120
+            old_state = game_info.me
 
 
         #This is the actual control function.
