@@ -3,9 +3,12 @@ from CowBotVector import *
 from rlbot.agents.base_agent import SimpleControllerState
 from NaiveSteering import *
 from Testing import *
-from AerialRotations import *
+#AerialRotations.py is now deprecated, replaced by the AerialRotation class in Mechanics.py
+#from AerialRotations import *
 from BallPrediction import *
-
+from Kickoff import *
+from Mechanics import *
+from math import sin, cos
 
 
 def Cowculate(game_info, old_game_info, renderer):
@@ -18,9 +21,16 @@ def Cowculate(game_info, old_game_info, renderer):
     #Initialize a controller state object.
     controller_input = SimpleControllerState()
 
-    plan = make_plan(game_info, renderer)
+    plan = make_plan(game_info, old_game_info, renderer)
+
+    if plan == "Kickoff":
+        run_kickoff(game_info, old_game_info)
+
+        #controller_input = run_kickoff(game_info, old_game_info)
+
 
     if plan == "Move":
+        #I will want to wrap this up somewhere else eventually
         #Starting and target states for our car
         current_state = game_info.me
 
@@ -41,18 +51,28 @@ def Cowculate(game_info, old_game_info, renderer):
         #This is the actual control function.
         #Currently a slot for testing functions.
 
-        controller_input = aerial_rotations(current_state, 0, old_state, time, old_time)
-
+        if (not game_info.me.wheel_contact):
+            if abs(game_info.me.pos.z - 800) < 20:
+                controller_input = AirDodge(Vec3(0, 0, 0)).input()
+            else:
+                controller_input = AerialRotation(current_state, 0, old_state, time, old_time).zero_omega_recovery() #aerial_rotations(current_state, 0, old_state, time, old_time)
+        else:
+            controller_input.throttle = 1.0
     return controller_input
  
 #Eventually this will have more options, but I want to get basic movement controls down before I worry about that
-def make_plan(game_info, renderer):
+def make_plan(game_info, old_game_info, renderer):
     '''
     make_plan returns a str to describe the highest-level plan for BAC.
     "Move" - change the position, orientation, and (angular) momentum of the car
+    "Kickoff" - checks if we're in a kickoff and hands off control appropriately
     I plan to make something like "Move" be a last-resort goal.
     Goals should be higher level strategy than "Move", but more specific than "Defend", ideally.
     '''
+
+    if is_kickoff(game_info, old_game_info)[0]:
+        game_info.first_frame_of_kickoff = is_kickoff(game_info, old_game_info)[1]
+        return "Kickoff"
 
     ball_prediction = make_ball_prediction(game_info.ball)
 
@@ -69,8 +89,6 @@ def find_destination(game_info):
     '''
 
     return less_blindly_chase_ball(game_info)
-
-
 
 
 def draw_debug(renderer, car, ball, action_display = None):

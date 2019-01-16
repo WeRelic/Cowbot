@@ -14,7 +14,6 @@ def make_ball_prediction(ball):
     for step in ball_path_generator:
         ball_path.append(step)
 
-    #print(type(ball_path))
     return ball_path
 
 
@@ -52,6 +51,12 @@ class PathPrediction:
 
     def next(self):
 
+        #Estimate, I should get store it higher up as well.
+        curve_radius = 250
+
+        is_corner_bounce = self.check_corner_bounce
+
+
         test_pos = self.current_pos + self.current_vel.scalar_multiply(1 / self.framerate)
 
         #Deal with nonstandard maps eventually
@@ -62,7 +67,7 @@ class PathPrediction:
         elif (test_pos.x < - (4096 - self.ball_radius)) and (self.current_vel.x < 0):
             self.collision = True
             self.normal = Vec3(1, 0, 0)
-            
+
         elif (test_pos.y > 5120 - self.ball_radius) and (self.current_vel.y > 0):
             self.collision = True
             self.normal = Vec3(0, -1, 0)
@@ -103,11 +108,12 @@ class PathPrediction:
             spin = self.normal.cross(self.obj.omega).scalar_multiply(self.ball_radius)
             parallel_vel = self.current_vel - orth_vel
             slip = spin + parallel_vel
-            ratio = orth_vel.magnitude() / slip.magnitude()
-            coef = -(self.mu * (min(1, self.Y*ratio)))
-            new_vel += slip.scalar_multiply(coef)
-            #rest the normal vector
-            self.normal = None
+            if slip.magnitude() != 0:
+                ratio = orth_vel.magnitude() / slip.magnitude()
+                coef = -(self.mu * (min(1, self.Y*ratio)))
+                new_vel += slip.scalar_multiply(coef)
+                #rest the normal vector
+                self.normal = None
 
             self.current_pos = new_pos
             self.current_vel = new_vel
@@ -133,7 +139,8 @@ class PathPrediction:
 
 
 
-
+    def check_corner_bounce(self):
+        pass
 
 
 

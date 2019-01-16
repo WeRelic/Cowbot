@@ -12,6 +12,7 @@ def aerial_rotations(current_state, target_state, old_state, time, old_time):
     Returns a (pitch, yaw, roll) tuple of controller inputs to turn the car from the starting
     rotation towards the desired rotation. start_rot and target_rot are in (pitch, yaw, roll) form.
     '''
+    ''''''
 
     controller_state = SimpleControllerState()
 
@@ -27,7 +28,6 @@ def aerial_rotations(current_state, target_state, old_state, time, old_time):
     controller_state = zero_omega_recovery(start_rot, 0, [0,atan2(current_state.vel.y, current_state.vel.x),0], 0, old_rot, old_omega, time, old_time)
 
     return controller_state
-
 
 def zero_omega_recovery(start_rot, start_omega, target_rot, target_omega, old_rot, old_omega, time, old_time):
     '''
@@ -87,9 +87,9 @@ def zero_omega_recovery(start_rot, start_omega, target_rot, target_omega, old_ro
 
     #Will need testing for coefficients
     #Check that this is reasonable, at the very least the coefficients need tuning.
-    pitch_correction = 1 * pitch_error + .002 * pitch_error_derivative
-    yaw_correction = 1 * yaw_error  + .002 * yaw_error_derivative
-    roll_correction = 1 * roll_error + .002 * roll_error_derivative
+    pitch_correction = 1 * pitch_error - .015 * pitch_error_derivative
+    yaw_correction = 1 * yaw_error - .02 * yaw_error_derivative
+    roll_correction = 1 * roll_error + .01 * roll_error_derivative
 
 
     #Normalize
@@ -112,8 +112,8 @@ def zero_omega_recovery(start_rot, start_omega, target_rot, target_omega, old_ro
     controller_state.pitch = pitch_correction
     controller_state.yaw = yaw_correction
     controller_state.roll = roll_correction
+    controller_state.throttle = 1
 
-    controller_state.throttle = 1.0
     return controller_state
 
 

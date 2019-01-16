@@ -67,6 +67,9 @@ class Vec3:
     def magnitude( self ):
         return sqrt( ( self.x**2 ) + ( self.y**2 ) + ( self.z**2 ) )
 
+    def normalize( self ):
+        return self.scalar_multiply( 1/(self.magnitude()) )
+
 
     # TODO: 3D rotations
 
