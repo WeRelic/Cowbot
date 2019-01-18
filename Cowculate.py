@@ -11,7 +11,7 @@ from Mechanics import *
 from math import sin, cos
 
 
-def Cowculate(game_info, old_game_info, renderer):
+def Cowculate(game_info, old_game_info, kickoff_position, renderer):
     '''
     The main control function for BAC, Cowculate() returns the final input.
     It takes a GameState object and returns a controller_state object.
@@ -19,49 +19,29 @@ def Cowculate(game_info, old_game_info, renderer):
     '''
 
     #Initialize a controller state object.
-    controller_input = SimpleControllerState()
+    
 
-    plan = make_plan(game_info, old_game_info, renderer)
+    plan = make_plan(game_info, old_game_info, kickoff_position, renderer)
 
     if plan == "Kickoff":
-        run_kickoff(game_info, old_game_info)
 
-        #controller_input = run_kickoff(game_info, old_game_info)
+        return run_kickoff(game_info, kickoff_position)
+        
 
 
-    if plan == "Move":
-        #I will want to wrap this up somewhere else eventually
-        #Starting and target states for our car
-        current_state = game_info.me
-
-        #target_state = find_destination(game_info)
-
-        time = game_info.time
+    elif plan == "Move":
 
         #Previous frame information
         if old_game_info != None:
             old_state = old_game_info.me
             old_time = old_game_info.time
         else:
-            #This might be wrong
-            old_time = -1/120
             old_state = game_info.me
 
-
-        #This is the actual control function.
-        #Currently a slot for testing functions.
-
-        if (not game_info.me.wheel_contact):
-            if abs(game_info.me.pos.z - 800) < 20:
-                controller_input = AirDodge(Vec3(0, 0, 0)).input()
-            else:
-                controller_input = AerialRotation(current_state, 0, old_state, time, old_time).zero_omega_recovery() #aerial_rotations(current_state, 0, old_state, time, old_time)
-        else:
-            controller_input.throttle = 1.0
-    return controller_input
+        return testing(game_info.me, old_state, game_info.fps)
  
 #Eventually this will have more options, but I want to get basic movement controls down before I worry about that
-def make_plan(game_info, old_game_info, renderer):
+def make_plan(game_info, old_game_info, kickoff_position, renderer):
     '''
     make_plan returns a str to describe the highest-level plan for BAC.
     "Move" - change the position, orientation, and (angular) momentum of the car
@@ -70,8 +50,7 @@ def make_plan(game_info, old_game_info, renderer):
     Goals should be higher level strategy than "Move", but more specific than "Defend", ideally.
     '''
 
-    if is_kickoff(game_info, old_game_info)[0]:
-        game_info.first_frame_of_kickoff = is_kickoff(game_info, old_game_info)[1]
+    if kickoff_position != "Other":
         return "Kickoff"
 
     ball_prediction = make_ball_prediction(game_info.ball)
@@ -96,7 +75,26 @@ def draw_debug(renderer, car, ball, action_display = None):
     # draw the expected path of the ball
     ball_path = make_ball_prediction(ball)
     renderer.draw_polyline_3d(ball_path, renderer.white())
-    # print the action that the bot is taking
+    # display the action that the bot is taking
     #renderer.draw_string_3d(car.physics.location, 2, 2, action_display, renderer.white())
     renderer.end_rendering()
 
+
+
+
+def testing(current_state, old_state, fps):
+    '''
+    This will be for whenever I'm testing out a new feature or behavior.
+    This should not be called at runtime for a finished bot.
+    '''
+    controller_input = SimpleControllerState()
+
+    if (not current_state.wheel_contact):
+        if abs(current_state.pos.z - 800) < 20:
+            controller_input = AirDodge(Vec3(0, 0, 0)).input()
+        else:
+            controller_input = AerialRotation(current_state, 0, old_state, fps).zero_omega_recovery()
+    else:
+        controller_input.throttle = 1.0
+
+    return controller_input

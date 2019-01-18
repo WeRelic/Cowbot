@@ -7,6 +7,7 @@ from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from Cowculate import *
 from GameState import *
+from Kickoff import *
 
 class BooleanAlgebraCow(BaseAgent):
 
@@ -18,6 +19,7 @@ class BooleanAlgebraCow(BaseAgent):
         self.opponent_indices = []
         self.old_game_info = None
         self.game_info = None
+        self.kickoff_position = "Other"
 
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
@@ -39,10 +41,29 @@ class BooleanAlgebraCow(BaseAgent):
                               self.teammate_indices, self.opponent_indices)
 
 
-        return Cowculate(self.game_info, self.old_game_info, self.renderer)
+        self.kickoff_position = self.update_kickoff_position()
+        #print('sanity')
+        return Cowculate(self.game_info, self.old_game_info, self.kickoff_position, self.renderer)
 
 
 
 
+    def update_kickoff_position(self):
+        '''
+        Returns the current kickoff position.
+        Gives "Other" except from the frame the countdown ends until either the ball is hit.
+        During this time it returns the position the bot starts in for the kickoff.
+        Eventually this will be map specific.  Currently only the standard pool.
+        '''
 
+        #Keep the same value most of the time.
+        kickoff_position = self.kickoff_position
 
+        #if the kickoff has just started, update the position.
+        if self.game_info.is_kickoff_pause and self.kickoff_position == "Other":
+            kickoff_position = check_kickoff_position(self.game_info.me)
+
+        #If the ball has just moved, reset the kickoff position.
+        elif self.kickoff_position != "Other" and self.game_info.ball.vel.magnitude() > 0:
+            kickoff_position = "Other"
+        return kickoff_position

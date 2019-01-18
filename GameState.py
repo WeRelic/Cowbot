@@ -4,10 +4,11 @@ class GameState:
 
     def __init__(self, packet, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices):
 
-        #Kickoff check
-        #Only standard maps
-        self.kickoff_dict = {Vec3(0.0, -4608, 10): "Far Back", Vec3(0.0, 4608, 10): "Far Back", Vec3(-1952, -2464, 10): "Right", Vec3(1952, 2464, 10): "Right", Vec3(1952, -2464, 10): "Left", Vec3(-1952, 2464, 10): "Left", Vec3(-256.0, -3840, 10): "Back Right", Vec3(256.0, 3840, 10): "Back Right", Vec3(256.0, -3840, 10): "Back Left", Vec3(-256.0, 3840,10): "Back Left"}
-        #        self.kickoff_dict_2 = {Vec3(0.0, -4608, 10): "Far Back", Vec3(0.0, 4608, 10): "Far Back", Vec3(-2048, -2560, 10): "Right", Vec3(2048, 2560, 10): "Right", Vec3(2048, -2560, 10): "Left", Vec3(-2048, 2560, 10): "Left", Vec3(-256.0, -3840, 10): "Back Right", Vec3(256.0, 3840, 10): "Back Right", Vec3(256.0, -3840, 10): "Back Left", Vec3(-256.0, 3840,10): "Back Left"}
+        #Framerate info.  Find out how to get this automatically.
+        self.fps = 60
+
+
+
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
         self.first_frame_of_kickoff = False
         self.kickoff_position = "Other"

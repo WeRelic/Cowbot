@@ -41,6 +41,7 @@ class AirDodge:
     def __init__(self, direction):
         '''
         'direction' is a Vec3 in the direction we want to dodge, relative to the car.
+        "Forward" is the +x direction, with +y to the right, and +z up.
         direction = Vec3(0, 0, 0) gives a double jump.
         '''
 
@@ -76,7 +77,7 @@ class AirDodge:
 
 class AerialRotation:
 
-    def __init__(self, current_state, target_state, old_state, time, old_time):
+    def __init__(self, current_state, target_state, old_state, fps):
 
     
         self.start_rot = current_state.rot
@@ -85,6 +86,8 @@ class AerialRotation:
         #self.target_omega = target_state.omega
         self.old_rot = old_state.rot
         self.old_omega = old_state.omega
+        self.fps = fps
+
         
         #This line only for testing and basic recovery, will be removed eventually.
         self.target_rot = [0, atan2(current_state.vel.y, current_state.vel.x) , 0]
@@ -95,24 +98,12 @@ class AerialRotation:
 
 
 
-        '''
-        Returns a (pitch, yaw, roll) tuple of controller inputs to turn the car from the starting
-        rotation towards the desired rotation. start_rot and target_rot are in (pitch, yaw, roll) form.
-        '''
-
-
-
-    
     def zero_omega_recovery(self):
         '''
         Returns a controller input to turn the car from the starting rotation towards the
         desired rotation. start_rot, target_rot, and old_rot are in (pitch, yaw, roll) form.
         This just uses three independent PIDs for each of pitch, yaw, roll.
         '''
-
-        #Fix this eventually
-        fps = 60
-
         
         controller_input = SimpleControllerState()
 
@@ -134,9 +125,9 @@ class AerialRotation:
         old_roll_error = rotate_to_range(old_roll_error, [-pi, pi])
         
 
-        pitch_error_derivative = one_frame_derivative(pitch_error, old_pitch_error, fps)
-        yaw_error_derivative = one_frame_derivative(yaw_error, old_yaw_error, fps)
-        roll_error_derivative = one_frame_derivative(roll_error, old_roll_error, fps)
+        pitch_error_derivative = one_frame_derivative(pitch_error, old_pitch_error, self.fps)
+        yaw_error_derivative = one_frame_derivative(yaw_error, old_yaw_error, self.fps)
+        roll_error_derivative = one_frame_derivative(roll_error, old_roll_error, self.fps)
 
         #This is reasonable, but at the very least the coefficients need tuning.
         pitch_correction = 1 * pitch_error - .015 * pitch_error_derivative
