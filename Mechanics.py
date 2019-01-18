@@ -9,7 +9,7 @@
 '''
 
 from rlbot.agents.base_agent import SimpleControllerState
-from math import atan2, pi
+from math import atan2, pi, sin, cos
 from CowBotVector import *
 from Miscellaneous import *
 
@@ -17,14 +17,42 @@ from Miscellaneous import *
 
 class GroundTurn:
 
-    def __init__(self, game_info, turn_target):
+    def __init__(self, current_state, target):
         '''
-        Turns on the ground towards the turn_target, with   
+        Turns on the ground towards the turn_target
         '''
+
+        self.pos = current_state.pos
+        self.vel = current_state.vel
+        self.omega = current_state.omega
+
+        self.target = target
+
+        self.reference_angle = current_state.yaw
 
         pass
 
 
+    def input(self):
+
+        controller_input = SimpleControllerState()
+
+        correction_vector = self.target.pos - self.pos
+
+        #Rotated to the car's reference frame on the ground.
+        rel_correction_vector = Vec3((correction_vector.x*cos(self.reference_angle)) + (correction_vector.y * sin(self.reference_angle)), (-(correction_vector.x*sin(self.reference_angle))) + (correction_vector.y * cos(self.reference_angle)) ,0)
+
+        correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)
+
+        controller_input.throttle = 1.0
+        controller_input.steer = cap_magnitude(correction_angle, 1)
+
+
+
+
+
+        return controller_input
+        
 
 
 
@@ -139,7 +167,7 @@ class AerialRotation:
         yaw_correction = cap_magnitude(yaw_correction, 1)
         roll_correction = cap_magnitude(roll_correction, 1)
     
-        #Final controller input values
+        #Final controller input valuesk
         controller_input.pitch = pitch_correction
         controller_input.yaw = yaw_correction
         controller_input.roll = roll_correction

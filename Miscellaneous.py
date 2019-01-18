@@ -12,7 +12,7 @@ def cap_magnitude(x, magnitude):
     if x > magnitude:
         return magnitude
     elif x < - magnitude:
-        return magnitude
+        return - magnitude
     return x
 
 

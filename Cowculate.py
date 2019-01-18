@@ -38,7 +38,7 @@ def Cowculate(game_info, old_game_info, kickoff_position, renderer):
         else:
             old_state = game_info.me
 
-        return testing(game_info.me, old_state, game_info.fps)
+        return testing(game_info.me, old_state, game_info.ball, game_info.fps)
  
 #Eventually this will have more options, but I want to get basic movement controls down before I worry about that
 def make_plan(game_info, old_game_info, kickoff_position, renderer):
@@ -53,9 +53,11 @@ def make_plan(game_info, old_game_info, kickoff_position, renderer):
     if kickoff_position != "Other":
         return "Kickoff"
 
-    ball_prediction = make_ball_prediction(game_info.ball)
+    #Ball prediction for use of the bot
+    ball_prediction = make_ball_prediction(game_info.ball, game_info.fps, ('x', 0))
 
-    draw_debug(renderer, game_info.me, game_info.ball, action_display = None)
+    #Draw path prediction and target rectangle.
+    #draw_debug(renderer, game_info.me, game_info.ball, ball_prediction, action_display = None)
 
     return "Move"
 
@@ -70,19 +72,7 @@ def find_destination(game_info):
     return less_blindly_chase_ball(game_info)
 
 
-def draw_debug(renderer, car, ball, action_display = None):
-    renderer.begin_rendering()
-    # draw the expected path of the ball
-    ball_path = make_ball_prediction(ball)
-    renderer.draw_polyline_3d(ball_path, renderer.white())
-    # display the action that the bot is taking
-    #renderer.draw_string_3d(car.physics.location, 2, 2, action_display, renderer.white())
-    renderer.end_rendering()
-
-
-
-
-def testing(current_state, old_state, fps):
+def testing(current_state, old_state, ball, fps):
     '''
     This will be for whenever I'm testing out a new feature or behavior.
     This should not be called at runtime for a finished bot.
@@ -95,6 +85,6 @@ def testing(current_state, old_state, fps):
         else:
             controller_input = AerialRotation(current_state, 0, old_state, fps).zero_omega_recovery()
     else:
-        controller_input.throttle = 1.0
-
+        return GroundTurn(current_state, ball).input()
+        
     return controller_input
