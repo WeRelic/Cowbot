@@ -9,6 +9,7 @@ from BallPrediction import *
 from Kickoff import *
 from Mechanics import *
 from math import sin, cos
+from Maneuvers import *
 
 
 def Cowculate(game_info, old_game_info, kickoff_position, renderer):
@@ -38,7 +39,7 @@ def Cowculate(game_info, old_game_info, kickoff_position, renderer):
         else:
             old_state = game_info.me
 
-        return testing(game_info.me, old_state, game_info.ball, game_info.fps)
+        return testing(game_info.me, old_state, game_info.ball, game_info.me.copy_state(), game_info.fps)
  
 #Eventually this will have more options, but I want to get basic movement controls down before I worry about that
 def make_plan(game_info, old_game_info, kickoff_position, renderer):
@@ -72,19 +73,22 @@ def find_destination(game_info):
     return less_blindly_chase_ball(game_info)
 
 
-def testing(current_state, old_state, ball, fps):
+def testing(current_state, old_state, ball, goal_state, fps):
     '''
     This will be for whenever I'm testing out a new feature or behavior.
     This should not be called at runtime for a finished bot.
     '''
     controller_input = SimpleControllerState()
 
-    if (not current_state.wheel_contact):
+    '''if (not current_state.wheel_contact):
         if abs(current_state.pos.z - 800) < 20:
             controller_input = AirDodge(Vec3(0, 0, 0)).input()
+        elif current_state.vel.magnitude() != 0:
+            controller_input = AerialRotation(current_state, current_state.copy_state(rot = [0, atan2(current_state.vel.y, current_state.vel.x) , 0]), old_state, fps).input()
         else:
-            controller_input = AerialRotation(current_state, 0, old_state, fps).zero_omega_recovery()
-    else:
-        return GroundTurn(current_state, ball).input()
+            controller_input.throttle = 1
+    else:'''
+    controller_input = FastDodge(current_state, goal_state, old_state, fps).input()
+    #return GroundTurn(current_state, ball).input()
         
     return controller_input

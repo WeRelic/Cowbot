@@ -1,0 +1,9 @@
+'''
+
+   This file is for the second-to-the-bottom layer of planning, just above Mechanics.py.
+   Here we deal with things that are still universally referred to as "mechanics" by human
+   players, but require more complicated inputs consisting of multiple sequential inputs.
+   These will involve conditionals so that the same line can call the entire maneuver, e.g.,
+   for a fast diagonal flip, the code here should check when to jump, turn, flip, and boost.
+
+'''

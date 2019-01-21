@@ -118,6 +118,32 @@ class CarState:
         self.double_jumped = double_jumped
         self.boost = boost
 
+    #Return a copy of the CarState object, but with given values changed.
+    #This will be useful for setting target states.
+    def copy_state(self, pos = None, rot = None, vel = None, omega = None):
+        if pos != None:
+            new_pos = pos
+        else:
+            new_pos = self.pos
+
+        if rot != None:
+            new_rot = rot
+        else:
+            new_rot = self.rot
+
+        if vel != None:
+            new_vel = vel
+        else:
+            new_vel = self.vel
+
+        if omega != None:
+            new_omega = omega
+        else:
+            new_omega = self.omega
+
+        return CarState(new_pos, new_rot, new_vel, new_omega, self.demo, self.wheel_contact, self.supersonic, self.jumped, self.double_jumped, self.boost)
+
+
 
 class Boostpad:
 

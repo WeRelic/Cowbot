@@ -14,7 +14,6 @@ from CowBotVector import *
 from Miscellaneous import *
 
 
-
 class GroundTurn:
 
     def __init__(self, current_state, target):
@@ -46,10 +45,6 @@ class GroundTurn:
 
         controller_input.throttle = 1.0
         controller_input.steer = cap_magnitude(correction_angle, 1)
-
-
-
-
 
         return controller_input
         
@@ -93,7 +88,6 @@ class AirDodge:
             plane_direction = Vec3(self.direction.x, self.direction.y, 0)
             plane_direction_normalized = plane_direction.normalize()
 
-            
             controller_input.jump = 1
             controller_input.yaw = plane_direction_normalized.y
             controller_input.pitch = - plane_direction_normalized.x
@@ -110,23 +104,15 @@ class AerialRotation:
     
         self.start_rot = current_state.rot
         self.start_omega = current_state.omega
-        #self.target_rot = target_state.rot
-        #self.target_omega = target_state.omega
+        self.target_rot = target_state.rot
+        self.target_omega = target_state.omega
         self.old_rot = old_state.rot
         self.old_omega = old_state.omega
         self.fps = fps
 
-        
-        #This line only for testing and basic recovery, will be removed eventually.
-        self.target_rot = [0, atan2(current_state.vel.y, current_state.vel.x) , 0]
-        
-        #controller_input = zero_omega_recovery(start_rot, 0, [0,atan2(current_state.vel.y, current_state.vel.x),0], 0, old_rot, old_omega, time, old_time)
 
 
-
-
-
-    def zero_omega_recovery(self):
+    def input(self):
         '''
         Returns a controller input to turn the car from the starting rotation towards the
         desired rotation. start_rot, target_rot, and old_rot are in (pitch, yaw, roll) form.
@@ -173,11 +159,6 @@ class AerialRotation:
         controller_input.roll = roll_correction
         controller_input.throttle = 1
         
-        return controller_input
-
-
-
-
-    
+        return controller_input    
 
 
