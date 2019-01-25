@@ -14,44 +14,6 @@ from CowBotVector import *
 from Miscellaneous import *
 
 
-class GroundTurn:
-
-    def __init__(self, current_state, target):
-        '''
-        Turns on the ground towards the turn_target
-        '''
-
-        self.pos = current_state.pos
-        self.vel = current_state.vel
-        self.omega = current_state.omega
-
-        self.target = target
-
-        self.reference_angle = current_state.yaw
-
-        pass
-
-
-    def input(self):
-
-        controller_input = SimpleControllerState()
-
-        correction_vector = self.target.pos - self.pos
-
-        #Rotated to the car's reference frame on the ground.
-        rel_correction_vector = Vec3((correction_vector.x*cos(self.reference_angle)) + (correction_vector.y * sin(self.reference_angle)), (-(correction_vector.x*sin(self.reference_angle))) + (correction_vector.y * cos(self.reference_angle)) ,0)
-
-        correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)
-
-        controller_input.throttle = 1.0
-        controller_input.steer = cap_magnitude(correction_angle, 1)
-
-        return controller_input
-        
-
-
-
-
 
 class AirDodge:
     '''
@@ -61,13 +23,14 @@ class AirDodge:
     '''
 
 
-    def __init__(self, direction):
+    def __init__(self, direction, jumped_last_frame):
         '''
         'direction' is a Vec3 in the direction we want to dodge, relative to the car.
         "Forward" is the +x direction, with +y to the right, and +z up.
         direction = Vec3(0, 0, 0) gives a double jump.
         '''
 
+        self.jumped_last_frame = jumped_last_frame
         self.direction = direction
 
 
@@ -81,18 +44,19 @@ class AirDodge:
 
         controller_input = SimpleControllerState()
 
-        if self.direction.x == self.direction.y == self.direction.z == 0:
-            controller_input.jump = 1
-            return controller_input
-        else:
-            plane_direction = Vec3(self.direction.x, self.direction.y, 0)
-            plane_direction_normalized = plane_direction.normalize()
-
-            controller_input.jump = 1
-            controller_input.yaw = plane_direction_normalized.y
-            controller_input.pitch = - plane_direction_normalized.x
-            
-            return controller_input
+        if (not self.jumped_last_frame):
+            if (self.direction.x == self.direction.y == self.direction.z == 0):
+                controller_input.jump = 1
+                return controller_input
+            else:
+                plane_direction = Vec3(self.direction.x, self.direction.y, 0)
+                plane_direction_normalized = plane_direction.normalize()
+                
+                controller_input.jump = 1
+                controller_input.yaw = plane_direction_normalized.y
+                controller_input.pitch = - plane_direction_normalized.x
+                
+        return controller_input
 
 
 
@@ -162,3 +126,37 @@ class AerialRotation:
         return controller_input    
 
 
+
+
+
+
+
+class JumpTurn:
+    '''
+    This mechanic is to jump and turn to face a given direction.
+    '''
+
+    def __init__(self, current_state, jump_height, turn_direction):
+        self.jump_height = jump_height
+        self.current_state = current_state
+
+        #1 for clockwise, 0 for counterclockwise
+        self.turn_direction = turn_direction
+
+
+    def input(self):
+
+        controller_input = SimpleControllerState()
+        #Add a catch to make sure jump_height isn't higher than the max jump height
+        if self.current_state.pos.z < self.jump_height:
+            controller_input.jump = 1
+        if self.turn_direction == 1:
+            controller_input.yaw = 1
+        else:
+            controller_input.yaw = -1
+
+
+
+
+
+        return controller_input

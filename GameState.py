@@ -2,12 +2,10 @@ from CowBotVector import *
 
 class GameState:
 
-    def __init__(self, packet, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices):
-
+    def __init__(self, packet, rigid_body_tick, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices, jumped_last_frame_list):
+        
         #Framerate info.  Find out how to get this automatically.
         self.fps = 60
-
-
 
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
         self.first_frame_of_kickoff = False
@@ -17,7 +15,7 @@ class GameState:
         self.ball = Ball(packet)
 
         #Info for own car
-        self.me = Car(packet, my_index)
+        self.me = Car(packet, rigid_body_tick, jumped_last_frame_list[my_index], my_index)
 
         #Info for other cars
         self.teammates = []
@@ -26,9 +24,9 @@ class GameState:
         for i in range(packet.num_cars):
             if i != my_index:
                 if i in teammate_indices:
-                    self.teammates.append(Car(packet, i))
+                    self.teammates.append(Car(packet, rigid_body_tick, jumped_last_frame_list[i], i))
                 else:
-                    self.opponents.append(Car(packet,i))
+                    self.opponents.append(Car(packet, rigid_body_tick, jumped_last_frame_list[i], i))
 
         #Boost info
         self.big_boosts = []
@@ -65,7 +63,7 @@ class Ball:
 
 
 
-def Car(packet,index):
+def Car(packet, rigid_body_tick, jumped_last_frame, index):
     '''
     Gets the game info for a given car, and returns the values.  Should be fed into a CarState object.
     '''
@@ -94,13 +92,15 @@ def Car(packet,index):
     jumped = this_car.jumped
     double_jumped = this_car.double_jumped
     boost = this_car.boost
+    jumped_this_frame = rigid_body_tick.players[index].input.jump
 
-    return CarState(pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost)
+    return CarState( pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped,
+                     double_jumped, boost, jumped_last_frame )
 
 
 class CarState:
 
-    def __init__(self, pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost):
+    def __init__(self, pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost, jumped_last_frame):
         self.pos = pos
         self.rot = rot
         self.vel = vel
@@ -117,6 +117,9 @@ class CarState:
         self.jumped = jumped
         self.double_jumped = double_jumped
         self.boost = boost
+
+        self.jumped_last_frame = jumped_last_frame
+
 
     #Return a copy of the CarState object, but with given values changed.
     #This will be useful for setting target states.
@@ -141,7 +144,7 @@ class CarState:
         else:
             new_omega = self.omega
 
-        return CarState(new_pos, new_rot, new_vel, new_omega, self.demo, self.wheel_contact, self.supersonic, self.jumped, self.double_jumped, self.boost)
+        return CarState(new_pos, new_rot, new_vel, new_omega, self.demo, self.wheel_contact, self.supersonic, self.jumped, self.double_jumped, self.boost, self.jumped_last_frame)
 
 
 
@@ -154,3 +157,23 @@ class Boostpad:
         self.timer = timer
 
 
+
+
+
+
+
+
+
+
+
+
+def get_jumped_this_frame_list(rigid_body_tick):
+
+    jumped_this_frame_list = []
+    for car in rigid_body_tick.players:
+        if car.input.jump:
+            jumped_this_frame_list.append(True)
+        else:
+            jumped_this_frame_list.append(False)
+
+    return jumped_this_frame_list

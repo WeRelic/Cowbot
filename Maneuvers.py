@@ -24,7 +24,7 @@
 '''
 
 from rlbot.agents.base_agent import SimpleControllerState
-from math import sin, cos
+from math import sin, cos, log, exp, sqrt
 from Mechanics import *
 
 
@@ -45,7 +45,7 @@ class FastDodge:
     '''
 
 
-    def __init__(self, current_state, goal_state, old_state, fps):
+    def __init__(self, current_state, goal_state, old_state, boost_to_use, fps):
         '''
         boost can be either a boolean (easy planning), or a float (advanced planning).
         Always give booleans as True or False, so that there isn't confusion over what we mean by "1".
@@ -55,6 +55,7 @@ class FastDodge:
         self.current_state = current_state
         self.goal_state = goal_state
         self.old_state = old_state
+        self.boost_to_use = boost_to_use
         self.fps = fps
 
         #Default to a front flip, so that we don't accidentally veer off-course if we
@@ -66,15 +67,21 @@ class FastDodge:
 
         self.boost_threshold = self.set_boost_threshold()
 
+        #For now this is always front-right.  Later I'll optimize.
         self.dodge_direction = self.set_dodge_direction()
 
         self.dodge_threshold = self.set_dodge_threshold()
+
+        self.jump_height = self.set_jump_height()
+
+        #Always left for now, since we're always flipping front-right
+        self.turn_direction = self.set_turn_direction()
+
 
     def input(self):
         '''
         The final call to get the controller_input for the maneuver.
         '''
-        dot_epsilon = 2
 
         car_direction_2d = Vec3( cos(self.current_state.yaw) , sin(self.current_state.yaw) , 0)
         if Vec3(self.current_state.vel.x, self.current_state.vel.y, 0).magnitude() != 0:
@@ -85,23 +92,21 @@ class FastDodge:
         if self.current_state.wheel_contact:
             if self.current_state.vel.magnitude() <= self.boost_threshold:
                 controller_input.boost = 1
+                controller_input.throttle = 1
 
             elif self.current_state.vel.magnitude() <= self.accel_threshold:
                 controller_input.throttle = 1.0
            
             else:
-                controller_input.jump = 1
-                #TODO: Worry about boosting and turning on this frame?
-                #For now I'll leave it as a pure jump; it's only a one frame difference.
-        
-        elif self.current_state.vel.z < 300 and abs( car_direction_2d.dot( self.dodge_direction ) - self.dodge_threshold ) < dot_epsilon:
-            #If we're in the air and we've turned close enough to the angle we want, flip.
-            controller_input = AirDodge(self.dodge_direction).input()
-        else:
+                controller_input = JumpTurn(self.current_state, self.jump_height, self.turn_direction).input()
+
+        elif not ( abs(self.current_state.yaw - atan2(self.current_state.vel.y, self.current_state.vel.x) + (pi/4)) < 0.2 ):
             #If we're in the air but haven't turned enough yet, keep turning.
-            controller_input = AerialRotation( self.current_state, self.current_state.copy_state(rot = [self.current_state.pitch, self.current_state.yaw + atan2(-self.dodge_direction.y, self.dodge_direction.x), self.current_state.roll]), self.old_state, self.fps ).input()
-
-
+            controller_input = JumpTurn(self.current_state, self.jump_height, self.turn_direction).input()
+        else:
+            #If we're in the air and we've turned close enough to the angle we want, flip.
+            print('dodge')
+            controller_input = AirDodge(self.dodge_direction, self.current_state.jumped_last_frame).input()
 
         return controller_input
 
@@ -135,19 +140,25 @@ class FastDodge:
         Determines how fast we should be going before we stop boosting.
         '''
 
-        #Default to zero in case we don't want to use boost.
-        return 0
+        #Horizontal velocity
+        vel_2d = Vec3(self.current_state.vel.x, self.current_state.vel.y, 0)
+
+        #Make sure we hit the target (2000 here) with the boost we're willing to use
+        #If not, use what boost we can, then dodge anyway
+        return min(2000, find_final_vel(vel_2d.magnitude(), self.boost_to_use))
 
 
     def set_dodge_direction(self):
         '''
         Decide which way we want to flip to maximize speed, or otherwise get to where
         we're going in a reasonable way.  Returns Vec3 relative to car coordinates.
+
+        TODO: Eventually intelligently decide to flip either right or left.
         '''
 
 
-        #Default to front flip.
-        return Vec3( 1, 0, 0 )
+        #45 Degree dodge for now.
+        return Vec3(1/sqrt(2), 1/sqrt(2), 0)
 
 
     def set_dodge_threshold(self):
@@ -156,10 +167,104 @@ class FastDodge:
         '''
 
 
-        #Default to zero for a front flip.
+        #Default to 1 to make sure we flip
         return 1
 
+    def set_jump_height(self):
+        '''
+        Decide how high the car needs to jump to be able to complete the turn before flipping.
+        '''
+
+        return 100
+
+
+    def set_turn_direction(self):
+        '''
+        Returns 1 for "clockwise" and 0 for "counter-clockwise"
+        ''' 
+
+
+        return 0
 
 
 
 
+
+
+
+
+def find_final_vel(v_initial, boost_amount):
+    '''
+    This assumes going in a straight line and already moving in the forward direction.
+    It returns the maximum speed we can reach by just holding boost, and using boost_amount
+    '''
+
+    v_max = 2275
+    v_throttle = 1450
+    boost_per_second = 33.3
+    boost_accel = 1000
+
+    if boost_amount < -(log(1-((v_throttle - v_initial)/(v_max)))):
+        return v_max + ((v_initial - v_max)*exp(-(boost_amount / boost_per_second)))
+
+    else:
+        boost_remaining = boost_amount - log(1-((v_throttle - v_initial)/(v_max)))
+        return min(v_max, v_throttle + boost_accel*(boost_remaining / boost_per_second))
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class GroundTurn:
+
+    def __init__(self, current_state, target):
+        '''
+        Turns on the ground towards the turn_target
+        '''
+
+        self.pos = current_state.pos
+        self.vel = current_state.vel
+        self.omega = current_state.omega
+
+        self.target = target
+
+        self.reference_angle = current_state.yaw
+
+        pass
+
+
+    def input(self):
+
+        controller_input = SimpleControllerState()
+
+        correction_vector = self.target.pos - self.pos
+
+        #Rotated to the car's reference frame on the ground.
+        rel_correction_vector = Vec3((correction_vector.x*cos(self.reference_angle)) + (correction_vector.y * sin(self.reference_angle)), (-(correction_vector.x*sin(self.reference_angle))) + (correction_vector.y * cos(self.reference_angle)) ,0)
+
+        correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)
+
+        controller_input.throttle = 1.0
+        controller_input.steer = cap_magnitude(correction_angle, 1)
+
+        return controller_input
+        

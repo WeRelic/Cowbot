@@ -80,15 +80,10 @@ def testing(current_state, old_state, ball, goal_state, fps):
     '''
     controller_input = SimpleControllerState()
 
-    '''if (not current_state.wheel_contact):
-        if abs(current_state.pos.z - 800) < 20:
-            controller_input = AirDodge(Vec3(0, 0, 0)).input()
-        elif current_state.vel.magnitude() != 0:
+    if current_state.pos.z > 600:
             controller_input = AerialRotation(current_state, current_state.copy_state(rot = [0, atan2(current_state.vel.y, current_state.vel.x) , 0]), old_state, fps).input()
-        else:
-            controller_input.throttle = 1
-    else:'''
-    controller_input = FastDodge(current_state, goal_state, old_state, fps).input()
-    #return GroundTurn(current_state, ball).input()
+    else:
+        boost_to_use = current_state.boost
+        controller_input = FastDodge(current_state, goal_state, old_state, boost_to_use, fps).input()
         
     return controller_input

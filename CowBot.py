@@ -33,16 +33,24 @@ class BooleanAlgebraCow(BaseAgent):
             team_info = find_self_and_teams(packet, self.index, self.team)
             self.teammate_indices = team_info[0]
             self.opponent_indices = team_info[1]
+            self.jumped_last_frame_list = []
+            for car in packet.game_cars:
+                self.jumped_last_frame_list.append(False)
 
 
         #Game state info
         self.old_game_info = self.game_info
-        self.game_info = GameState(packet, self.field_info, self.name, self.index, self.team,
-                              self.teammate_indices, self.opponent_indices)
+        self.game_info = GameState(packet, self.get_rigid_body_tick(),
+                                   self.field_info, self.name, self.index,
+                                   self.team, self.teammate_indices, self.opponent_indices,
+                                   self.jumped_last_frame_list)
 
+        #updated for next frame - Cowculate doesn't see this variable
+        self.jumped_last_frame_list = get_jumped_this_frame_list(self.get_rigid_body_tick())
 
+        #updated for current frame
         self.kickoff_position = self.update_kickoff_position()
-        #print('sanity')
+        
         return Cowculate(self.game_info, self.old_game_info, self.kickoff_position, self.renderer)
 
 
@@ -67,3 +75,7 @@ class BooleanAlgebraCow(BaseAgent):
         elif self.kickoff_position != "Other" and self.game_info.ball.vel.magnitude() > 0:
             kickoff_position = "Other"
         return kickoff_position
+
+
+
+
