@@ -26,8 +26,12 @@
 from rlbot.agents.base_agent import SimpleControllerState
 from math import sin, cos, log, exp, sqrt
 from Mechanics import *
+from Miscellaneous import *
 
 
+#############################################################################################
+
+#############################################################################################
 
 class FastDodge:
     '''
@@ -145,6 +149,7 @@ class FastDodge:
 
         #Make sure we hit the target (2000 here) with the boost we're willing to use
         #If not, use what boost we can, then dodge anyway
+        #Not thoroughly tested
         return min(2000, find_final_vel(vel_2d.magnitude(), self.boost_to_use))
 
 
@@ -189,48 +194,9 @@ class FastDodge:
 
 
 
+#############################################################################################
 
-
-
-
-def find_final_vel(v_initial, boost_amount):
-    '''
-    This assumes going in a straight line and already moving in the forward direction.
-    It returns the maximum speed we can reach by just holding boost, and using boost_amount
-    '''
-
-    v_max = 2275
-    v_throttle = 1450
-    boost_per_second = 33.3
-    boost_accel = 1000
-
-    if boost_amount < -(log(1-((v_throttle - v_initial)/(v_max)))):
-        return v_max + ((v_initial - v_max)*exp(-(boost_amount / boost_per_second)))
-
-    else:
-        boost_remaining = boost_amount - log(1-((v_throttle - v_initial)/(v_max)))
-        return min(v_max, v_throttle + boost_accel*(boost_remaining / boost_per_second))
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+############################################################################################
 
 
 
@@ -264,7 +230,9 @@ class GroundTurn:
         correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)
 
         controller_input.throttle = 1.0
-        controller_input.steer = cap_magnitude(correction_angle, 1)
+        if correction_angle > 1.25:
+            controller_input.handbrake = 1
+        controller_input.steer = cap_magnitude(5*correction_angle, 1)
 
         return controller_input
         

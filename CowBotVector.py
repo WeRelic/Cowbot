@@ -2,7 +2,7 @@
 
 """
  
-from math import pi, atan2, sqrt
+from math import pi, atan2, sqrt, sin, cos
 
 
 
@@ -70,6 +70,9 @@ class Vec3:
     def normalize( self ):
         return self.scalar_multiply( 1/(self.magnitude()) )
 
+    def rotate_2d( self, theta ):
+        vec_2d = Vec3(self.x, self.y, 0)
+        return vec_2d.cross(Vec3(0,0,1))
 
     # TODO: 3D rotations
 

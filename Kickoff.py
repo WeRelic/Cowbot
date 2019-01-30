@@ -19,7 +19,7 @@ def run_kickoff(game_info, kickoff_position):
             controller_input.jump = 1
             return controller_input
         elif current_state.vel.z < 300:
-            return AirDodge(Vec3(1,0,0)).input()
+            return AirDodge(Vec3(1,0,0), game_info.me.jumped_last_frame).input()
         else:
             controller_input.boost = 1
             return controller_input

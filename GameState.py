@@ -34,7 +34,8 @@ class GameState:
         for i in range(field_info.num_boosts):
             pad = field_info.boost_pads[i]
             if pad.is_full_boost:
-                self.big_boosts.append(Boostpad(i, pad.location, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
+                pad_pos = Vec3(pad.location.x, pad.location.y, pad.location.z)
+                self.big_boosts.append(Boostpad(i, pad_pos, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
 
         #Game time elapsed
         self.time = packet.game_info.seconds_elapsed

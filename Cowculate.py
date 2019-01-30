@@ -10,6 +10,7 @@ from Kickoff import *
 from Mechanics import *
 from math import sin, cos
 from Maneuvers import *
+from Pathing import *
 
 
 def Cowculate(game_info, old_game_info, kickoff_position, renderer):
@@ -39,7 +40,17 @@ def Cowculate(game_info, old_game_info, kickoff_position, renderer):
         else:
             old_state = game_info.me
 
-        return testing(game_info.me, old_state, game_info.ball, game_info.me.copy_state(), game_info.fps)
+        #Find closest big gboost
+        min_boost_dist = 20000
+        for boost in game_info.big_boosts:
+            if (game_info.me.pos - boost.pos).magnitude() < min_boost_dist:
+                if boost.is_active:
+                    min_boost_dist = (game_info.me.pos - boost.pos).magnitude()
+                    closest_boost = boost
+
+
+       
+        return testing(game_info.me, old_state, game_info.ball, game_info.me.copy_state(pos = closest_boost.pos), game_info.fps)
  
 #Eventually this will have more options, but I want to get basic movement controls down before I worry about that
 def make_plan(game_info, old_game_info, kickoff_position, renderer):
@@ -56,10 +67,9 @@ def make_plan(game_info, old_game_info, kickoff_position, renderer):
 
     #Ball prediction for use of the bot
     ball_prediction = make_ball_prediction(game_info.ball, game_info.fps, ('x', 0))
+    path = ArcLineArc( game_info.me.pos, game_info.ball.pos, game_info.me.vel, Vec3(0,1,0), -400, 300, renderer)
 
-    #Draw path prediction and target rectangle.
-    #draw_debug(renderer, game_info.me, game_info.ball, ball_prediction, action_display = None)
-
+ 
     return "Move"
 
 
@@ -80,10 +90,9 @@ def testing(current_state, old_state, ball, goal_state, fps):
     '''
     controller_input = SimpleControllerState()
 
-    if current_state.pos.z > 600:
-            controller_input = AerialRotation(current_state, current_state.copy_state(rot = [0, atan2(current_state.vel.y, current_state.vel.x) , 0]), old_state, fps).input()
-    else:
-        boost_to_use = current_state.boost
-        controller_input = FastDodge(current_state, goal_state, old_state, boost_to_use, fps).input()
-        
+    
+    controller_input = GroundTurn(current_state, goal_state).input()
+    if current_state.boost == 100:
+        controller_input.boost = 1
+
     return controller_input
