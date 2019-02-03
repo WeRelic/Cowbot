@@ -150,8 +150,8 @@ class ArcLineArc(GroundPath):
 
         renderer.begin_rendering()
         renderer.draw_line_3d(point1, point2, renderer.red())
-        renderer.draw_polyline_3d( draw_arc_3d(self.center1, abs(self.radius1), angle1, self.sgn1*self.phi1, 60), renderer.red())
-        renderer.draw_polyline_3d( draw_arc_3d(self.center2, abs(self.radius2), angle2, self.sgn2*self.phi2, 60), renderer.red() )
+        renderer.draw_polyline_3d( draw_arc_3d(self.center1, abs(self.radius1), angle1, - self.sgn1*self.phi1, 60), renderer.red())
+        renderer.draw_polyline_3d( draw_arc_3d(self.center2, abs(self.radius2), angle2, - self.sgn2*self.phi2, 60), renderer.red() )
         renderer.end_rendering()
 
         

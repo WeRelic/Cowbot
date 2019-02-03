@@ -20,6 +20,10 @@ class BooleanAlgebraCow(BaseAgent):
         self.old_game_info = None
         self.game_info = None
         self.kickoff_position = "Other"
+        self.kickoff_data = None
+
+        #This will be used to remember opponent actions.  Maybe load in bots preemptively one day?
+        self.memory = None
 
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
@@ -37,44 +41,42 @@ class BooleanAlgebraCow(BaseAgent):
             for car in packet.game_cars:
                 self.jumped_last_frame_list.append(False)
 
+            self.old_plan = None
+            self.current_plan = None
+
 
         #Game state info
-        self.old_game_info = self.game_info
         self.game_info = GameState(packet, self.get_rigid_body_tick(),
                                    self.field_info, self.name, self.index,
                                    self.team, self.teammate_indices, self.opponent_indices,
                                    self.jumped_last_frame_list)
 
-        #updated for next frame - Cowculate doesn't see this variable
+
+        #Check if it's a kickoff.  If so, run kickoff code.
+        self.kickoff_position = update_kickoff_position(self.game_info, self.kickoff_position)
+
+        if self.kickoff_position != "Other":
+            self.kickoff_data = Kickoff(self.game_info, self.kickoff_position, self.old_kickoff_data.memory)
+            return kickoff_data.input()
+
+        #Make a plan for now.  Can depend on previous plans, current info, and opponent tendencies.
+        self.current_plan = GamePlan(self.old_plan, self.game_info, self.old_game_info, self.memory, self.renderer)
+
+
+
+        output = Cowculate(self.game_info, self.old_game_info, self.current_plan, self.renderer)
+
+        #Update previous frame variables.
+        self.old_plan = self.current_plan
+        self.old_game_info = self.game_info
         self.jumped_last_frame_list = get_jumped_this_frame_list(self.get_rigid_body_tick())
+        self.old_kickoff_data = self.kickoff_data
 
-        #updated for current frame
-        self.kickoff_position = self.update_kickoff_position()
         
-        return Cowculate(self.game_info, self.old_game_info, self.kickoff_position, self.renderer)
+        return output
 
 
 
-
-    def update_kickoff_position(self):
-        '''
-        Returns the current kickoff position.
-        Gives "Other" except from the frame the countdown ends until either the ball is hit.
-        During this time it returns the position the bot starts in for the kickoff.
-        Eventually this will be map specific.  Currently only the standard pool.
-        '''
-
-        #Keep the same value most of the time.
-        kickoff_position = self.kickoff_position
-
-        #if the kickoff has just started, update the position.
-        if self.game_info.is_kickoff_pause and self.kickoff_position == "Other":
-            kickoff_position = check_kickoff_position(self.game_info.me)
-
-        #If the ball has just moved, reset the kickoff position.
-        elif self.kickoff_position != "Other" and self.game_info.ball.vel.magnitude() > 0:
-            kickoff_position = "Other"
-        return kickoff_position
 
 
 
