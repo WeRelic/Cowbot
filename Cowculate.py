@@ -12,9 +12,11 @@ from math import sin, cos
 from Maneuvers import *
 from Pathing import *
 from GamePlan import *
+import EvilGlobals
 
 
-def Cowculate(game_info, old_game_info, plan, renderer):
+
+def Cowculate(game_info, old_game_info, plan):
     '''
     The main control function for BAC, Cowculate() returns the final input.
     It takes a GameState object and returns a controller_state object.

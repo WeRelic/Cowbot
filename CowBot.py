@@ -8,6 +8,9 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 from Cowculate import *
 from GameState import *
 from Kickoff import *
+from EvilGlobals import renderer
+
+
 
 class BooleanAlgebraCow(BaseAgent):
 
@@ -43,7 +46,9 @@ class BooleanAlgebraCow(BaseAgent):
 
             self.old_plan = None
             self.current_plan = None
+            self.old_kickoff_data = None
 
+        EvilGlobals.renderer = self.renderer
 
         #Game state info
         self.game_info = GameState(packet, self.get_rigid_body_tick(),
@@ -56,15 +61,16 @@ class BooleanAlgebraCow(BaseAgent):
         self.kickoff_position = update_kickoff_position(self.game_info, self.kickoff_position)
 
         if self.kickoff_position != "Other":
-            self.kickoff_data = Kickoff(self.game_info, self.kickoff_position, self.old_kickoff_data.memory)
-            return kickoff_data.input()
+            if self.old_kickoff_data != None:
+                self.kickoff_data = Kickoff(self.game_info, self.kickoff_position, self.old_kickoff_data.memory)
+            else:
+                self.kickoff_data = Kickoff(self.game_info, self.kickoff_position, None)
+            return self.kickoff_data.input()
 
-        #Make a plan for now.  Can depend on previous plans, current info, and opponent tendencies.
-        self.current_plan = GamePlan(self.old_plan, self.game_info, self.old_game_info, self.memory, self.renderer)
+        #Make a plan for now.  Can depend on previous plans, current game info, and opponent tendencies.
+        self.current_plan = GamePlan(self.old_plan, self.game_info, self.old_game_info, self.memory)
 
-
-
-        output = Cowculate(self.game_info, self.old_game_info, self.current_plan, self.renderer)
+        output = Cowculate(self.game_info, self.old_game_info, self.current_plan)
 
         #Update previous frame variables.
         self.old_plan = self.current_plan

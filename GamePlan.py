@@ -1,7 +1,7 @@
 '''
 
     This file defines the GamePlan class.  GamePlan will be used for high level strategies, 
-    storing planned paths, etc.  
+    storing planned paths, etc.  The GamePlan object is saved across frames in CowBot.py.
 
 
 '''
@@ -12,8 +12,7 @@ from Pathing import *
 
 class GamePlan():
 
-    def __init__(self, old_plan, game_info, old_game_info, memory, renderer):
-        self.renderer = renderer
+    def __init__(self, old_plan, game_info, old_game_info, memory):
         self.old_plan = old_plan
         self.game_info = game_info
         self.old_game_info = old_game_info
@@ -31,7 +30,7 @@ class GamePlan():
         
         
         path = ArcLineArc( self.game_info.me.pos, self.game_info.ball.pos,
-                           self.game_info.me.vel, Vec3(0,1,0), 400, 300, self.renderer)
+                           self.game_info.me.vel, Vec3(0,1,0), 400, 300)
 
 
 

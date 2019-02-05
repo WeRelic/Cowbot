@@ -9,7 +9,7 @@ Arc_line_arc is the first pathing we use, but could be replaced later.
 
 from math import pi, asin, sqrt
 from CowBotVector import *
-
+import EvilGlobals
 #############################################################################################
 
 #############################################################################################
@@ -31,17 +31,12 @@ class GroundPath:
 class ArcLineArc(GroundPath):
 
 
-    def __init__(self, start, end, start_tangent, end_tangent, radius1, radius2, renderer):
+    def __init__(self, start, end, start_tangent, end_tangent, radius1 = None, radius2 = None, transition1 = None, transition2 = None):
         '''
         Postiive radius means Clockwise
         Negative radius means Counter-clockwise
+        Zero radius means no arc: the endpoint is on the line segment.
         '''
-
-        #Make sure we don't have zero radius on one of the circles.
-        if radius1 == 0:
-            raise TypeError("Radius1 can't be zero")
-        if radius2 == 0:
-            raise TypeError("Radius2 can't be zero")
 
         #make sure tangents aren't the zero vector
         if start_tangent.magnitude == 0:
@@ -102,7 +97,7 @@ class ArcLineArc(GroundPath):
         self.length_circle1, self.length_line, self.length_circle2 = self.find_lengths()
         self.length = self.length_circle1 + self.length_line + self.length_circle2
 
-        self.draw_path(renderer)
+        self.draw_path()
 
 
     def find_lengths(self):
@@ -137,7 +132,7 @@ class ArcLineArc(GroundPath):
 
 
 
-    def draw_path( self, renderer ):
+    def draw_path( self ):
         point1 = [ self.transition1.x , self.transition1.y , 0 ]
         point2 = [ self.transition2.x, self.transition2.y, 0 ]
 
@@ -148,11 +143,11 @@ class ArcLineArc(GroundPath):
         angle2 = atan2( direction2.y , direction2.x )
 
 
-        renderer.begin_rendering()
-        renderer.draw_line_3d(point1, point2, renderer.red())
-        renderer.draw_polyline_3d( draw_arc_3d(self.center1, abs(self.radius1), angle1, - self.sgn1*self.phi1, 60), renderer.red())
-        renderer.draw_polyline_3d( draw_arc_3d(self.center2, abs(self.radius2), angle2, - self.sgn2*self.phi2, 60), renderer.red() )
-        renderer.end_rendering()
+        EvilGlobals.renderer.begin_rendering()
+        EvilGlobals.renderer.draw_line_3d(point1, point2, EvilGlobals.renderer.red())
+        EvilGlobals.renderer.draw_polyline_3d( draw_arc_3d(self.center1, abs(self.radius1), angle1, - self.sgn1*self.phi1, 60), EvilGlobals.renderer.red())
+        EvilGlobals.renderer.draw_polyline_3d( draw_arc_3d(self.center2, abs(self.radius2), angle2, - self.sgn2*self.phi2, 60), EvilGlobals.renderer.red() )
+        EvilGlobals.renderer.end_rendering()
 
         
 

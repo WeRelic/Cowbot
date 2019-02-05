@@ -22,7 +22,7 @@ def find_rotation(game_info):
 
 
 
-def draw_debug(renderer, car, ball, ball_prediction, action_display = None):
+def draw_debug(car, ball, ball_prediction, action_display = None):
     renderer.begin_rendering()
     #Draw the expected path of the ball
     #The time is wrong, but not used here right now
