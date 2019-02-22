@@ -28,18 +28,140 @@ def Cowculate(game_info, old_game_info, plan):
         old_state = old_game_info.me
         old_time = old_game_info.time
     else:
+        #Just assign the current frame on load - there is no previous frame.
         old_state = game_info.me
 
-    #Find closest big boost
-    min_boost_dist = 20000
-    for boost in game_info.big_boosts:
-        if (game_info.me.pos - boost.pos).magnitude() < min_boost_dist:
-            if boost.is_active:
-                min_boost_dist = (game_info.me.pos - boost.pos).magnitude()
-                closest_boost = boost
 
-    return testing(game_info.me, old_state, game_info.ball,
-                   game_info.me.copy_state(pos = closest_boost.pos), game_info.fps)
+    current_state = game_info.me
+
+    return execute(plan, game_info, current_state, old_state)
+
+
+
+
+
+def execute(plan, game_info, current_state, old_state):
+
+
+    controller_input = AerialRotation(current_state,
+                              current_state.copy_state(pitch = 0,
+                                                       roll = 0,
+                                                       yaw = atan2(current_state.vel.y,
+                                                                   current_state.vel.x)),
+                              old_state, 120).input()
+
+    if current_state.wheel_contact:
+
+        if plan == "Boost-":
+            if game_info.my_team == 0:
+                target_boost = game_info.boosts[3]
+            else:
+                target_boost = game_info.boosts[29]
+
+            angle_to_boost = atan2((target_boost.pos - current_state.pos).y , (target_boost.pos - current_state.pos).x)
+
+            if abs(angle_to_boost) < pi/12:
+                return FastDodge(current_state,
+                                 current_state.copy_state(pos = target_boost.pos),
+                                 old_state).input()
+
+            return GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
+
+        elif plan == "Boost+":
+            if game_info.my_team == 0:
+                target_boost = game_info.boosts[4]
+            else:
+                target_boost = game_info.boosts[30]
+
+            angle_to_boost = atan2((target_boost.pos - current_state.pos).y , (target_boost.pos - current_state.pos).x)
+
+            if abs(angle_to_boost) < pi/12:
+                return FastDodge(current_state,
+                                 current_state.copy_state(pos = target_boost.pos),
+                                 old_state).input()
+
+            return GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
+            
+
+        elif plan == "Goal":
+            if game_info.my_team == 0:
+                center_of_net = Vec3(0,-5120,0)
+            else:
+                center_of_net = Vec3(0,5120,0)
+
+            return GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
+
+
+
+
+        else:
+            controller_input = GroundTurn(current_state, current_state.copy_state(pos = game_info.ball.pos)).input()
+            if current_state.vel.magnitude() < 2250:
+                controller_input.boost = 1
+            return controller_input
+
+    return controller_input
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -50,9 +172,10 @@ def testing(current_state, old_state, ball, goal_state, fps):
     '''
     controller_input = SimpleControllerState()
 
-    
-    controller_input = GroundTurn(current_state, goal_state).input()
-    if current_state.boost == 100:
-        controller_input.boost = 1
+    controller_input = AerialRotation(current_state,
+                                      current_state.copy_state(pitch = 0, yaw = atan2(current_state.vel.y, current_state.vel.x), roll = 0), old_state, fps).input()
 
+    controller_input.throttle = 1
+  
     return controller_input
+

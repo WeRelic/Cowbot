@@ -30,6 +30,7 @@ def rotate_to_range(theta, interval):
     return theta
         
 
+#This is very broken, fix later.  For now I'm patching by just manually entering boost thresholds.
 def find_final_vel(v_initial, boost_amount):
     '''
     This assumes going in a straight line and already moving in the forward direction.
@@ -47,3 +48,12 @@ def find_final_vel(v_initial, boost_amount):
     else:
         boost_remaining = boost_amount - log(1-((v_throttle - v_initial)/(v_max)))
         return min(v_max, v_throttle + boost_accel*(boost_remaining / boost_per_second))
+
+
+def find_closest_big_boost(game_info):
+    min_boost_dist = 20000
+    for boost in game_info.big_boosts:
+        if (game_info.me.pos - boost.pos).magnitude() < min_boost_dist:
+            if boost.is_active:
+                min_boost_dist = (game_info.me.pos - boost.pos).magnitude()
+                closest_boost = boost

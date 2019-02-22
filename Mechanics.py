@@ -73,12 +73,23 @@ class AerialRotation:
     def __init__(self, current_state, target_state, old_state, fps):
 
     
-        self.start_rot = current_state.rot
+        self.start_pitch = current_state.pitch
+        self.start_roll = current_state.roll
+        self.start_yaw = current_state.yaw
+
         self.start_omega = current_state.omega
-        self.target_rot = target_state.rot
+
+        self.target_pitch = target_state.pitch
+        self.target_roll = target_state.roll
+        self.target_yaw = target_state.yaw
+
         self.target_omega = target_state.omega
-        self.old_rot = old_state.rot
+
+        self.old_pitch = old_state.pitch
+        self.old_roll = old_state.roll
+        self.old_yaw = old_state.yaw
         self.old_omega = old_state.omega
+
         self.fps = fps
 
 
@@ -89,16 +100,16 @@ class AerialRotation:
         desired rotation. start_rot, target_rot, and old_rot are in (pitch, yaw, roll) form.
         This just uses three independent PIDs for each of pitch, yaw, roll.
         '''
-        
+
         controller_input = SimpleControllerState()
 
-        pitch_error = self.target_rot[0] - self.start_rot[0]
-        yaw_error = self.target_rot[1] - self.start_rot[1]
-        roll_error = self.target_rot[2] - self.start_rot[2]    
+        pitch_error = self.target_pitch - self.start_pitch
+        yaw_error = self.target_yaw - self.start_yaw
+        roll_error = self.target_roll - self.start_roll    
 
-        old_pitch_error = self.start_rot[0] - self.old_rot[0]
-        old_yaw_error = self.start_rot[1] - self.old_rot[1]
-        old_roll_error = self.start_rot[2] - self.old_rot[2]
+        old_pitch_error = self.start_pitch - self.old_pitch
+        old_yaw_error = self.start_yaw - self.old_yaw
+        old_roll_error = self.start_roll - self.old_roll
 
 
         pitch_error = rotate_to_range(pitch_error, [-pi/2, pi/2])
@@ -115,16 +126,16 @@ class AerialRotation:
         roll_error_derivative = one_frame_derivative(roll_error, old_roll_error, self.fps)
 
         #This is reasonable, but at the very least the coefficients need tuning.
-        pitch_correction = 1 * pitch_error - .015 * pitch_error_derivative
-        yaw_correction = 1 * yaw_error - .02 * yaw_error_derivative
+        pitch_correction = 1 * pitch_error# - .015 * pitch_error_derivative
+        yaw_correction = 1 * yaw_error - .01 * yaw_error_derivative
         roll_correction = 1 * roll_error + .01 * roll_error_derivative
 
         #Normalize
         pitch_correction = cap_magnitude(pitch_correction, 1)
-        yaw_correction = cap_magnitude(yaw_correction, 1)
+        yaw_correction = 5*cap_magnitude(yaw_correction, 1/5)
         roll_correction = cap_magnitude(roll_correction, 1)
     
-        #Final controller input valuesk
+        #Final controller input values
         controller_input.pitch = pitch_correction
         controller_input.yaw = yaw_correction
         controller_input.roll = roll_correction
@@ -153,18 +164,49 @@ class JumpTurn:
 
 
     def input(self):
-
         controller_input = SimpleControllerState()
         #Add a catch to make sure jump_height isn't higher than the max jump height
-        if self.current_state.pos.z < self.jump_height:
+        #For now make sure jump_height is higher than the height of the car at rest.
+        if self.jump_height == 0 and self.current_state.wheel_contact:
             controller_input.jump = 1
-        if self.turn_direction == 1:
-            controller_input.yaw = 1
-        else:
-            controller_input.yaw = -1
+        elif self.current_state.pos.z < self.jump_height:
+            controller_input.jump = 1
+        controller_input.yaw = (self.turn_direction - (1/2)) * 2
+
+        controller_input.jump = 1
+        return controller_input
 
 
 
 
 
+#############################################################################################
+
+#############################################################################################
+
+
+class QuickTurn():
+    '''
+    A powerslide turn to turn a small amount quickly.  Designed for flipping for speed.
+    Might be useful for shooting as well.
+    '''
+
+    def __init__(self, direction, boost):
+        '''
+        +1 direction for right, 0 for left
+        boost is a boolean
+        '''
+
+        
+        self.direction = direction
+        self.boost = boost
+
+
+    def input(self):
+        controller_input = SimpleControllerState()
+        controller_input.throttle = 1
+        if self.boost == 1:
+            controller_input.boost = 1
+        controller_input.handbrake = 1
+        controller_input.steer = (self.direction - (1/2))*2
         return controller_input

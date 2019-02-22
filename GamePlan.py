@@ -29,8 +29,8 @@ class GamePlan():
         '''
         
         
-        path = ArcLineArc( self.game_info.me.pos, self.game_info.ball.pos,
-                           self.game_info.me.vel, Vec3(0,1,0), 400, 300)
+        path = None #ArcLineArc( self.game_info.me.pos, self.game_info.ball.pos,
+                           #self.game_info.me.vel, Vec3(0,1,0), 400, 300)
 
 
 

@@ -18,6 +18,7 @@ class GameState:
         self.me = Car(packet, rigid_body_tick, jumped_last_frame_list[my_index], my_index)
 
         #Info for other cars
+        self.my_team = my_team
         self.teammates = []
         self.opponents = []
 
@@ -30,11 +31,12 @@ class GameState:
 
         #Boost info
         self.big_boosts = []
-        self.small_boosts = []
+        self.boosts = []
         for i in range(field_info.num_boosts):
             pad = field_info.boost_pads[i]
+            pad_pos = Vec3(pad.location.x, pad.location.y, pad.location.z)
+            self.boosts.append(Boostpad(i, pad_pos, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
             if pad.is_full_boost:
-                pad_pos = Vec3(pad.location.x, pad.location.y, pad.location.z)
                 self.big_boosts.append(Boostpad(i, pad_pos, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
 
         #Game time elapsed
@@ -61,7 +63,7 @@ class Ball:
                            packet.game_ball.physics.angular_velocity.y,
                            packet.game_ball.physics.angular_velocity.z )
 
-
+        self.last_touch = packet.game_ball.latest_touch
 
 
 def Car(packet, rigid_body_tick, jumped_last_frame, index):
@@ -75,9 +77,9 @@ def Car(packet, rigid_body_tick, jumped_last_frame, index):
                 this_car.physics.location.z )
     
     #TODO: get this in quaternion format?
-    rot = [ this_car.physics.rotation.pitch,
-            this_car.physics.rotation.yaw,
-            this_car.physics.rotation.roll ]
+    pitch = this_car.physics.rotation.pitch
+    yaw = this_car.physics.rotation.yaw
+    roll = this_car.physics.rotation.roll
     
     vel = Vec3( this_car.physics.velocity.x,
                 this_car.physics.velocity.y,
@@ -95,23 +97,21 @@ def Car(packet, rigid_body_tick, jumped_last_frame, index):
     boost = this_car.boost
     jumped_this_frame = rigid_body_tick.players[index].input.jump
 
-    return CarState( pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped,
+    return CarState( pos, pitch, yaw, roll , vel, omega, demo, wheel_contact, supersonic, jumped,
                      double_jumped, boost, jumped_last_frame )
 
 
 class CarState:
 
-    def __init__(self, pos, rot, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost, jumped_last_frame):
+    def __init__(self, pos, pitch, yaw, roll, vel, omega, demo, wheel_contact, supersonic, jumped, double_jumped, boost, jumped_last_frame):
         self.pos = pos
-        self.rot = rot
+        self.pitch = pitch
+        self.yaw = yaw
+        self.roll = roll
         self.vel = vel
         self.omega = omega
 
-        if self.rot != None:
-            self.pitch = rot[0]
-            self.yaw = rot[1]
-            self.roll = rot[2]
- 
+        
         self.demo = demo
         self.wheel_contact = wheel_contact
         self.supersonic = supersonic
@@ -124,16 +124,12 @@ class CarState:
 
     #Return a copy of the CarState object, but with given values changed.
     #This will be useful for setting target states.
-    def copy_state(self, pos = None, rot = None, vel = None, omega = None):
+    def copy_state(self, pos = None, vel = None, omega = None,
+                   pitch = None, yaw = None, roll = None):
         if pos != None:
             new_pos = pos
         else:
             new_pos = self.pos
-
-        if rot != None:
-            new_rot = rot
-        else:
-            new_rot = self.rot
 
         if vel != None:
             new_vel = vel
@@ -145,7 +141,22 @@ class CarState:
         else:
             new_omega = self.omega
 
-        return CarState(new_pos, new_rot, new_vel, new_omega, self.demo, self.wheel_contact, self.supersonic, self.jumped, self.double_jumped, self.boost, self.jumped_last_frame)
+        if pitch != None:
+            new_pitch = pitch
+        else:
+            new_pitch = self.pitch
+
+        if yaw != None:
+            new_yaw = yaw
+        else:
+            new_yaw = self.yaw
+
+        if roll != None:
+            new_roll = roll
+        else:
+            new_roll = self.roll
+
+        return CarState(new_pos, new_pitch, new_yaw, new_roll, new_vel, new_omega, self.demo, self.wheel_contact, self.supersonic, self.jumped, self.double_jumped, self.boost, self.jumped_last_frame)
 
 
 

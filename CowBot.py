@@ -56,21 +56,23 @@ class BooleanAlgebraCow(BaseAgent):
                                    self.team, self.teammate_indices, self.opponent_indices,
                                    self.jumped_last_frame_list)
 
+        #Make a plan for now.  Can depend on previous plans, current game info, and opponent tendencies.
+        #Very hacky for short deadline.  Fix after wintertide.
+        self.current_plan = make_plan(self.game_info, self.old_plan)
 
         #Check if it's a kickoff.  If so, run kickoff code.
         self.kickoff_position = update_kickoff_position(self.game_info, self.kickoff_position)
 
-        if self.kickoff_position != "Other":
+        if self.current_plan == "Kickoff":
             if self.old_kickoff_data != None:
-                self.kickoff_data = Kickoff(self.game_info, self.kickoff_position, self.old_kickoff_data.memory)
+                self.kickoff_data = Kickoff(self.game_info, self.old_game_info, self.kickoff_position, self.old_kickoff_data.memory)
             else:
-                self.kickoff_data = Kickoff(self.game_info, self.kickoff_position, None)
-            return self.kickoff_data.input()
+                self.kickoff_data = Kickoff(self.game_info, self.old_game_info, self.kickoff_position, None)
+            controller_input = self.kickoff_data.input()
+            output = self.kickoff_data.input()
 
-        #Make a plan for now.  Can depend on previous plans, current game info, and opponent tendencies.
-        self.current_plan = GamePlan(self.old_plan, self.game_info, self.old_game_info, self.memory)
-
-        output = Cowculate(self.game_info, self.old_game_info, self.current_plan)
+        else:
+            output = Cowculate(self.game_info, self.old_game_info, self.current_plan)
 
         #Update previous frame variables.
         self.old_plan = self.current_plan
@@ -84,6 +86,38 @@ class BooleanAlgebraCow(BaseAgent):
 
 
 
+def make_plan(game_info, old_plan):
 
+    if game_info.my_team == 0:
+        y_sign = 1
+    else:
+        y_sign = -1
+
+    current_state = game_info.me
+
+    if game_info.is_kickoff_pause:
+        return "Kickoff"
+    elif old_plan == "Kickoff":
+        if y_sign*(game_info.ball.pos.y - game_info.me.pos.y) > 0:
+            return "Ball"
+        else:
+            return check_boost_side(game_info)
+    elif old_plan == "Ball" and game_info.ball.last_touch.team == game_info.my_team:
+        return check_boost_side(game_info)
+    elif old_plan == "Ball" and y_sign*(game_info.ball.pos.y - game_info.me.pos.y) < 0:
+        return check_boost_side(game_info)
+    elif (old_plan == "Boost+" or old_plan == "Boost-") and game_info.me.boost == 100:
+        return "Goal"
+    elif old_plan == "Goal" and abs(game_info.me.pos.x) < 900:
+        return "Ball"
+    else:
+        return old_plan
+
+
+def check_boost_side(game_info):
+    if game_info.ball.pos.x > 0:
+        return "Boost-"
+    else:
+        return "Boost+"
 
 
