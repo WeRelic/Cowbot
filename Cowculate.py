@@ -42,45 +42,43 @@ def Cowculate(game_info, old_game_info, plan):
 
 def execute(plan, game_info, current_state, old_state):
 
+        if plan == "Boost-" or plan == "Boost+":
+            if plan == "Boost-":
+                if game_info.my_team == 0:
+                    target_boost = game_info.boosts[3]
+                else:
+                    target_boost = game_info.boosts[29]
 
-    controller_input = AerialRotation(current_state,
-                              current_state.copy_state(pitch = 0,
-                                                       roll = 0,
-                                                       yaw = atan2(current_state.vel.y,
-                                                                   current_state.vel.x)),
-                              old_state, 120).input()
-
-    if current_state.wheel_contact:
-
-        if plan == "Boost-":
-            if game_info.my_team == 0:
-                target_boost = game_info.boosts[3]
             else:
-                target_boost = game_info.boosts[29]
+                if game_info.my_team == 0:
+                    target_boost = game_info.boosts[4]
+                else:
+                    target_boost = game_info.boosts[30]
 
+            
             angle_to_boost = atan2((target_boost.pos - current_state.pos).y , (target_boost.pos - current_state.pos).x)
 
-            if abs(angle_to_boost) < pi/12:
-                return FastDodge(current_state,
-                                 current_state.copy_state(pos = target_boost.pos),
-                                 old_state).input()
+            if (abs(current_state.yaw - angle_to_boost) < pi/3) and (current_state.vel.magnitude() < 2000) and abs(current_state.pos.y) < 2500:
+                if (current_state.yaw - angle_to_boost) < 0:
+                    return FastDodge(current_state,
+                                     current_state.copy_state(pos = target_boost.pos),
+                                     old_state,
+                                     direction = 1,
+                                     boost_to_use = current_state.boost-1,
+                                     boost_threshold = 1200).input()
+                else:
+                    return FastDodge(current_state,
+                                     current_state.copy_state(pos = target_boost.pos),
+                                     old_state,
+                                     direction = -1,
+                                     boost_to_use = current_state.boost-1,
+                                     boost_threshold = 1200).input()
 
-            return GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
-
-        elif plan == "Boost+":
-            if game_info.my_team == 0:
-                target_boost = game_info.boosts[4]
-            else:
-                target_boost = game_info.boosts[30]
-
-            angle_to_boost = atan2((target_boost.pos - current_state.pos).y , (target_boost.pos - current_state.pos).x)
-
-            if abs(angle_to_boost) < pi/12:
-                return FastDodge(current_state,
-                                 current_state.copy_state(pos = target_boost.pos),
-                                 old_state).input()
-
-            return GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
+                
+            controller_input = GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
+            if current_state.vel.magnitude() < 2250:
+                controller_input.boost = 1
+            return controller_input
             
 
         elif plan == "Goal":
@@ -91,16 +89,25 @@ def execute(plan, game_info, current_state, old_state):
 
             return GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
 
+        elif not current_state.wheel_contact:
+        
+            controller_input = AerialRotation(current_state,
+                                              current_state.copy_state(pitch = 0,
+                                                                       roll = 0,
+                                                                       yaw = atan2(current_state.vel.y,
+                                                                                   current_state.vel.x)),
+                                              old_state, 120).input()
+            controller_input.throttle = 1
 
-
+            return controller_input
 
         else:
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = game_info.ball.pos)).input()
-            if current_state.vel.magnitude() < 2250:
+            if current_state.vel.magnitude() < 2250 and current_state.wheel_contact:
                 controller_input.boost = 1
             return controller_input
 
-    return controller_input
+
 
 
 

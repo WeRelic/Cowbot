@@ -183,7 +183,7 @@ class Kickoff():
 
             elif abs(self.current_state.pos.y) > 1200:
                 controller_input = FastDodge(self.current_state,
-                                             self.current_state.copy_state(pos = Vec3(x_sign*800,0,0)),
+                                             self.current_state.copy_state(pos = Vec3(x_sign*500,0,0)),
                                              self.old_state,
                                              boost_to_use = 100,
                                              boost_threshold = 1000,
@@ -235,7 +235,7 @@ class Kickoff():
 
             if abs(self.current_state.pos.y) > 1200:
                 controller_input = FastDodge(self.current_state,
-                                             self.current_state.copy_state(pos = Vec3(-x_sign*700,0,0)),
+                                             self.current_state.copy_state(pos = Vec3(-x_sign*500,0,0)),
                                              self.old_state,
                                              boost_to_use = 100,
                                              boost_threshold = 1000,

@@ -50,10 +50,8 @@ class FastDodge:
 
 
     def __init__(self, current_state, goal_state, old_state, boost_to_use = 30,
-                 direction = 1, oversteer = True, boost_threshold = None, fps = 60):
+                 direction = 1, oversteer = True, boost_threshold = None, fps = 120):
         '''
-        boost can be either a boolean (easy planning), or a float (advanced planning).
-        Always give booleans as True or False, so that there isn't confusion over what we mean by "1".
         direction = 1 for right, direction = -1 for left.
         '''
         
@@ -83,7 +81,8 @@ class FastDodge:
 
         
         
-
+        #questionable if we're still turning
+        #but it should be okay if we're driving straight.
         if self.dodge_direction.y > 0:
             self.dodge_angle = atan2((goal_state.pos - current_state.pos).y,
                                      (goal_state.pos - current_state.pos).x) - (pi/12)
@@ -92,10 +91,9 @@ class FastDodge:
                                      (goal_state.pos - current_state.pos).x) + (pi/12)
 
 
-        
         self.movement_angle = atan2(current_state.vel.y, current_state.vel.x)
 
-        #Currently set to opposite of the dodge direction.  This should be good for general use.
+        #Currently set to opposite of the dodge direction.  This should be good for general use, up to oversteer.
         #Eventually wrap this into set_dodge_direction?
         self.turn_direction = self.set_turn_direction()
 
@@ -104,11 +102,7 @@ class FastDodge:
         '''
         The final call to get the controller_input for the maneuver.
         '''
-
-        car_direction_2d = Vec3( cos(self.current_state.yaw) , sin(self.current_state.yaw) , 0)
-        if Vec3(self.current_state.vel.x, self.current_state.vel.y, 0).magnitude() != 0:
-            car_vel_normalized = Vec3(self.current_state.vel.x, self.current_state.vel.y, 0).normalize()
-
+        
         controller_input = SimpleControllerState()
         #Speed up on the ground, turn as needed, then jump
         if self.current_state.wheel_contact:
@@ -149,7 +143,7 @@ class FastDodge:
         controller_input.throttle = 1
         return controller_input
 
-###############################################################################################
+###############################################
 
     def check_for_space(self):
         '''

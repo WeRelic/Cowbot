@@ -64,7 +64,9 @@ class Ball:
                            packet.game_ball.physics.angular_velocity.z )
 
         self.last_touch = packet.game_ball.latest_touch
-
+        self.hit_location = Vec3(self.last_touch.hit_location.x,
+                                 self.last_touch.hit_location.y,
+                                 self.last_touch.hit_location.z)
 
 def Car(packet, rigid_body_tick, jumped_last_frame, index):
     '''

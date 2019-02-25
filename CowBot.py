@@ -102,7 +102,7 @@ def make_plan(game_info, old_plan):
             return "Ball"
         else:
             return check_boost_side(game_info)
-    elif old_plan == "Ball" and game_info.ball.last_touch.team == game_info.my_team:
+    elif old_plan == "Ball" and game_info.ball.last_touch.team == game_info.my_team and (game_info.ball.hit_location - game_info.me.pos).magnitude() < 200:
         return check_boost_side(game_info)
     elif old_plan == "Ball" and y_sign*(game_info.ball.pos.y - game_info.me.pos.y) < 0:
         return check_boost_side(game_info)
