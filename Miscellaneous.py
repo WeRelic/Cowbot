@@ -1,5 +1,6 @@
 from math import pi
-from math import log
+from math import log, cos, sin
+from CowBotVector import *
 
 def one_frame_derivative(f, old_f, fps):
         return (f - old_f) / (1 / fps)
@@ -57,3 +58,15 @@ def find_closest_big_boost(game_info):
             if boost.is_active:
                 min_boost_dist = (game_info.me.pos - boost.pos).magnitude()
                 closest_boost = boost
+
+
+
+def car_coordinates_2d(current_state, direction):
+        '''
+        Takes a Vec3 for a direction on the field and returns the same direction relative to the car
+        '''
+
+        x = direction.x * cos(-current_state.yaw) - direction.y * sin(-current_state.yaw)
+        y = direction.x * sin(-current_state.yaw) + direction.y * cos(-current_state.yaw)
+        
+        return Vec3(x,y,0)

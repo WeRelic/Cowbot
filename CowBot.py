@@ -80,7 +80,8 @@ class BooleanAlgebraCow(BaseAgent):
         self.jumped_last_frame_list = get_jumped_this_frame_list(self.get_rigid_body_tick())
         self.old_kickoff_data = self.kickoff_data
 
-        
+        if output.throttle == 0:
+            output.throttle = 0.01
         return output
 
 
@@ -94,6 +95,13 @@ def make_plan(game_info, old_plan):
         y_sign = -1
 
     current_state = game_info.me
+    if game_info.ball.vel.magnitude() != 0 and current_state.vel.magnitude() != 0:
+        normalized_ball_vel = game_info.ball.vel.normalize()
+        normalized_car_vel = current_state.vel.normalize()
+        ball_car_dot = normalized_car_vel.dot(normalized_ball_vel)
+
+
+
 
     if game_info.is_kickoff_pause:
         return "Kickoff"
@@ -102,14 +110,18 @@ def make_plan(game_info, old_plan):
             return "Ball"
         else:
             return check_boost_side(game_info)
-    elif old_plan == "Ball" and game_info.ball.last_touch.team == game_info.my_team and (game_info.ball.hit_location - game_info.me.pos).magnitude() < 200:
-        return check_boost_side(game_info)
-    elif old_plan == "Ball" and y_sign*(game_info.ball.pos.y - game_info.me.pos.y) < 0:
+    elif old_plan == "Ball" and abs(current_state.pos.y) > 5120:
+        return "Goal"
+    elif (old_plan == "Ball" or old_plan == "Flip into Ball") and game_info.ball.last_touch.team == game_info.my_team and (game_info.ball.hit_location - game_info.me.pos).magnitude() < 200:
         return check_boost_side(game_info)
     elif (old_plan == "Boost+" or old_plan == "Boost-") and game_info.me.boost == 100:
         return "Goal"
-    elif old_plan == "Goal" and abs(game_info.me.pos.x) < 900:
+    elif old_plan == "Goal" and abs(game_info.me.pos.x) < 1200:
         return "Ball"
+    elif (old_plan == "Ball" or old_plan == "Flip into Ball") and y_sign*(game_info.ball.pos.y - game_info.me.pos.y) < -100:
+        return check_boost_side(game_info)
+    elif old_plan == "Ball" and (game_info.ball.pos - current_state.pos).magnitude() < 450 - 100*ball_car_dot and game_info.ball.pos.z < 250:
+        return "Flip into Ball"
     else:
         return old_plan
 

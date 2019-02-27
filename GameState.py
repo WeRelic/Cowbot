@@ -15,7 +15,7 @@ class GameState:
         self.ball = Ball(packet)
 
         #Info for own car
-        self.me = Car(packet, rigid_body_tick, jumped_last_frame_list[my_index], my_index)
+        self.me = Car(packet, rigid_body_tick, jumped_last_frame_list[my_index], my_index, my_index)
 
         #Info for other cars
         self.my_team = my_team
@@ -25,9 +25,9 @@ class GameState:
         for i in range(packet.num_cars):
             if i != my_index:
                 if i in teammate_indices:
-                    self.teammates.append(Car(packet, rigid_body_tick, jumped_last_frame_list[i], i))
+                    self.teammates.append(Car(packet, rigid_body_tick, jumped_last_frame_list[i], i, my_index))
                 else:
-                    self.opponents.append(Car(packet, rigid_body_tick, jumped_last_frame_list[i], i))
+                    self.opponents.append(Car(packet, rigid_body_tick, jumped_last_frame_list[i], i, my_index))
 
         #Boost info
         self.big_boosts = []
@@ -68,7 +68,7 @@ class Ball:
                                  self.last_touch.hit_location.y,
                                  self.last_touch.hit_location.z)
 
-def Car(packet, rigid_body_tick, jumped_last_frame, index):
+def Car(packet, rigid_body_tick, jumped_last_frame, index, my_index):
     '''
     Gets the game info for a given car, and returns the values.  Should be fed into a CarState object.
     '''
@@ -97,8 +97,11 @@ def Car(packet, rigid_body_tick, jumped_last_frame, index):
     jumped = this_car.jumped
     double_jumped = this_car.double_jumped
     boost = this_car.boost
-    jumped_this_frame = rigid_body_tick.players[index].input.jump
-
+    if index == my_index:
+        jumped_this_frame = rigid_body_tick.players[index].input.jump
+    else:
+        jumped_this_frame = None
+        
     return CarState( pos, pitch, yaw, roll , vel, omega, demo, wheel_contact, supersonic, jumped,
                      double_jumped, boost, jumped_last_frame )
 

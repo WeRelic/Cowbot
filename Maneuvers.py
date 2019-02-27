@@ -268,3 +268,71 @@ class GroundTurn:
 
         return controller_input
         
+
+
+
+#############################################################################################
+    
+############################################################################################
+
+
+class NavigateTo:
+
+
+    '''
+    PD controller for navigating towards a position and stopping
+    '''
+
+
+    def __init__(self, current_state, goal_state, ball):
+        self.current_state = current_state
+        self.goal_state = goal_state
+        self.ball = ball
+
+
+
+    def input(self):
+        controller_input = SimpleControllerState()
+
+        goal_angle = atan2((self.goal_state.pos - self.current_state.pos).y, (self.goal_state.pos - self.current_state.pos).x)
+
+        if (self.current_state.pos - self.goal_state.pos).magnitude() > 500:
+            controller_input = GroundTurn(self.current_state, self.goal_state).input()
+
+
+        elif self.current_state.vel.magnitude() < 100 and abs(self.goal_state.yaw - self.current_state.yaw) > pi/2:
+            if self.goal_state.yaw - self.current_state.yaw > pi/2:
+                turn_direction = 1
+            else:
+                turn_direction = -1
+                
+            controller_input = JumpTurn(self.current_state, 0, turn_direction).input()
+
+
+
+        else:
+                
+            if abs(goal_angle) > pi/2:
+                correction_sign = -1
+            else:
+                correction_sign = 1
+                
+            controller_input.throttle = correction_sign
+
+            if self.goal_state.yaw - self.current_state.yaw > 0:
+                angle_sign = 1
+            else:
+                angle_sign = -1
+
+            controller_input.steer = correction_sign*angle_sign
+
+
+        return controller_input
+
+
+
+
+
+
+
+    
