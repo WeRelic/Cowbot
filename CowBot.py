@@ -99,6 +99,8 @@ def make_plan(game_info, old_plan):
         normalized_ball_vel = game_info.ball.vel.normalize()
         normalized_car_vel = current_state.vel.normalize()
         ball_car_dot = normalized_car_vel.dot(normalized_ball_vel)
+    else:
+        ball_car_dot = 0
 
 
 
