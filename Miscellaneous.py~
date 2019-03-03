@@ -1,2 +1,0 @@
-def one_frame_derivative(f, old_f, time, old_time, framerate):
-        return (f - old_f) / (1 / fps)

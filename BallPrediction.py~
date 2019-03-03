@@ -1,9 +1,0 @@
-def make_ball_prediction(game_info):
-    '''
-    Predicts where the ball will be.
-    Outputs 
-    '''
-
-
-
-    
