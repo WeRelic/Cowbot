@@ -166,14 +166,19 @@ class JumpTurn:
     def input(self):
         controller_input = SimpleControllerState()
         #Add a catch to make sure jump_height isn't higher than the max jump height
-        #For now make sure jump_height is higher than the height of the car at rest.
+        #For now make sure jump_height is zero or higher than the height of the car at rest.
+
+        #Zero jump height means we just jump on frame 1
         if self.jump_height == 0 and self.current_state.wheel_contact:
             controller_input.jump = 1
+
+        #If we're not to jump_height yet, hold jump to jump higher.
         elif self.current_state.pos.z < self.jump_height:
             controller_input.jump = 1
+
+        #Turn in the right direction.
         controller_input.yaw = (self.turn_direction - (1/2)) * 2
 
-        controller_input.jump = 1
         return controller_input
 
 

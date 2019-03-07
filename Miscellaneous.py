@@ -20,7 +20,7 @@ def cap_magnitude(x, magnitude):
 
 def rotate_to_range(theta, interval):
     '''
-    If theta isn't in range, then add or subtract 2*pi as appropriate to
+    If theta isn't in range, then add or subtract the interval length as appropriate to
     ensure that it is
     '''
 

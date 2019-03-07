@@ -234,7 +234,7 @@ class FastDodge:
 
 class GroundTurn:
 
-    def __init__(self, current_state, target_state):
+    def __init__(self, current_state, target_state, can_reverse = False):
         '''
         Turns on the ground towards the turn_target
         '''
@@ -244,27 +244,41 @@ class GroundTurn:
         self.omega = current_state.omega
 
         self.target_state = target_state
-
-        self.reference_angle = current_state.yaw
-
-        pass
-
+        self.current_state = current_state
+        self.can_reverse = can_reverse
 
     def input(self):
 
         controller_input = SimpleControllerState()
+        theta = self.current_state.yaw
+        correction_vector = self.target_state.pos - self.current_state.pos
 
-        correction_vector = self.target_state.pos - self.pos
+        facing_vector = Vec3(cos(theta), sin(theta), 0)
 
+
+        car_to_target = (self.target_state.pos - self.current_state.pos).normalize()
         #Rotated to the car's reference frame on the ground.
-        rel_correction_vector = Vec3((correction_vector.x*cos(self.reference_angle)) + (correction_vector.y * sin(self.reference_angle)), (-(correction_vector.x*sin(self.reference_angle))) + (correction_vector.y * cos(self.reference_angle)), 0)
+        rel_correction_vector = Vec3((correction_vector.x*cos(theta)) + (correction_vector.y * sin(theta)),
+                                         (-(correction_vector.x*sin(theta))) + (correction_vector.y * cos(theta)),
+                                         0)
 
-        correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)
+        if self.can_reverse and facing_vector.dot(car_to_target) < - pi/8:
+            
+            
+            correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)
+            
+            controller_input.throttle = - 1.0
+            if abs(correction_angle) > 1.25:
+                controller_input.handbrake = 1
+            controller_input.steer = cap_magnitude(-5*correction_angle, 1)
 
-        controller_input.throttle = 1.0
-        if correction_angle > 1.25:
-            controller_input.handbrake = 1
-        controller_input.steer = cap_magnitude(5*correction_angle, 1)
+        else:
+            correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)
+            
+            controller_input.throttle = 1.0
+            if abs(correction_angle) > 1.25:
+                controller_input.handbrake = 1
+            controller_input.steer = cap_magnitude(5*correction_angle, 1)
 
         return controller_input
         
@@ -278,47 +292,61 @@ class GroundTurn:
 
 class NavigateTo:
 
-
     '''
-    PD controller for navigating towards a position and stopping
+    Controller for navigating towards a position, stopping, and readjusting to face a certain direction
     '''
 
-
-    def __init__(self, current_state, goal_state, ball):
+    def __init__(self, current_state, goal_state):
         self.current_state = current_state
         self.goal_state = goal_state
-        self.ball = ball
-
 
 
     def input(self):
         controller_input = SimpleControllerState()
+        current_angle_vec = Vec3(cos(self.current_state.yaw), sin(self.current_state.yaw), 0)
+        goal_angle_vec = Vec3(cos(self.goal_state.yaw), sin(self.goal_state.yaw), 0)
+        vel_2d = Vec3(self.current_state.vel.x, self.current_state.vel.y, 0)
 
-        goal_angle = atan2((self.goal_state.pos - self.current_state.pos).y, (self.goal_state.pos - self.current_state.pos).x)
 
+               
         if (self.current_state.pos - self.goal_state.pos).magnitude() > 500:
+            #Turn towards target. Hold throttle until we're close enough to start stopping.
             controller_input = GroundTurn(self.current_state, self.goal_state).input()
 
+        elif vel_2d.magnitude() < 100 and current_angle_vec.dot(goal_angle_vec) < 0:
+            #If we're moving slowly, but not facing the right way, jump to turn in the air.
+            #Decide which way to turn.  Make sure we don't have wraparound issues.
 
-        elif self.current_state.vel.magnitude() < 100 and abs(self.goal_state.yaw - self.current_state.yaw) > pi/2:
-            if self.goal_state.yaw - self.current_state.yaw > pi/2:
-                turn_direction = 1
+            goal_x = goal_angle_vec.x
+            goal_y = goal_angle_vec.y
+            car_theta = self.current_state.yaw
+
+
+            #Rotated to the car's reference frame on the ground.
+            rel_vector = Vec3((goal_x*cos(car_theta)) + (goal_y * sin(car_theta)),
+                              (-(goal_x*sin(car_theta))) + (goal_y * cos(car_theta)),
+                              0)
+
+            correction_angle = atan2(rel_vector.y, rel_vector.x)
+
+            #Jump and turn to reach goal_yaw.
+            if self.current_state.wheel_contact:
+                controller_input.jump = 1
             else:
-                turn_direction = -1
-                
-            controller_input = JumpTurn(self.current_state, 0, turn_direction).input()
-
-
+                controller_input.yaw = cap_magnitude(correction_angle, 1)
 
         else:
-                
-            if abs(goal_angle) > pi/2:
+            #Proportional controller to stop in the right place, and turn while wiggling.
+
+            #Check if the goal is ahead of or behind us, and throttle in that direction
+            goal_angle = atan2((self.goal_state.pos - self.current_state.pos).y, (self.goal_state.pos - self.current_state.pos).x)
+            if abs(goal_angle - self.current_state.yaw) > pi/2:
                 correction_sign = -1
             else:
                 correction_sign = 1
-                
             controller_input.throttle = correction_sign
 
+            #Correct as we wiggle so that we face goal_yaw.
             if self.goal_state.yaw - self.current_state.yaw > 0:
                 angle_sign = 1
             else:

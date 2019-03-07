@@ -19,6 +19,10 @@ class GameState:
 
         #Info for other cars
         self.my_team = my_team
+        if self.my_team == 0:
+            self.team_sign = 1
+        else:
+            self.team_sign = -1
         self.teammates = []
         self.opponents = []
 
@@ -41,6 +45,15 @@ class GameState:
 
         #Game time elapsed
         self.time = packet.game_info.seconds_elapsed
+
+
+
+        #Minimum distance from the ball to an opponent
+        self.opponent_distance = 10000
+        for car in self.opponents:
+            if (car.pos - self.ball.pos).magnitude() < self.opponent_distance:
+                self.opponent_distance = (car.pos - self.ball.pos).magnitude()
+            
 
 class Ball:
 
