@@ -57,30 +57,61 @@ class GameState:
 
 class Ball:
 
-    def __init__(self, packet):
-        self.pos = Vec3( packet.game_ball.physics.location.x,
-                         packet.game_ball.physics.location.y,
-                         packet.game_ball.physics.location.z )
+    #Packet is used for the current ball state in game.
+    #Slice can be used instead to get a BallState object for a prediction in the future.
+    def __init__(self, packet, state = None):
 
-        #TODO: get this in quaternion format?
-        #Note: ball rotation is only useful in snow day
-        self.rot = [ packet.game_ball.physics.rotation.pitch,
-                     packet.game_ball.physics.rotation.yaw,
-                     packet.game_ball.physics.rotation.roll ]
+        if state == None:
+            self.pos = Vec3( packet.game_ball.physics.location.x,
+                             packet.game_ball.physics.location.y,
+                             packet.game_ball.physics.location.z )
+
+            #TODO: get this in quaternion format?
+            #Note: ball rotation is only useful in snow day
+            self.rot = [ packet.game_ball.physics.rotation.pitch,
+                         packet.game_ball.physics.rotation.yaw,
+                         packet.game_ball.physics.rotation.roll ]
         
-        self.vel = Vec3( packet.game_ball.physics.velocity.x,
-                         packet.game_ball.physics.velocity.y,
-                         packet.game_ball.physics.velocity.z )
+            self.vel = Vec3( packet.game_ball.physics.velocity.x,
+                             packet.game_ball.physics.velocity.y,
+                             packet.game_ball.physics.velocity.z )
         
-        self.omega = Vec3( packet.game_ball.physics.angular_velocity.x,
-                           packet.game_ball.physics.angular_velocity.y,
-                           packet.game_ball.physics.angular_velocity.z )
+            self.omega = Vec3( packet.game_ball.physics.angular_velocity.x,
+                               packet.game_ball.physics.angular_velocity.y,
+                               packet.game_ball.physics.angular_velocity.z )
+            
+            self.last_touch = packet.game_ball.latest_touch
+            self.hit_location = Vec3(self.last_touch.hit_location.x,
+                                     self.last_touch.hit_location.y,
+                                     self.last_touch.hit_location.z)
 
-        self.last_touch = packet.game_ball.latest_touch
-        self.hit_location = Vec3(self.last_touch.hit_location.x,
-                                 self.last_touch.hit_location.y,
-                                 self.last_touch.hit_location.z)
+        else:
+            #Position
+            self.x = state.x
+            self.y = state.y
+            self.z = state.z
+            self.pos = Vec3(self.x, self.y, self.z)
 
+            #Velocity
+            self.velx = state.velx
+            self.vely = state.vely
+            self.velz = state.velz
+            self.vel = Vec3(self.vx, self.vy, self.vz)
+
+            #Rotation
+            self.pitch = state.pitch
+            self.yaw = state.yaw
+            self.roll = state.roll
+
+            #Angular velocity
+            self.omegax = state.omegax
+            self.omegay = state.omegay
+            self.omegaz = state.omegaz
+            self.omega = Vec3(self.omegax, self.omegay, self.omegaz)
+
+            
+            
+            
 def Car(packet, rigid_body_tick, jumped_last_frame, index, my_index):
     '''
     Gets the game info for a given car, and returns the values.  Should be fed into a CarState object.

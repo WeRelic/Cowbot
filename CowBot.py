@@ -10,6 +10,7 @@ from GameState import *
 from Kickoff import *
 from Planning import *
 from EvilGlobals import renderer
+from BallPrediction import *
 
 
 
@@ -63,6 +64,9 @@ class BooleanAlgebraCow(BaseAgent):
 
         #Check if it's a kickoff.  If so, run kickoff code.
         self.kickoff_position = update_kickoff_position(self.game_info, self.kickoff_position)
+
+        test_precdiction = PredictionPath(self.get_ball_prediction_struct())
+
 
         if self.current_plan == "Kickoff":
             if self.old_kickoff_data != None:
