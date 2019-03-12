@@ -9,7 +9,7 @@
 '''
 
 from rlbot.agents.base_agent import SimpleControllerState
-from math import atan2, pi, sin, cos
+from math import atan2, pi, sin, cos, sqrt
 from CowBotVector import *
 from Miscellaneous import *
 
@@ -70,7 +70,7 @@ class AirDodge:
 
 class AerialRotation:
 
-    def __init__(self, current_state, target_state, old_state, fps):
+    def __init__(self, current_state, target_state, old_state, fps = 120):
 
     
         self.start_pitch = current_state.pitch
@@ -159,7 +159,7 @@ class JumpTurn:
         self.jump_height = jump_height
         self.current_state = current_state
 
-        #1 for clockwise, 0 for counterclockwise
+        #1 for clockwise, -1 for counterclockwise
         self.turn_direction = turn_direction
 
 
@@ -177,7 +177,9 @@ class JumpTurn:
             controller_input.jump = 1
 
         #Turn in the right direction.
-        controller_input.yaw = (self.turn_direction - (1/2)) * 2
+        if self.turn_direction ==0:
+            raise TypeError("turn direction should be 1 or -1")
+        controller_input.yaw = self.turn_direction
 
         return controller_input
 
@@ -198,7 +200,7 @@ class QuickTurn():
 
     def __init__(self, direction, boost):
         '''
-        +1 direction for right, 0 for left
+        +1 direction for right, -1 for left
         boost is a boolean
         '''
 
@@ -213,5 +215,48 @@ class QuickTurn():
         if self.boost == 1:
             controller_input.boost = 1
         controller_input.handbrake = 1
-        controller_input.steer = (self.direction - (1/2))*2
+        controller_input.steer = self.direction
         return controller_input
+
+
+
+#############################################################################################
+
+#############################################################################################
+
+
+class CancelledFastDodge:
+    '''
+    CancelledFastDodge is the mechanic where one dodges diagonally forward, then cancels
+    the forward portion of the flip.  This might be useful on kickoffs, since it should be faster 
+    than a standard dodge.
+    '''
+
+
+    def __init__(self, current_state, dodge_direction):
+        #Dodge direction is 1 for right, -1 for left
+        self.double_jumped = current_state.double_jumped
+        self.dodge_direction = dodge_direction
+        self.current_state = current_state
+
+
+
+
+    def input(self):
+        controller_input = SimpleControllerState()
+
+        if self.current_state.pos.z < 50:
+            #If we're too close to the ground to dodge, just keep boosting.
+            controller_input.boost = 1
+            return controller_input
+
+        if not self.double_jumped:
+            #If we haven't double jumped yet, dodge
+            return AirDodge(Vec3(1/sqrt(2), self.dodge_direction / sqrt(2), 0), self.current_state.jumped_last_frame).input()
+
+
+        else:
+            #If we have double jumped, pull back to cancel the forward portion of the dodge.
+            controller_input.boost = 1
+            controller_input.pitch = 1
+            return controller_input

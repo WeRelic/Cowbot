@@ -20,8 +20,7 @@ class GroundPath:
         self.length = None
         self.time_to_traverse = None
         self.waypoints = []
-        
-        
+
 
 #############################################################################################
 
@@ -148,8 +147,6 @@ class ArcLineArc(GroundPath):
 
         direction2 = self.transition2 - self.center2
         angle2 = atan2( direction2.y , direction2.x )
-
-
 
         #Draw the path to make sure we got the right one.
         EvilGlobals.renderer.begin_rendering()

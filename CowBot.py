@@ -7,7 +7,7 @@ from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from Cowculate import *
 from GameState import *
-from Kickoff import *
+from Kickoffs.Kickoff import *
 from Planning import *
 from EvilGlobals import renderer
 from BallPrediction import *
@@ -57,6 +57,10 @@ class BooleanAlgebraCow(BaseAgent):
                                    self.field_info, self.name, self.index,
                                    self.team, self.teammate_indices, self.opponent_indices,
                                    self.jumped_last_frame_list)
+        if self.old_game_info == None:
+            #This avoids TypeErros on calls to old_game_info on the first frame of a kickoff.
+            #The first frame shouldn't be calling previous frame information anyway
+            self.old_game_info = self.game_info
 
         #Make a plan for now.  Can depend on previous plans, current game info, and opponent tendencies.
         #Very hacky for short deadline.  Fix after wintertide.
@@ -66,7 +70,7 @@ class BooleanAlgebraCow(BaseAgent):
         self.kickoff_position = update_kickoff_position(self.game_info, self.kickoff_position)
 
         test_precdiction = PredictionPath(self.get_ball_prediction_struct())
-
+        #return testing(self.game_info, self.game_info.me)
 
         if self.current_plan == "Kickoff":
             if self.old_kickoff_data != None:
@@ -89,6 +93,21 @@ class BooleanAlgebraCow(BaseAgent):
         if output.throttle == 0:
             output.throttle = 0.01
         return output
+
+
+
+
+def testing(game_info, current_state):
+    controller_input = SimpleControllerState()
+    if current_state.wheel_contact and current_state.vel.magnitude() < 1500:
+        controller_input.boost = 1
+    elif current_state.wheel_contact:
+        controller_input.jump = 1
+        controller_input.boost = 1
+    else:
+        controller_input = CancelledFastDodge(current_state, 1).input()
+
+    return controller_input
 
 
 

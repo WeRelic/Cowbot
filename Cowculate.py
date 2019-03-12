@@ -3,7 +3,6 @@ from CowBotVector import *
 from rlbot.agents.base_agent import SimpleControllerState
 from Testing import *
 from BallPrediction import *
-from Kickoff import *
 from Mechanics import *
 from math import sin, cos
 from Maneuvers import *
@@ -172,7 +171,9 @@ def go_for_ball(game_info, shot_on_goal, controller_input):
 
     current_state = game_info.me
     if shot_on_goal and (Vec3(cos(current_state.yaw) , sin(current_state.yaw), 0)).dot((game_info.ball.vel).normalize()) < - pi/8:
-        return GroundTurn(current_state, game_info.ball.pos, can_reverse = True).input()
+        return GroundTurn(current_state,
+                          current_state.copy_state(pos = game_info.ball.pos),
+                          can_reverse = True).input()
 
 
 
@@ -277,3 +278,11 @@ def wait_far_post(game_info, controller_input):
 
     #Go to net, stop in the middle, then turn in place to face the ball.
     return NavigateTo(current_state, current_state.copy_state(pos = far_post, yaw = ball_angle)).input()
+
+
+
+
+
+
+
+

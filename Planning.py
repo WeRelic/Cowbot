@@ -16,10 +16,11 @@ def make_plan(game_info, old_plan):
         ball_car_dot = 0
     relative_ball_position = y_sign*(game_info.ball.pos.y - game_info.me.pos.y)
     dist_from_last_touch = (game_info.ball.hit_location - game_info.me.pos).magnitude()
-    first_teammate_pos = game_info.teammates[0].pos
     last_touch = game_info.ball.last_touch
     my_team = game_info.my_team
     ball_distance = (game_info.ball.pos - current_state.pos).magnitude()
+    if len(game_info.teammates) > 0:
+        first_teammate_pos = game_info.teammates[0].pos
 
 
 
@@ -54,7 +55,7 @@ def make_plan(game_info, old_plan):
         return check_boost_side(game_info)
 
 
-    elif (old_plan == "Boost+" or old_plan == "Boost-") and game_current_state.boost == 100:
+    elif (old_plan == "Boost+" or old_plan == "Boost-") and current_state.boost == 100:
         #If we were going for boost, but have full boost, go to net.
         #This includes picking up the boost we wanted.
         return "Goal"

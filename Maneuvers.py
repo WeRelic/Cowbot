@@ -38,14 +38,7 @@ class FastDodge:
     FastFlip will be called to flip for speed whenever we need to go fast and have space
     for a flip.  Eventually decisions on whether to front or diagonal flip, how much 
     (if at all) to boost, etc. will be handled by this class.  Note: this is only for flips
-    to gain speed in the direction the car is currently moving.  Half flips will be 
-    handled seperately, along with turning to face the right direction for the flip.
-
-
-    Before fully fleshed out, this will cause weird behavior if path planning decides
-    to do a flip when a flip is a bad idea.  Keep this in mind until "check_for_space()"
-    works properly.
-
+    to gain speed, including turning to line up the dodge and deciding when to dodge.
     '''
 
 
@@ -65,21 +58,20 @@ class FastDodge:
         self.oversteer = oversteer
         
         
-        #Default to a front flip, so that we don't accidentally veer off-course if we
-        #don't get an updated flip direction.  Given in yaw relative to car coordinates.
-        #+x is forward, +y is right, and angle increases clockwise.
         self.space = self.check_for_space()
+
+        #If we don't have a boost threshold, find it based on how much boost we want to use.
         if boost_threshold == None:
             self.boost_threshold = self.set_boost_threshold()
         else:
             self.boost_threshold = boost_threshold
+
         self.accel_threshold = self.set_accel_threshold()
 
         self.dodge_direction = self.set_dodge_direction(self.direction)
         self.dodge_threshold = self.set_dodge_threshold()
         self.jump_height = self.set_jump_height()
 
-        
         
         #questionable if we're still turning
         #but it should be okay if we're driving straight.
@@ -104,13 +96,13 @@ class FastDodge:
         '''
         
         controller_input = SimpleControllerState()
-        #Speed up on the ground, turn as needed, then jump
+
+
         if self.current_state.wheel_contact:
+            #Speed up on the ground, turn as needed, then jump
+
             #Boost if we're slower than boost_threshold.
-            #Also turn towards the goal_state if we're not facing it.
             if self.current_state.vel.magnitude() <= self.boost_threshold:
-                #controller_input = GroundTurn(self.current_state,
-                                              #self.current_state.copy_state(pos=Vec3(0,0,0))).input()
                 controller_input.boost = 1
             #Accelerate if we're below accel_threshold
             elif self.current_state.vel.magnitude() <= self.accel_threshold:
@@ -214,14 +206,13 @@ class FastDodge:
 
     def set_turn_direction(self):
         '''
-        Returns 1 for "clockwise" and 0 for "counter-clockwise"
-        We currently need 0 and 1 here for parity on the minus sign elsewhere.
+        Returns 1 for "clockwise" and -1 for "counter-clockwise"
         '''
 
         if (self.dodge_angle - self.current_state.yaw) >=0:
             return 1
         else:
-            return 0
+            return -1
 
 
 
