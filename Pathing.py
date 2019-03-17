@@ -37,14 +37,14 @@ class ArcLineArc(GroundPath):
         Zero radius means no arc: the endpoint is on the line segment.
         '''
 
-        #make sure we have the right number of control points
+        #Make sure we have the right number of control points
         if (radius1 == None and transition1 == None) or (radius1 != None and transition1 != None):
             raise TypeError('Exactly one of radius1 and transition1 must be specified.')
         if (radius2 == None and transition2 == None) or (radius2 != None and transition2 != None):
             raise TypeError('Exactly one of radius2 and transition2 must be specified.')
 
 
-        #make sure tangents aren't the zero vector
+        #Make sure tangents aren't the zero vector
         if start_tangent.magnitude == 0:
             raise TypeError("start_tangent can't be length zero")
         if end_tangent.magnitude == 0:

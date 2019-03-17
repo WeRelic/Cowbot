@@ -47,8 +47,8 @@ def execute(plan, game_info, current_state, old_state):
                 shot_on_goal = True
 
         #Fix this once we add flips, but this is fine for now.
-        if (plan == "Boost-" or plan == "Boost+") and current_state.wheel_contact:
-            controller_input = go_for_boost(plan, game_info, controller_input)
+        if (plan == "Boost-" or plan == "Boost+"):
+            controller_input = go_for_boost(plan, game_info, old_state, controller_input)
             
 
         elif plan == "Goal" and current_state.wheel_contact and len(game_info.teammates) == 0:
@@ -135,18 +135,20 @@ def go_to_net(plan, game_info, old_state, controller_input):
 
 
 
-def go_for_boost(plan, game_info, controller_input):
+def go_for_boost(plan, game_info, old_state, controller_input):
     current_state = game_info.me
-
-    #Check -x coordinate boosts
+    wobble = Vec3(current_state.omega.x, current_state.omega.y, 0).magnitude()
+    epsilon = 0.3
+    
     if plan == "Boost-":
+        #Check -x coordinate boosts
         if game_info.my_team == 0:
             target_boost = game_info.boosts[3]
         else:
             target_boost = game_info.boosts[29]
 
-    #Check +x coordinate boosts
     else:
+        #Check +x coordinate boosts
         if game_info.my_team == 0:
             target_boost = game_info.boosts[4]
         else:
@@ -158,9 +160,15 @@ def go_for_boost(plan, game_info, controller_input):
     #Turn towards boost
     controller_input = GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
 
-    #If slow and on the ground, boost
-    if current_state.vel.magnitude() < 2250 and current_state.wheel_contact and abs(angle_to_boost - current_state.yaw) < pi/6:
-        controller_input.boost = 1
+    
+    if current_state.vel.magnitude() < 2250 and angles_are_close(angle_to_boost, current_state.yaw, pi/6) and wobble < epsilon and (current_state.pos - target_boost.pos).magnitude() > 300:
+        #If slow, not wobbling from a previous dodge, facing towards the boost,
+        #and not already at the boost, dodge for speed
+        controller_input = FastDodge(current_state,
+                                     current_state.copy_state(pos=target_boost.pos),
+                                     old_state,
+                                     boost_to_use = current_state.boost).input()
+        #controller_input.boost = 1
     return controller_input
 
 
@@ -170,7 +178,7 @@ def go_for_boost(plan, game_info, controller_input):
 def go_for_ball(game_info, shot_on_goal, controller_input):
 
     current_state = game_info.me
-    if shot_on_goal and (Vec3(cos(current_state.yaw) , sin(current_state.yaw), 0)).dot((game_info.ball.vel).normalize()) < - pi/8:
+    if shot_on_goal and game_info.ball.vel.magnitude() != 0 and (Vec3(cos(current_state.yaw) , sin(current_state.yaw), 0)).dot((game_info.ball.vel).normalize()) < - pi/8:
         return GroundTurn(current_state,
                           current_state.copy_state(pos = game_info.ball.pos),
                           can_reverse = True).input()
@@ -212,7 +220,7 @@ def go_for_ball(game_info, shot_on_goal, controller_input):
                        (game_info.ball.pos - current_state.pos).x)
 
     #If we're not supersonic, and we're facing roughly towards the ball, boost.
-    if current_state.vel.magnitude() < 2250 and current_state.wheel_contact and (current_state.yaw - ball_angle) < pi/6:
+    if current_state.vel.magnitude() < 2250 and current_state.wheel_contact and angles_are_close(current_state.yaw, ball_angle, pi/6):
         controller_input.boost = 1
 
 

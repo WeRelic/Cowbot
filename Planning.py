@@ -34,7 +34,7 @@ def make_plan(game_info, old_plan):
             return "Kickoff"
 
 
-    elif old_plan == "Kickoff":
+    elif old_plan == "Kickoff" or old_plan == None:
         #If we were doing a kickoff, but now the ball is in front of us, go for ball.
         #If the ball is behind us, go for boost.
         #I think this usually results in going for boost, since "Ball" often

@@ -1,9 +1,9 @@
 from math import pi
-from math import log, cos, sin
+from math import log, cos, sin, asin
 from CowBotVector import *
 
 def one_frame_derivative(f, old_f, fps):
-        return (f - old_f) / (1 / fps)
+    return (f - old_f) / (1 / fps)
 
 
 def cap_magnitude(x, magnitude):
@@ -62,11 +62,36 @@ def find_closest_big_boost(game_info):
 
 
 def car_coordinates_2d(current_state, direction):
-        '''
-        Takes a Vec3 for a direction on the field and returns the same direction relative to the car
-        '''
+    '''
+    Takes a Vec3 for a direction on the field and returns the same direction relative to the car
+    '''
 
-        x = direction.x * cos(-current_state.yaw) - direction.y * sin(-current_state.yaw)
-        y = direction.x * sin(-current_state.yaw) + direction.y * cos(-current_state.yaw)
+    x = direction.x * cos(-current_state.yaw) - direction.y * sin(-current_state.yaw)
+    y = direction.x * sin(-current_state.yaw) + direction.y * cos(-current_state.yaw)
         
-        return Vec3(x,y,0)
+    return Vec3(x,y,0)
+
+
+
+
+def angles_are_close(angle1, angle2, epsilon):
+    '''
+    Checks if two angles are close, without worrying about branches.
+    '''
+    return abs(sin(angle1 - angle2)) < asin(epsilon)
+
+
+def left_or_right(current_state, target_pos):
+    '''
+    Takes the current car state and where we want to go and says if that target is to the
+    left (-1) or to the right (1).
+    Only for angles < 2*pi/3
+    '''
+
+    target_angle = atan2((current_state.pos - target_pos).y, (current_state.pos - target_pos).x)
+    if sin(target_angle) > 0:
+        return 1
+    else:
+        return -1
+
+
