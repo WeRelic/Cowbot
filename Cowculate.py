@@ -1,4 +1,4 @@
-from GameState import *
+import GameState as CowState
 from CowBotVector import *
 from rlbot.agents.base_agent import SimpleControllerState
 from Testing import *
