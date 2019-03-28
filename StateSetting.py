@@ -4,7 +4,7 @@ def Vec3_to_Vector3(vector):
     return framework.Vector3(x = vector.x, y = vector.y, z = vector.z)
 
 def rot_to_Rotator(rot):
-    return framework.Rotator(rot[0], rot[1], rot[2])
+    return framework.Rotator(pitch = rot.pitch, yaw = rot.yaw, roll = rot.roll)
 
 
 def set_state(game_info,
@@ -29,31 +29,31 @@ def set_state(game_info,
     '''
 
     new_ball_state = None
-    cars_state = None
-    boosts_state = None
+    new_cars_state = {}
+    boosts_state = {}
     game_info_state = None
 
+    ################################################################################################
     #Ball first.
-    if ball_state != None:
-        new_ball_state = framework.BallState(framework.Physics(location = Vec3_to_Vector3(ball_state.pos),
-                                                               rotation = rot_to_Rotator(ball_state.rot),
-                                                               velocity = Vec3_to_Vector3(ball_state.vel),
-                                                               angular_velocity = Vec3_to_Vector3(ball_state.omega)))
+    ################################################################################################
 
+
+
+    new_ball_state = framework.BallState(state_to_physics(ball_state))
+
+    ################################################################################################
     #Cars
-    new_cars_state = {}
+    ################################################################################################
 
     #My car
     if current_state != None:
-        my_car = framework.CarState(framework.Physics(location = Vec3_to_Vector3(current_state.pos),
-                                                      rotation = rot_to_Rotator(current_state.rot),
-                                                      velocity = Vec3_to_Vector3(current_state.vel),
-                                                      angular_velocity = Vec3_to_Vector3(current_state.omega)),
+        my_car = framework.CarState(state_to_physics(current_state),
                                     boost_amount = current_state.boost,
                                     jumped = current_state.jumped,
                                     double_jumped = current_state.double_jumped)
 
-        cars[game_info.my_index] = my_car
+
+        new_cars_state[game_info.my_index] = my_car
 
     #Teammates' cars
     if teammates_state != None:
@@ -81,16 +81,50 @@ def set_state(game_info,
             
             new_cars_state[game_info.opponents[i].index] = opponent_state
             
-            
+    ################################################################################################        
     #Skipping boosts_state setting for now.  Maybe will add later.
-            
+    ################################################################################################
+
+    ################################################################################################
     #Skipping game_info_state for now.  Maybe will add later.
-            
-    
+    ################################################################################################
+
+    ################################################################################################
     #Put it all together and set the state.
+    ################################################################################################
+
     game_state = framework.GameState(ball = new_ball_state,
-                                     cars = cars_state,
+                                     cars = new_cars_state,
                                      boosts = boosts_state,
                                      game_info = game_info_state)
 
     return game_state
+
+
+
+def state_to_physics(state):
+    if state != None:
+        if state.pos != None:
+            location = Vec3_to_Vector3(state.pos)
+        else:
+            location = None
+
+        if state.rot != None:
+            rotation = rot_to_Rotator(state.rot)
+        else:
+            rotation = None
+
+        if state.vel != None:
+            velocity = Vec3_to_Vector3(state.vel)
+        else:
+            velocity = None
+
+        if state.omega != None:
+            angular_velocity = Vec3_to_Vector3(state.omega)
+        else:
+            angular_velocity = None
+
+    return framework.Physics(location = location,
+                   rotation = rotation,
+                   velocity = velocity,
+                   angular_velocity = angular_velocity)

@@ -1,11 +1,15 @@
+import rlutilities as utils
+from rlutilities.simulation import Game
+
 from CowBotVector import *
+from Miscellaneous import *
 
 class GameState:
 
-    def __init__(self, packet, rigid_body_tick, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices, me_jumped_last_frame):
+    def __init__(self, packet, rigid_body_tick, utils_game, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices, me_jumped_last_frame):
         
-        #Framerate info.  Find out how to get this automatically.
-        self.fps = 60
+        #Framerate.  Eventually phase this out for time_delta instead.
+        self.fps = 120
 
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
         self.first_frame_of_kickoff = False
@@ -48,9 +52,17 @@ class GameState:
             if pad.is_full_boost:
                 self.big_boosts.append(Boostpad(i, pad_pos, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
 
-        #Game time elapsed
-        self.time = packet.game_info.seconds_elapsed
-
+        #Other Game info
+        self.game_time = packet.game_info.seconds_elapsed
+        if utils_game != None:
+            self.utils_game = utils_game
+            self.dt = utils_game.time_delta
+            self.utils_game.read_game_information(packet,
+                                                  rigid_body_tick,
+                                                  field_info)
+        else:
+            self.dt = 1/120
+            self.utils_game = None
 
         #Minimum distance from the ball to an opponent
         self.opponent_distance = 10000
@@ -58,9 +70,57 @@ class GameState:
             if (car.pos - self.ball.pos).magnitude() < self.opponent_distance:
                 self.opponent_distance = (car.pos - self.ball.pos).magnitude()
             
-##################################################################################
+
 
 ##################################################################################
+#Orientation
+##################################################################################
+
+class Orientation:
+
+    '''
+    This is an orientation matrix with columns Front, Left, Up.
+    This will be the working object for a car or ball orientation.
+    '''
+
+
+    def __init__( self ,
+                  pitch = None,
+                  yaw = None,
+                  roll = None,
+                  pyr = None,
+                  front = None,
+                  left = None,
+                  up = None
+    ):
+
+        if pitch != None and yaw != None and roll != None:
+            pyr = [ pitch, yaw, roll ]
+
+        if pyr != None:
+            self.matrix = pyr_to_matrix(pyr)
+
+        if front != None and left != None and up != None:
+            self.matrix = [ front, left, up ]
+
+        self.front = self.matrix[0]
+        self.left = self.matrix[1]
+        self.up = self.matrix[2]
+
+        if pyr != None:
+            self.pitch = pyr[0]
+            self.yaw = pyr[1]
+            self.roll = pyr[2]
+        else:
+            self.yaw = atan2( self.front.y , self.front.x )
+            self.pitch = atan2( self.front.z , sqrt(self.left.z**2 + self.up.z**2) )
+            self.roll = atan2( self.left.z , self.up.z )
+
+
+##################################################################################
+#Ball
+##################################################################################
+
 
 
 def Ball(packet, state = None):
@@ -74,13 +134,15 @@ def Ball(packet, state = None):
         x = packet.game_ball.physics.location.x
         y = packet.game_ball.physics.location.y
         z = packet.game_ball.physics.location.z
-        pos = Vec3( x , y , z )
+        pos = Vec3( x, y, z )
 
         #Rotation
         pitch = packet.game_ball.physics.rotation.pitch
         yaw = packet.game_ball.physics.rotation.yaw
         roll = packet.game_ball.physics.rotation.roll            
-        rot = [ pitch, yaw, roll ]
+        rot = Orientation( pitch = pitch,
+                           yaw = yaw,
+                           roll = roll )
 
         #Velocity
         vx = packet.game_ball.physics.velocity.x
@@ -117,7 +179,9 @@ def Ball(packet, state = None):
         pitch = state.pitch
         yaw = state.yaw
         roll = state.roll
-        rot = [ pitch, yaw, roll ]
+        rot = Orientation( pitch = pitch,
+                           yaw = yaw,
+                           roll = roll )
 
         #Angular velocity
         omegax = state.omegax
@@ -134,8 +198,6 @@ def Ball(packet, state = None):
                      hit_location = hit_location)
 
 
-
-
 class BallState:
 
     def __init__( self,
@@ -146,25 +208,31 @@ class BallState:
                   last_touch = None,
                   hit_location = None):
 
-        self.x = pos.x
-        self.y = pos.y
-        self.z = pos.z
-        self.pos = pos
+        self.pos = None
+        self.rot = None
+        self.vel = None
+        self.omega = None
+        
+        if pos != None:
+            self.x = pos.x
+            self.y = pos.y
+            self.z = pos.z
+            self.pos = pos
 
-        self.pitch = rot[0]
-        self.yaw = rot[1]
-        self.roll = rot[2]
-        self.rot = rot
+        if rot != None:
+            self.rot = rot
 
-        self.vx = vel.x
-        self.vy = vel.y
-        self.vz = vel.z
-        self.vel = vel
+        if vel != None:
+            self.vx = vel.x
+            self.vy = vel.y
+            self.vz = vel.z
+            self.vel = vel
 
-        self.omegax = omega.x
-        self.omegay = omega.y
-        self.omegaz = omega.z
-        self.omega = omega
+        if omega != None:
+            self.omegax = omega.x
+            self.omegay = omega.y
+            self.omegaz = omega.z
+            self.omega = omega
 
         self.last_touch = last_touch
         self.hit_location = hit_location
@@ -174,11 +242,9 @@ class BallState:
     #This will be useful for setting target states.
     def copy_state( self,
                     pos = None,
+                    rot = None,
                     vel = None,
-                    omega = None,
-                    pitch = None,
-                    yaw = None,
-                    roll = None):
+                    omega = None):
 
         if pos != None:
             new_pos = pos
@@ -195,29 +261,10 @@ class BallState:
         else:
             new_omega = self.omega
 
-        rot_check = False
-        if pitch != None:
-            new_pitch = pitch
-            rot_check = True
+        if rot != None:
+            new_rot = rot
         else:
-            new_pitch = self.pitch
-
-        if yaw != None:
-            new_yaw = yaw
-            rot_check = True
-        else:
-            new_yaw = self.yaw
-
-        if roll != None:
-            rot_check = True
-            new_roll = roll
-        else:
-            new_roll = self.roll
-
-        if rot_check:
-            new_rot = [ new_pitch, new_yaw, new_roll ]
-        else:
-            new_rot = [ pitch, yaw, roll ]
+            new_rot = self.rot
 
         return BallState(pos = new_pos,
                          rot = new_rot,
@@ -228,10 +275,8 @@ class BallState:
 
 
 ##################################################################################
-
+#Car
 ##################################################################################
-
-
 
 def Car(packet,
         rigid_body_tick,
@@ -248,10 +293,12 @@ def Car(packet,
                 this_car.physics.location.y,
                 this_car.physics.location.z )
     
-    #TODO: get this in quaternion format?
     pitch = this_car.physics.rotation.pitch
     yaw = this_car.physics.rotation.yaw
     roll = this_car.physics.rotation.roll
+    rot = Orientation( pitch = pitch,
+                            yaw = yaw,
+                            roll = roll )
     
     vel = Vec3( this_car.physics.velocity.x,
                 this_car.physics.velocity.y,
@@ -269,9 +316,7 @@ def Car(packet,
     boost = this_car.boost
         
     return CarState( pos = pos,
-                     pitch = pitch,
-                     yaw = yaw,
-                     roll = roll,
+                     rot = rot,
                      vel = vel,
                      omega = omega,
                      demo = demo,
@@ -288,9 +333,7 @@ class CarState:
 
     def __init__( self,
                   pos = None,
-                  pitch = None,
-                  yaw = None,
-                  roll = None,
+                  rot = None,
                   vel = None,
                   omega = None,
                   demo = None,
@@ -303,13 +346,10 @@ class CarState:
                   index = None ):
 
         self.pos = pos
-        self.pitch = pitch
-        self.yaw = yaw
-        self.roll = roll
+        self.rot = rot
         self.vel = vel
         self.omega = omega
 
-        
         self.demo = demo
         self.wheel_contact = wheel_contact
         self.supersonic = supersonic
@@ -327,9 +367,7 @@ class CarState:
                    pos = None,
                    vel = None,
                    omega = None,
-                   pitch = None,
-                   yaw = None,
-                   roll = None):
+                   rot = None):
 
         if pos != None:
             new_pos = pos
@@ -346,35 +384,24 @@ class CarState:
         else:
             new_omega = self.omega
 
-        if pitch != None:
-            new_pitch = pitch
+        if rot != None:
+            new_rot = rot
         else:
-            new_pitch = self.pitch
+            new_rot = self.rot
+        
 
-        if yaw != None:
-            new_yaw = yaw
-        else:
-            new_yaw = self.yaw
-
-        if roll != None:
-            new_roll = roll
-        else:
-            new_roll = self.roll
-
-        return CarState(new_pos,
-                        new_pitch,
-                        new_yaw,
-                        new_roll,
-                        new_vel,
-                        new_omega,
-                        self.demo,
-                        self.wheel_contact,
-                        self.supersonic,
-                        self.jumped,
-                        self.double_jumped,
-                        self.boost,
-                        self.jumped_last_frame,
-                        self.index)
+        return CarState(pos = new_pos,
+                        rot = new_rot,
+                        vel = new_vel,
+                        omega = new_omega,
+                        demo = self.demo,
+                        wheel_contact = self.wheel_contact,
+                        supersonic = self.supersonic,
+                        jumped = self.jumped,
+                        double_jumped = self.double_jumped,
+                        boost = self.boost,
+                        jumped_last_frame = self.jumped_last_frame,
+                        index = self.index)
 
 ##################################################################################
 

@@ -1,3 +1,9 @@
+import rlutilities as util
+from rlutilities.mechanics import AerialTurn
+import rlutilities.linear_algebra as linear
+
+from Miscellaneous import *
+
 '''
 
    In this file we define classes for the lowest level mechancis,
@@ -12,6 +18,30 @@ from rlbot.agents.base_agent import SimpleControllerState
 from math import atan2, pi, sin, cos, sqrt
 from CowBotVector import *
 from Miscellaneous import *
+
+
+class PersistentMechanics:
+    '''
+    This class will hold information for mechanics that require past data.
+    '''
+
+    def __init__( self ):
+        self.aerial_turn = Mechanic()
+        
+
+
+
+class Mechanic:
+    '''
+    
+    '''
+
+    def __init__( self ):
+        self.check = False
+        self.action = None
+        self.target_rot = None
+
+
 
 
 #############################################################################################
@@ -68,80 +98,13 @@ class AirDodge:
 
 #############################################################################################
 
-class AerialRotation:
+def aerial_rotation(target_rot, dt, persistent):
+    persistent.aerial_turn.check = True
+    persistent.aerial_turn.action.target = rot_to_mat3(target_rot)
+    persistent.aerial_turn.action.step(dt)
+    controller_input = persistent.aerial_turn.action.controls
 
-    def __init__(self, current_state, target_state, old_state, fps = 120):
-
-    
-        self.start_pitch = current_state.pitch
-        self.start_roll = current_state.roll
-        self.start_yaw = current_state.yaw
-
-        self.start_omega = current_state.omega
-
-        self.target_pitch = target_state.pitch
-        self.target_roll = target_state.roll
-        self.target_yaw = target_state.yaw
-
-        self.target_omega = target_state.omega
-
-        self.old_pitch = old_state.pitch
-        self.old_roll = old_state.roll
-        self.old_yaw = old_state.yaw
-        self.old_omega = old_state.omega
-
-        self.fps = fps
-
-
-
-    def input(self):
-        '''
-        Returns a controller input to turn the car from the starting rotation towards the
-        desired rotation. start_rot, target_rot, and old_rot are in (pitch, yaw, roll) form.
-        This just uses three independent PIDs for each of pitch, yaw, roll.
-        '''
-
-        controller_input = SimpleControllerState()
-
-        pitch_error = self.target_pitch - self.start_pitch
-        yaw_error = self.target_yaw - self.start_yaw
-        roll_error = self.target_roll - self.start_roll    
-
-        old_pitch_error = self.start_pitch - self.old_pitch
-        old_yaw_error = self.start_yaw - self.old_yaw
-        old_roll_error = self.start_roll - self.old_roll
-
-
-        pitch_error = rotate_to_range(pitch_error, [-pi/2, pi/2])
-        yaw_error = rotate_to_range(yaw_error, [-pi, pi])
-        roll_error = rotate_to_range(roll_error, [-pi, pi])                    
-
-        old_pitch_error = rotate_to_range(old_pitch_error, [-pi/2, pi/2])
-        old_yaw_error = rotate_to_range(old_yaw_error, [-pi, pi])
-        old_roll_error = rotate_to_range(old_roll_error, [-pi, pi])
-        
-
-        pitch_error_derivative = one_frame_derivative(pitch_error, old_pitch_error, self.fps)
-        yaw_error_derivative = one_frame_derivative(yaw_error, old_yaw_error, self.fps)
-        roll_error_derivative = one_frame_derivative(roll_error, old_roll_error, self.fps)
-
-        #This is reasonable, but at the very least the coefficients need tuning.
-        pitch_correction = 1 * pitch_error# - .015 * pitch_error_derivative
-        yaw_correction = 1 * yaw_error - .01 * yaw_error_derivative
-        roll_correction = 1 * roll_error + .01 * roll_error_derivative
-
-        #Normalize
-        pitch_correction = cap_magnitude(pitch_correction, 1)
-        yaw_correction = 5*cap_magnitude(yaw_correction, 1/5)
-        roll_correction = cap_magnitude(roll_correction, 1)
-    
-        #Final controller input values
-        controller_input.pitch = pitch_correction
-        controller_input.yaw = yaw_correction
-        controller_input.roll = roll_correction
-        controller_input.throttle = 1
-        
-        return controller_input    
+    return controller_input, persistent
 
 
 

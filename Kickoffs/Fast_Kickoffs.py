@@ -1,8 +1,9 @@
 from Mechanics import *
 from Maneuvers import *
+from GameState import *
 
 
-def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_input):
+def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_input, persistent):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -20,7 +21,7 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
         #Boost to start
         controller_input = GroundTurn(current_state,
                                       current_state.copy_state(pos = game_info.ball.pos)).input()
-                                      
+
         controller_input.boost = 1
 
     elif abs(current_state.pos.y) > 3817:
@@ -44,7 +45,7 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
     elif current_state.wheel_contact and abs(current_state.pos.y) < 1000:# and opponent_distance < 1000:
         #If we're on the ground, close, and the opponent is also close,
         #jump and turn towards the ball to prep for the dodge.
-        if current_state.yaw > ball_angle:
+        if current_state.rot.yaw > ball_angle:
             direction = -1
         else:
             direction = 1
@@ -65,7 +66,7 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
         controller_input = GroundTurn(current_state,
                                       current_state.copy_state(pos=game_info.ball.pos)).input()
 
-    return controller_input
+    return controller_input, persistent
 
 
 #########################################################################################################
@@ -73,7 +74,7 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
 #########################################################################################################
 
 
-def offcenter(game_info, old_game_info, opponent_distance, team_sign, x_sign, controller_input):
+def offcenter(game_info, old_game_info, opponent_distance, team_sign, x_sign, controller_input, persistent):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -86,7 +87,7 @@ def offcenter(game_info, old_game_info, opponent_distance, team_sign, x_sign, co
         first_boost = 7
     else:
         first_boost = 26
-        
+
     if abs(current_state.pos.x) > 80 and abs(current_state.pos.y) > 950:
         #If we're not near the center-line of the field, boost towards the first small boost
         controller_input = GroundTurn(current_state,
@@ -103,13 +104,14 @@ def offcenter(game_info, old_game_info, opponent_distance, team_sign, x_sign, co
         controller_input = CancelledFastDodge(current_state, x_sign).input()
 
     else:
-        controller_input = AerialRotation(current_state,
-                                          current_state.copy_state(roll = 0),
-                                          old_state).input()
+        target_rot = Orientation(pyr = [current_state.rot.pitch, current_state.rot.yaw, 0])
+        controller_input, persistent = aerial_rotation(target_rot,
+                                           game_info.dt,
+                                           persistent)
         controller_input.boost = 1
 
 
-    return controller_input
+    return controller_input, persistent
 
 
 
@@ -118,7 +120,7 @@ def offcenter(game_info, old_game_info, opponent_distance, team_sign, x_sign, co
 #########################################################################################################
 
 
-def diagonal(game_info, old_game_info,opponent_distance, team_sign, x_sign, controller_input):
+def diagonal(game_info, old_game_info,opponent_distance, team_sign, x_sign, controller_input, persistent):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -156,9 +158,10 @@ def diagonal(game_info, old_game_info,opponent_distance, team_sign, x_sign, cont
         controller_input = CancelledFastDodge(current_state, x_sign).input()
 
     else:
-        controller_input = AerialRotation(current_state,
-                                          current_state.copy_state(roll = 0),
-                                          old_state).input()
+        target_rot = Orientation(pyr = [current_state.rot.pitch, current_state.rot.yaw, 0] )
+        controller_input, persistent = aerial_rotation(target_rot,
+                                           game_info.dt,
+                                           persistent)
         controller_input.boost = 1
         
-    return controller_input
+    return controller_input, persistent

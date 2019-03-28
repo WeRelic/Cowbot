@@ -1,5 +1,8 @@
 from math import pi
 from math import log, cos, sin, asin
+
+from rlutilities.linear_algebra import mat3
+
 from CowBotVector import *
 
 def one_frame_derivative(f, old_f, fps):
@@ -66,12 +69,10 @@ def car_coordinates_2d(current_state, direction):
     Takes a Vec3 for a direction on the field and returns the same direction relative to the car
     '''
 
-    x = direction.x * cos(-current_state.yaw) - direction.y * sin(-current_state.yaw)
-    y = direction.x * sin(-current_state.yaw) + direction.y * cos(-current_state.yaw)
+    x = direction.x * cos(-current_state.rot.yaw) - direction.y * sin(-current_state.rot.yaw)
+    y = direction.x * sin(-current_state.rot.yaw) + direction.y * cos(-current_state.rot.yaw)
         
     return Vec3(x,y,0)
-
-
 
 
 def angles_are_close(angle1, angle2, epsilon):
@@ -94,4 +95,62 @@ def left_or_right(current_state, target_pos):
     else:
         return -1
 
+'''
+def pyr_to_mat3(pyr):
+    pitch = pyr[0]
+    yaw = pyr[1]
+    roll = pyr[2]
+    front = Vec3(cos(pitch)*cos(yaw) + sin(pitch)*sin(yaw)*sin(roll),
+                 sin(pitch)*cos(roll),
+                 -cos(pitch)*sin(yaw) + sin(pitch)*cos(yaw)*sin(roll))
+    left = Vec3(-sin(pitch)*cos(yaw) + cos(pitch)*sin(yaw)*sin(roll),
+                cos(pitch)*cos(roll),
+                -sin(pitch)*sin(yaw) + cos(pitch)*cos(yaw)*sin(roll))
+    up = Vec3(sin(pitch)*cos(roll),
+              -sin(roll),
+              cos(yaw)*cos(roll))
 
+    front_x = cos(pitch)*cos(yaw) + sin(pitch)*sin(yaw)*sin(roll)
+    front_y = sin(pitch)*cos(roll)
+    front_z = -cos(pitch)*sin(yaw) + sin(pitch)*cos(yaw)*sin(roll)
+    left_x = -sin(pitch)*cos(yaw) + cos(pitch)*sin(yaw)*sin(roll)
+    left_y = cos(pitch)*cos(roll)
+    left_z = -sin(pitch)*sin(yaw) + cos(pitch)*cos(yaw)*sin(roll)
+    up_x = sin(pitch)*cos(roll)
+    up_y = -sin(roll)
+    up_z = cos(yaw)*cos(roll)
+
+    return mat3( front_x,
+                front_y,
+                front_z,
+                left_x,
+                left_y,
+                left_z,
+                up_x,
+                up_y,
+                up_z )
+'''
+
+
+
+def rot_to_mat3(rot):
+    return mat3( rot.front.x, rot.left.x, rot.up.x,
+                 rot.front.y, rot.left.y, rot.up.y,
+                 rot.front.z, rot.left.z, rot.up.z )
+
+def pyr_to_matrix(pyr):
+    pitch = pyr[0]
+    yaw = pyr[1]
+    roll = pyr[2]
+
+    front = Vec3(cos(yaw)*cos(pitch),
+                 sin(yaw)*cos(pitch),
+                 sin(pitch))
+    left = Vec3(-cos(yaw)*sin(pitch)*sin(roll) - sin(yaw)*cos(roll),
+                -sin(yaw)*sin(pitch)*sin(roll) + cos(yaw)*cos(roll),
+                cos(pitch)*sin(roll))
+    up = Vec3(-cos(yaw)*sin(pitch)*cos(roll) + sin(yaw)*sin(roll),
+              -sin(yaw)*sin(pitch)*cos(roll) - cos(yaw)*sin(roll),
+              cos(pitch)*cos(roll))
+    
+    return [front, left, up]

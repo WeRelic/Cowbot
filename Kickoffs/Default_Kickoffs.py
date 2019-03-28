@@ -24,7 +24,7 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
     elif current_state.wheel_contact and abs(current_state.pos.y) < 1000 and abs(game_info.opponents[0].pos.y) < 1000:
         #If we're on the ground, close, and the opponent is also close,
         #jump and turn towards the ball to prep for the dodge.
-        if current_state.yaw > ball_angle:
+        if current_state.rot.yaw > ball_angle:
             direction = 0
         else:
             direction = 1
@@ -87,7 +87,7 @@ def back_left(game_info, old_game_info, opponent_distance, team_sign, x_sign, co
 
     elif current_state.wheel_contact and (current_state.vel.magnitude() > 2000) and abs(game_info.opponents[0].pos.y) < 1000:
         #If we're approaching the ball and the opponent is close, jump turn to prep for the dodge
-        if current_state.yaw > ball_angle:
+        if current_state.rot.yaw > ball_angle:
             direction = 0
         else:
             direction = 1
@@ -149,7 +149,7 @@ def back_right(game_info, old_game_info, opponent_distance, team_sign, x_sign, c
 
     elif current_state.wheel_contact and (current_state.vel.magnitude() > 2000) and opponent_distance < 1000:
         #If we're approaching the ball and the opponent is close, jump turn to prep for the dodge
-        if current_state.yaw > ball_angle:
+        if current_state.rot.yaw > ball_angle:
             direction = 0
         else:
             direction = 1
@@ -211,14 +211,13 @@ def left(game_info, old_game_info,opponent_distance, team_sign, x_sign, controll
 
     elif abs(current_state.pos.y) < 250 and opponent_distance < 1000:
         #If both players are close to the ball, dodge into the ball.
-        print("dodge")
         controller_input = AirDodge(Vec3(1/sqrt(2),-1/sqrt(2),0),
                                     current_state.jumped_last_frame).input()
 
     elif current_state.wheel_contact and (current_state.vel.magnitude() > 1725) and opponent_distance < 1000:
         #If we're approaching the ball and the opponent is close,
         #jump turn into ball to prep for the dodge
-        if current_state.yaw > ball_angle:
+        if current_state.rot.yaw > ball_angle:
             direction = 0
         else:
             direction = 1
@@ -279,7 +278,7 @@ def right(game_info, old_game_info, opponent_distance, team_sign, x_sign, contro
     elif current_state.wheel_contact and (current_state.vel.magnitude() > 1725) and opponent_distance < 1000:
         #If we're approaching the ball and the opponent is close,
         #jump turn into ball to prep for the dodge
-        if current_state.yaw > ball_angle:
+        if current_state.rot.yaw > ball_angle:
             direction = 0
         else:
             direction = 1

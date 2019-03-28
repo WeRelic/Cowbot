@@ -13,7 +13,7 @@ from Miscellaneous import *
 
 
 
-def Cowculate(game_info, old_game_info, plan):
+def Cowculate(game_info, old_game_info, plan, persistent):
     '''
     The main control function for BAC, Cowculate() returns the final input.
     It takes a GameState object and returns a controller_input object.
@@ -23,7 +23,7 @@ def Cowculate(game_info, old_game_info, plan):
     #Previous frame information
     if old_game_info != None:
         old_state = old_game_info.me
-        old_time = old_game_info.time
+        old_time = old_game_info.game_time
     else:
         #Just assign the current frame on load - there is no previous frame.
         old_state = game_info.me
@@ -31,11 +31,12 @@ def Cowculate(game_info, old_game_info, plan):
 
     current_state = game_info.me
 
-    return execute(plan, game_info, current_state, old_state)
+    controller_input, persistent = execute(plan, game_info, current_state, old_state, persistent)
+
+    return controller_input, persistent
 
 
-
-def execute(plan, game_info, current_state, old_state):
+def execute(plan, game_info, current_state, old_state, persistent):
 
         controller_input = SimpleControllerState()
         team_sign = game_info.team_sign
@@ -48,11 +49,11 @@ def execute(plan, game_info, current_state, old_state):
 
         #Fix this once we add flips, but this is fine for now.
         if (plan == "Boost-" or plan == "Boost+"):
-            controller_input = go_for_boost(plan, game_info, old_state, controller_input)
+            controller_input, persistent = go_for_boost(plan, game_info, old_state, controller_input, persistent)
             
 
         elif plan == "Goal" and current_state.wheel_contact and len(game_info.teammates) == 0:
-            controller_input = go_to_net(plan, game_info, old_state, controller_input)
+            controller_input, persistent = go_to_net(plan, game_info, old_state, controller_input, persistent)
 
         elif plan == "Ball" and len(game_info.teammates) == 0:
             #Team variable to deal with both sides
@@ -61,26 +62,23 @@ def execute(plan, game_info, current_state, old_state):
             ball_in_defensive_corner = not (team_sign*game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
             ball_in_offensive_corner = not (team_sign*game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
             if not ball_in_defensive_corner and not ball_in_offensive_corner and current_state.wheel_contact:
-                controller_input = go_for_ball(game_info, shot_on_goal, controller_input)
+                controller_input, persistent = go_for_ball(game_info, shot_on_goal, controller_input, persistent)
 
             elif ball_in_defensive_corner or ball_in_offensive_corner:
-                controller_input = wait_in_net(game_info, controller_input)
+                controller_input, persistent = wait_in_net(game_info, controller_input, persistent)
 
 
         elif plan == "Flip into Ball":
-            controller_input = flip_into_ball(game_info, controller_input)
+            controller_input, persistent = flip_into_ball(game_info, controller_input, persistent)
 
         elif (not current_state.wheel_contact):
             #If we're in the air, and not trying to hit the ball, recover.
-        
-            controller_input = AerialRotation(current_state,
-                                              current_state.copy_state(pitch = 0,
-                                                                       roll = 0,
-                                                                       yaw = atan2(current_state.vel.y,
-                                                                                   current_state.vel.x)),
-                                              old_state, 120).input()
-            controller_input.throttle = 1
-            return controller_input
+            target_rot = Orientation(pyr = [0, atan2(current_state.vel.y, current_state.vel.x), 0])
+
+            controller_input, persistent = aerial_rotation(target_rot,
+                                                           game_info.dt,
+                                                           persistent)
+            return controller_input, persistent
 
 
         elif len(game_info.teammates) > 0:
@@ -89,33 +87,33 @@ def execute(plan, game_info, current_state, old_state):
                 
             if team_sign * game_info.ball.pos.y > -1500:
                 #Don't go into the opponents' half
-                controller_input = wait_in_net(game_info, controller_input)
+                controller_input, persistent = wait_in_net(game_info, controller_input, persistent)
             elif teammate_in_net and not shot_on_goal:
                 #Don't cut off teammate unless you need to make a save
-                controller_input = wait_far_post(game_info, controller_input)
+                controller_input, persistent = wait_far_post(game_info, controller_input, persistent)
             elif ball_in_defensive_corner:
                 #Wait in net if the ball is in the corner and teammate isn't in net
-                controller_input = wait_in_net(game_info, controller_input)
+                controller_input, persistent = wait_in_net(game_info, controller_input, persistent)
             else:
-                controller_input = go_for_ball(game_info, shot_on_goal, controller_input)
+                controller_input, persistent = go_for_ball(game_info, shot_on_goal, controller_input, persistent)
 
 
 
 
         else:
             #If it's a 1v1, go for the ball next
-            controller_input = ball_chase(game_info, controller_input)
+            controller_input, persistent = ball_chase(game_info, controller_input)
 
 
             
-        return controller_input
+        return controller_input, persistent
 
 
 #########################################################################################
 #########################################################################################
 
 
-def go_to_net(plan, game_info, old_state, controller_input):
+def go_to_net(plan, game_info, old_state, controller_input, persistent):
     current_state = game_info.me
 
     #Find the center of our net
@@ -125,17 +123,17 @@ def go_to_net(plan, game_info, old_state, controller_input):
     controller_input = GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
 
     #If we start to go up the wall on the way, turn back down.
-    if current_state.roll > 0.1:
+    if current_state.rot.roll > 0.1:
         controller_input.steer = 1
-    elif current_state.roll < - 0.1:
+    elif current_state.rot.roll < - 0.1:
         controller_input.steer = -1
-    return controller_input
+    return controller_input, persistent
 
 #########################################################################################
 
 
 
-def go_for_boost(plan, game_info, old_state, controller_input):
+def go_for_boost(plan, game_info, old_state, controller_input, persistent):
     current_state = game_info.me
     wobble = Vec3(current_state.omega.x, current_state.omega.y, 0).magnitude()
     epsilon = 0.3
@@ -161,7 +159,7 @@ def go_for_boost(plan, game_info, old_state, controller_input):
     controller_input = GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
 
     
-    if current_state.vel.magnitude() < 2250 and angles_are_close(angle_to_boost, current_state.yaw, pi/6) and wobble < epsilon and (current_state.pos - target_boost.pos).magnitude() > 300:
+    if current_state.vel.magnitude() < 2250 and angles_are_close(angle_to_boost, current_state.rot.yaw, pi/6) and wobble < epsilon and (current_state.pos - target_boost.pos).magnitude() > 300:
         #If slow, not wobbling from a previous dodge, facing towards the boost,
         #and not already at the boost, dodge for speed
         controller_input = FastDodge(current_state,
@@ -169,23 +167,24 @@ def go_for_boost(plan, game_info, old_state, controller_input):
                                      old_state,
                                      boost_to_use = current_state.boost).input()
         #controller_input.boost = 1
-    return controller_input
+    return controller_input, persistent
 
 
 
 #########################################################################################
 
-def go_for_ball(game_info, shot_on_goal, controller_input):
+def go_for_ball(game_info, shot_on_goal, controller_input, persistent):
 
     current_state = game_info.me
-    if shot_on_goal and game_info.ball.vel.magnitude() != 0 and (Vec3(cos(current_state.yaw) , sin(current_state.yaw), 0)).dot((game_info.ball.vel).normalize()) < - pi/8:
-        return GroundTurn(current_state,
-                          current_state.copy_state(pos = game_info.ball.pos),
-                          can_reverse = True).input()
+    if shot_on_goal and game_info.ball.vel.magnitude() != 0 and (Vec3(cos(current_state.rot.yaw) , sin(current_state.rot.yaw), 0)).dot((game_info.ball.vel).normalize()) < - pi/8:
+        controller_input = GroundTurn(current_state,
+                                      current_state.copy_state(pos = game_info.ball.pos),
+                                      can_reverse = True).input()
+        return controller_input, persistent
 
 
 
-    elif game_info.ball.vel.magnitude() > 0 and (Vec3(cos(current_state.yaw) , sin(current_state.yaw), 0)).dot((game_info.ball.vel).normalize()) > - 0.7:
+    elif game_info.ball.vel.magnitude() > 0 and (Vec3(cos(current_state.rot.yaw) , sin(current_state.rot.yaw), 0)).dot((game_info.ball.vel).normalize()) > - 0.7:
     #If the ball isn't coming right at us, try to lead it to make contact.
         #time for us to reach the ball's current position at our current speed, which is
         #bounded below to avoid bad things
@@ -220,16 +219,16 @@ def go_for_ball(game_info, shot_on_goal, controller_input):
                        (game_info.ball.pos - current_state.pos).x)
 
     #If we're not supersonic, and we're facing roughly towards the ball, boost.
-    if current_state.vel.magnitude() < 2250 and current_state.wheel_contact and angles_are_close(current_state.yaw, ball_angle, pi/6):
+    if current_state.vel.magnitude() < 2250 and current_state.wheel_contact and angles_are_close(current_state.rot.yaw, ball_angle, pi/6):
         controller_input.boost = 1
 
 
-    return controller_input
+    return controller_input, persistent
 
 
 #########################################################################################
 
-def wait_in_net(game_info, controller_input):
+def wait_in_net(game_info, controller_input, persistent):
     current_state = game_info.me
     #Find our net
     center_of_net = Vec3(0,-game_info.team_sign*5120,0)
@@ -239,13 +238,14 @@ def wait_in_net(game_info, controller_input):
                        (game_info.ball.pos - current_state.pos).x)
 
     #Go to net, stop in the middle, then turn in place to face the ball.
-    return NavigateTo(current_state, current_state.copy_state(pos = center_of_net, yaw = ball_angle)).input()
-
+    rot = Orientation(pyr = [current_state.rot.pitch, ball_angle, current_state.rot.roll] )
+    controller_input = NavigateTo(current_state, current_state.copy_state(pos = center_of_net, rot = rot)).input()
+    return controller_input, persistent
 
 #########################################################################################
 
 
-def flip_into_ball(game_info, controller_input):
+def flip_into_ball(game_info, controller_input, persistent):
     current_state = game_info.me
     #if still on ground, jump
     if current_state.wheel_contact:
@@ -255,24 +255,24 @@ def flip_into_ball(game_info, controller_input):
         controller_input = AirDodge(car_coordinates_2d(current_state, game_info.ball.pos - current_state.pos),
                                     current_state.jumped_last_frame).input()
         
-    return controller_input
+    return controller_input, persistent
 
 
 #########################################################################################
 
 
-def ball_chase(game_info, controller_input):
+def ball_chase(game_info, controller_input, persistent):
     current_state = game_info.me
 
     #Turn towards ball, and boost if on the ground and not supersonic.
     controller_input = GroundTurn(current_state, current_state.copy_state(pos = game_info.ball.pos)).input()
     if current_state.vel.magnitude() < 2250 and current_state.wheel_contact:
         controller_input.boost = 1
-    return controller_input
+    return controller_input, persistent
 
 #########################################################################################
 
-def wait_far_post(game_info, controller_input):
+def wait_far_post(game_info, controller_input, persistent):
     current_state = game_info.me
     #Find our net
     if game_info.ball.pos.x > 0:
@@ -285,7 +285,9 @@ def wait_far_post(game_info, controller_input):
                        (game_info.ball.pos - current_state.pos).x)
 
     #Go to net, stop in the middle, then turn in place to face the ball.
-    return NavigateTo(current_state, current_state.copy_state(pos = far_post, yaw = ball_angle)).input()
+    rot = Orientation(pyr = [current_state.pitch, ball_angle, current_state.roll] )
+    controller_input = NavigateTo(current_state, current_state.copy_state(pos = far_post, rot = rot)).input()
+    return controller_input, persistent
 
 
 

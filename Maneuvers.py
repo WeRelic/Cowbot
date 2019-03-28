@@ -86,7 +86,7 @@ class FastDodge:
         #Currently set to opposite of the dodge direction.  This should be good for general use, up to oversteer.
         #Eventually wrap this into set_dodge_direction?
 
-        if (self.dodge_angle - self.current_state.yaw) >=0:
+        if (self.dodge_angle - self.current_state.rot.yaw) >=0:
             self.turn_direction = 1
         else:
             self.turn_direction = -1
@@ -107,9 +107,9 @@ class FastDodge:
             #Accelerate if we're below accel_threshold
             elif self.current_state.vel.magnitude() <= self.accel_threshold:
                 controller_input.throttle = 1
-            elif ( abs(self.current_state.yaw - self.dodge_angle) < 0.2 ):
+            elif ( abs(self.current_state.rot.yaw - self.dodge_angle) < 0.2 ):
                 #Once we turn partway, jump and turn the rest of the way
-                if self.dodge_angle - self.current_state.yaw > 0:
+                if self.dodge_angle - self.current_state.rot.yaw > 0:
                     controller_input = JumpTurn(self.current_state, self.jump_height, 1).input()
                 else:
                     controller_input = JumpTurn(self.current_state, self.jump_height, -1).input()
@@ -120,9 +120,9 @@ class FastDodge:
 
         elif self.current_state.double_jumped:
             #Once we dodge, rotate back around to land properly
-            controller_input.yaw = cap_magnitude(self.movement_angle - self.current_state.yaw, 1)
+            controller_input.yaw = cap_magnitude(self.movement_angle - self.current_state.rot.yaw, 1)
 
-        elif not ( angles_are_close(self.current_state.yaw, self.dodge_angle, 0.2) ):
+        elif not ( angles_are_close(self.current_state.rot.yaw, self.dodge_angle, 0.2) ):
             #Turn a bit more while in the air before dodging
             controller_input = JumpTurn(self.current_state, self.jump_height, self.turn_direction).input()
 
@@ -158,7 +158,7 @@ class GroundTurn:
     def input(self):
 
         controller_input = SimpleControllerState()
-        theta = self.current_state.yaw
+        theta = self.current_state.rot.yaw
         correction_vector = self.target_state.pos - self.current_state.pos
 
         facing_vector = Vec3(cos(theta), sin(theta), 0)
@@ -211,8 +211,8 @@ class NavigateTo:
 
     def input(self):
         controller_input = SimpleControllerState()
-        current_angle_vec = Vec3(cos(self.current_state.yaw), sin(self.current_state.yaw), 0)
-        goal_angle_vec = Vec3(cos(self.goal_state.yaw), sin(self.goal_state.yaw), 0)
+        current_angle_vec = Vec3(cos(self.current_state.rot.yaw), sin(self.current_state.rot.yaw), 0)
+        goal_angle_vec = Vec3(cos(self.goal_state.rot.yaw), sin(self.goal_state.rot.yaw), 0)
         vel_2d = Vec3(self.current_state.vel.x, self.current_state.vel.y, 0)
 
 
@@ -227,7 +227,7 @@ class NavigateTo:
 
             goal_x = goal_angle_vec.x
             goal_y = goal_angle_vec.y
-            car_theta = self.current_state.yaw
+            car_theta = self.current_state.rot.yaw
 
 
             #Rotated to the car's reference frame on the ground.
@@ -237,7 +237,7 @@ class NavigateTo:
 
             correction_angle = atan2(rel_vector.y, rel_vector.x)
 
-            #Jump and turn to reach goal_yaw.
+            #Jump and turn to reach goal yaw.
             if self.current_state.wheel_contact:
                 controller_input.jump = 1
             else:
@@ -248,14 +248,14 @@ class NavigateTo:
 
             #Check if the goal is ahead of or behind us, and throttle in that direction
             goal_angle = atan2((self.goal_state.pos - self.current_state.pos).y, (self.goal_state.pos - self.current_state.pos).x)
-            if abs(goal_angle - self.current_state.yaw) > pi/2:
+            if abs(goal_angle - self.current_state.rot.yaw) > pi/2:
                 correction_sign = -1
             else:
                 correction_sign = 1
             controller_input.throttle = correction_sign
 
             #Correct as we wiggle so that we face goal_yaw.
-            if self.goal_state.yaw - self.current_state.yaw > 0:
+            if self.goal_state.rot.yaw - self.current_state.rot.yaw > 0:
                 angle_sign = 1
             else:
                 angle_sign = -1

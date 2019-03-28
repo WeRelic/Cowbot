@@ -12,10 +12,11 @@ class BallPredictionSlice:
         self.z = current_slice.physics.location.z
         self.pos = Vec3(self.x, self.y, self.z)
         
-        self.pitch = current_slice.physics.rotation.pitch
-        self.yaw = current_slice.physics.rotation.yaw
-        self.roll = current_slice.physics.rotation.roll
-        
+        pitch = current_slice.physics.rotation.pitch
+        yaw = current_slice.physics.rotation.yaw
+        roll = current_slice.physics.rotation.roll
+        self.rot = Orientation(pyr = [ pitch, yaw, roll] )
+
         self.vx = current_slice.physics.velocity.x
         self.vy = current_slice.physics.velocity.y
         self.vz = current_slice.physics.velocity.z
@@ -39,9 +40,11 @@ class BallPredictionSlice:
             self.old_z = prev_slice.physics.location.z
             self.old_pos = Vec3(self.x, self.y, self.z)
             
-            self.old_pitch = prev_slice.physics.rotation.pitch
-            self.old_yaw = prev_slice.physics.rotation.yaw
-            self.old_roll = prev_slice.physics.rotation.roll
+            old_pitch = prev_slice.physics.rotation.pitch
+            old_yaw = prev_slice.physics.rotation.yaw
+            old_roll = prev_slice.physics.rotation.roll
+            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
+
             
             self.old_vx = prev_slice.physics.velocity.x
             self.old_vy = prev_slice.physics.velocity.y
