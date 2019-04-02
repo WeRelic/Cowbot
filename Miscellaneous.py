@@ -1,7 +1,8 @@
 from math import pi
 from math import log, cos, sin, asin
 
-from rlutilities.linear_algebra import mat3
+from rlutilities.linear_algebra import mat3, vec3
+import rlbot.utils.game_state_util as framework
 
 from CowBotVector import *
 
@@ -95,42 +96,6 @@ def left_or_right(current_state, target_pos):
     else:
         return -1
 
-'''
-def pyr_to_mat3(pyr):
-    pitch = pyr[0]
-    yaw = pyr[1]
-    roll = pyr[2]
-    front = Vec3(cos(pitch)*cos(yaw) + sin(pitch)*sin(yaw)*sin(roll),
-                 sin(pitch)*cos(roll),
-                 -cos(pitch)*sin(yaw) + sin(pitch)*cos(yaw)*sin(roll))
-    left = Vec3(-sin(pitch)*cos(yaw) + cos(pitch)*sin(yaw)*sin(roll),
-                cos(pitch)*cos(roll),
-                -sin(pitch)*sin(yaw) + cos(pitch)*cos(yaw)*sin(roll))
-    up = Vec3(sin(pitch)*cos(roll),
-              -sin(roll),
-              cos(yaw)*cos(roll))
-
-    front_x = cos(pitch)*cos(yaw) + sin(pitch)*sin(yaw)*sin(roll)
-    front_y = sin(pitch)*cos(roll)
-    front_z = -cos(pitch)*sin(yaw) + sin(pitch)*cos(yaw)*sin(roll)
-    left_x = -sin(pitch)*cos(yaw) + cos(pitch)*sin(yaw)*sin(roll)
-    left_y = cos(pitch)*cos(roll)
-    left_z = -sin(pitch)*sin(yaw) + cos(pitch)*cos(yaw)*sin(roll)
-    up_x = sin(pitch)*cos(roll)
-    up_y = -sin(roll)
-    up_z = cos(yaw)*cos(roll)
-
-    return mat3( front_x,
-                front_y,
-                front_z,
-                left_x,
-                left_y,
-                left_z,
-                up_x,
-                up_y,
-                up_z )
-'''
-
 
 
 def rot_to_mat3(rot):
@@ -154,3 +119,13 @@ def pyr_to_matrix(pyr):
               cos(pitch)*cos(roll))
     
     return [front, left, up]
+
+
+def Vec3_to_Vector3(vector):
+    return framework.Vector3(x = vector.x, y = vector.y, z = vector.z)
+
+def Vec3_to_vec3(vector):
+    return vec3(vector.x, vector.y, vector.z)
+
+def vec3_to_Vec3(vector):
+    return Vec3(vector[0], vector[1], vector[2])

@@ -16,7 +16,7 @@ from EvilGlobals import renderer
 from BallPrediction import *
 from StateSetting import *
 
-TESTING = False
+TESTING = True
 
 
 class BooleanAlgebraCow(BaseAgent):
@@ -59,11 +59,13 @@ class BooleanAlgebraCow(BaseAgent):
         self.persistent = PersistentMechanics()
         self.timer = 0
 
-
-        #Testing
-        if TESTING:
-            self.ball_pos = None
         
+        #Put testing-only variables here
+        if TESTING:
+            self.state = "Reset"
+            #self.ball_pos = None
+        
+
         
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
@@ -90,6 +92,7 @@ class BooleanAlgebraCow(BaseAgent):
             self.old_kickoff_data = None
 
             self.utils_game = utils.simulation.Game(self.index, self.team)
+            utils.simulation.Game.set_mode("soccar")
 
         EvilGlobals.renderer = self.renderer
 
@@ -104,10 +107,15 @@ class BooleanAlgebraCow(BaseAgent):
             #The first frame shouldn't be calling previous frame information anyway
             self.old_game_info = self.game_info
 
-        #Persistent Mechanics
+        #Update persistent mechanics if we're not doing them, otherwise let them do their thing.
+        #The checks will be set to true when the mechanic is called.
         if not self.persistent.aerial_turn.check:
             self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
         self.persistent.aerial_turn.check = False
+
+        if not self.persistent.aerial.check:
+            self.persistent.aerial.action = Aerial(self.game_info.utils_game.my_car)
+        self.persistent.aerial.check = False
         
         ###############################################################################################
         #Planning
@@ -129,67 +137,76 @@ class BooleanAlgebraCow(BaseAgent):
 
 
         if TESTING:
-            reset = False
+            self.timer += self.game_info.dt
 
-            car_to_ball = (self.game_info.ball.pos - self.game_info.me.pos).normalize()
-            front = (self.game_info.me.rot.front).normalize()
-
-            target_front = car_to_ball
-            if target_front.x != 0:
-                target_left = Vec3(-target_front.y, target_front.x, 0).normalize()
-            else:
-                target_left = Vec3(0, -target_front.z, target_front.y)
-
-            target_up = target_front.cross(target_left).normalize()
-            
-            if self.timer > 2:
-                reset = True
-
-            car_pos = Vec3(0, 0, 1000)
-            
-
-            #Set the game state
-            if reset:
+            if self.state == "Reset":
+                #Reset everything
                 self.timer = 0
-                self.persistent.aerial_turn.check = False
-                theta = random.uniform(0,2*pi)
-                phi = random.uniform(0,pi)
-                self.ball_pos = Vec3(500*cos(theta)*sin(phi), 500*sin(theta)*sin(phi), 1000+500*cos(phi))
 
-
-                ball_state = self.zero_ball_state.copy_state(pos = self.ball_pos,
+                #Set the game state
+                ball_pos = Vec3(0, 0, 2200)
+                ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(0, 0, 0),
+                                                             vel = Vec3(-500, -2200, 300),
                                                              omega = Vec3(0,0,0))
 
-                self.set_game_state(set_state(self.game_info,
-                                              ball_state = ball_state))
-                return SimpleControllerState()
-            else:
-                self.timer += self.game_info.dt
-
-                #State setting
+                car_pos = Vec3(-500, -4800, 15)
                 car_state = self.zero_car_state.copy_state(pos = car_pos,
-                                                         vel = Vec3(0, 0, 0))
-
-                ball_state = self.zero_ball_state.copy_state(pos = self.ball_pos,
-                                                            vel = Vec3(0, 0, 0),
-                                                            omega = Vec3(0,0,0))
+                                                           vel = Vec3(0, 0, 0),
+                                                           rot = Orientation(pitch = 0,
+                                                                             yaw = pi/2,
+                                                                             roll = 0),
+                                                           boost = 100)
 
                 self.set_game_state(set_state(self.game_info,
                                               current_state = car_state,
                                               ball_state = ball_state))
+                self.state = "Wait"
+                return SimpleControllerState()
+
+            elif self.state == "Wait":
+                if self.timer > 0.2:
+                    self.state = "Initialize"
+                return SimpleControllerState()
 
 
-                #Controller inputs
-                controller_input = SimpleControllerState()
-                target_rot = Orientation(front = target_front,
-                                         left = target_left,
-                                         up = target_up)
-                controller_input, self.persistent = aerial_rotation(target_rot,
-                                                                    self.game_info.dt,
-                                                                    self.persistent)
+            elif self.state == "Initialize":
+                self.persistent.aerial.check = True
+                prediction = utils.simulation.Ball(self.game_info.utils_game.ball)
+                self.ball_predictions = [prediction.location]
+
+                for i in range(100):
+
+                    prediction.step(1/60)
+
+                    self.ball_predictions.append(prediction.location)
+
+                    if prediction.location[2] > 150:
+
+                        self.persistent.aerial.action.target = prediction.location
+                        self.persistent.aerial.action.arrival_time = prediction.time
+                        simulation = self.persistent.aerial.action.simulate()
+
+                        if (vec3_to_Vec3(simulation.location) - vec3_to_Vec3(self.persistent.aerial.action.target)).magnitude() < 30:
+                            self.target_ball = utils.simulation.Ball(prediction)
+                            break
+
+                self.state = "Go"
+
+                return SimpleControllerState()
+
+            elif self.state == "Go":
+
+                #Controller inputs and persistent mechanics
+                controller_input, self.persistent = aerial(vec3_to_Vec3(self.persistent.aerial.action.target),
+                                                           Vec3(0,0,1),
+                                                           self.game_info.dt,
+                                                           self.persistent)
+                if self.timer > 3:
+                    self.state = "Reset"
                 return controller_input
+
+
 
 
         ###############################################################################################
@@ -218,6 +235,7 @@ class BooleanAlgebraCow(BaseAgent):
                                self.current_plan,
                                self.persistent)
 
+            
         
 
 

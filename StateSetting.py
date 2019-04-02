@@ -1,7 +1,6 @@
 import rlbot.utils.game_state_util as framework
 
-def Vec3_to_Vector3(vector):
-    return framework.Vector3(x = vector.x, y = vector.y, z = vector.z)
+from Miscellaneous import *
 
 def rot_to_Rotator(rot):
     return framework.Rotator(pitch = rot.pitch, yaw = rot.yaw, roll = rot.roll)

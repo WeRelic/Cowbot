@@ -367,7 +367,8 @@ class CarState:
                    pos = None,
                    vel = None,
                    omega = None,
-                   rot = None):
+                   rot = None,
+                   boost = None):
 
         if pos != None:
             new_pos = pos
@@ -388,7 +389,12 @@ class CarState:
             new_rot = rot
         else:
             new_rot = self.rot
-        
+
+        if boost != None:
+            new_boost = boost
+        else:
+            new_boost = self.boost
+            
 
         return CarState(pos = new_pos,
                         rot = new_rot,
@@ -399,7 +405,7 @@ class CarState:
                         supersonic = self.supersonic,
                         jumped = self.jumped,
                         double_jumped = self.double_jumped,
-                        boost = self.boost,
+                        boost = new_boost,
                         jumped_last_frame = self.jumped_last_frame,
                         index = self.index)
 

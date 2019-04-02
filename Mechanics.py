@@ -1,5 +1,5 @@
 import rlutilities as util
-from rlutilities.mechanics import AerialTurn
+from rlutilities.mechanics import AerialTurn, Aerial
 import rlutilities.linear_algebra as linear
 
 from Miscellaneous import *
@@ -27,19 +27,62 @@ class PersistentMechanics:
 
     def __init__( self ):
         self.aerial_turn = Mechanic()
-        
+        self.aerial = Mechanic()
 
 
 
 class Mechanic:
     '''
-    
+    This is the class for a mechanic (typically from RLUtilities) that requires past information.
+    Each mechanic has a check, which records if the mechanics 
+    is currently operating, so that we don't overwrite it while it's running.
+    Each mechanic also has an action, which will be the corresponding object from RLU.
     '''
 
     def __init__( self ):
         self.check = False
         self.action = None
-        self.target_rot = None
+
+
+#############################################################################################
+
+#############################################################################################
+
+
+def aerial(target, up, dt, persistent):
+    '''
+    Takes a target, an up-vector, a time delta (float), and a PersistentMechanics object.
+    The front vector of the car is determined by the aerial controller, so up
+    controls the roll about that axis
+    Returns contoller input and an updated PersistentMechanics object for the next frame.
+    These are the steps to access RLUtilities' Aerial functions. All the math happens there.
+    '''
+    persistent.aerial.check = True
+    persistent.aerial.action.target = Vec3_to_vec3(target)
+    persistent.aerial.action.up = Vec3_to_vec3(up)
+    persistent.aerial.action.step(dt)
+    controller_input = persistent.aerial.action.controls
+
+    return controller_input, persistent
+
+
+#############################################################################################
+
+#############################################################################################
+
+
+def aerial_rotation(target_rot, dt, persistent):
+    '''
+    Takes a target Orientation object, a time delta (float), and a PersistentMechanics object.
+    Returns contoller input and an updated PersistentMechanics object for the next frame.
+    These are the steps to access RLUtilities' AerialTurn functions. All the math happens there.
+    '''
+    persistent.aerial_turn.check = True
+    persistent.aerial_turn.action.target = rot_to_mat3(target_rot)
+    persistent.aerial_turn.action.step(dt)
+    controller_input = persistent.aerial_turn.action.controls
+
+    return controller_input, persistent
 
 
 
@@ -98,20 +141,6 @@ class AirDodge:
 
 #############################################################################################
 
-def aerial_rotation(target_rot, dt, persistent):
-    persistent.aerial_turn.check = True
-    persistent.aerial_turn.action.target = rot_to_mat3(target_rot)
-    persistent.aerial_turn.action.step(dt)
-    controller_input = persistent.aerial_turn.action.controls
-
-    return controller_input, persistent
-
-
-
-
-#############################################################################################
-
-#############################################################################################
 
 class JumpTurn:
     '''
