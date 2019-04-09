@@ -1,10 +1,5 @@
 def make_plan(game_info, old_plan):
 
-    #General 'keep track of my team' sign for decisions.
-    if game_info.my_team == 0:
-        y_sign = 1
-    else:
-        y_sign = -1
 
     #Some quantities that are used in decision making.
     current_state = game_info.me
@@ -14,7 +9,7 @@ def make_plan(game_info, old_plan):
         ball_car_dot = normalized_car_vel.dot(normalized_ball_vel)
     else:
         ball_car_dot = 0
-    relative_ball_position = y_sign*(game_info.ball.pos.y - game_info.me.pos.y)
+    relative_ball_position = (game_info.ball.pos.y - game_info.me.pos.y)
     dist_from_last_touch = (game_info.ball.hit_location - game_info.me.pos).magnitude()
     last_touch = game_info.ball.last_touch
     my_team = game_info.my_team

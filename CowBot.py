@@ -16,7 +16,7 @@ from EvilGlobals import renderer
 from BallPrediction import *
 from StateSetting import *
 
-TESTING = True
+TESTING = False
 
 
 class BooleanAlgebraCow(BaseAgent):
@@ -199,7 +199,7 @@ class BooleanAlgebraCow(BaseAgent):
 
                 #Controller inputs and persistent mechanics
                 controller_input, self.persistent = aerial(vec3_to_Vec3(self.persistent.aerial.action.target),
-                                                           Vec3(0,0,1),
+                                                           Vec3(-1,0,-1),
                                                            self.game_info.dt,
                                                            self.persistent)
                 if self.timer > 3:

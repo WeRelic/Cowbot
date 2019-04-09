@@ -39,12 +39,11 @@ def Cowculate(game_info, old_game_info, plan, persistent):
 def execute(plan, game_info, current_state, old_state, persistent):
 
         controller_input = SimpleControllerState()
-        team_sign = game_info.team_sign
         shot_on_goal = False
         #Look ahead two seconds to see if the ball is rolling into the net
         for step in range(100):
             ball_prediction = (game_info.ball.pos + game_info.ball.vel.scalar_multiply(0.02*step))
-            if abs(ball_prediction.x) < 915 and team_sign*ball_prediction.y < -5120:
+            if abs(ball_prediction.x) < 915 and ball_prediction.y < -5120:
                 shot_on_goal = True
 
         #Fix this once we add flips, but this is fine for now.
@@ -59,8 +58,8 @@ def execute(plan, game_info, current_state, old_state, persistent):
             #Team variable to deal with both sides
             
 
-            ball_in_defensive_corner = not (team_sign*game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
-            ball_in_offensive_corner = not (team_sign*game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
+            ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
+            ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
             if not ball_in_defensive_corner and not ball_in_offensive_corner and current_state.wheel_contact:
                 controller_input, persistent = go_for_ball(game_info, shot_on_goal, controller_input, persistent)
 
@@ -82,10 +81,10 @@ def execute(plan, game_info, current_state, old_state, persistent):
 
 
         elif len(game_info.teammates) > 0:
-            ball_in_defensive_corner = not (team_sign*game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
-            teammate_in_net = abs(game_info.teammates[0].pos.x) < 900 and team_sign*game_info.teammates[0].pos.y < -4700
+            ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
+            teammate_in_net = abs(game_info.teammates[0].pos.x) < 900 and game_info.teammates[0].pos.y < -4700
                 
-            if team_sign * game_info.ball.pos.y > -1500:
+            if game_info.ball.pos.y > -1500:
                 #Don't go into the opponents' half
                 controller_input, persistent = wait_in_net(game_info, controller_input, persistent)
             elif teammate_in_net and not shot_on_goal:
@@ -117,7 +116,7 @@ def go_to_net(plan, game_info, old_state, controller_input, persistent):
     current_state = game_info.me
 
     #Find the center of our net
-    center_of_net = Vec3(0,-game_info.team_sign*5120,0)
+    center_of_net = Vec3(0,-5120,0)
 
     #Turn towards the center of our net
     controller_input = GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
@@ -200,7 +199,7 @@ def go_for_ball(game_info, shot_on_goal, controller_input, persistent):
     if (game_info.opponents[0].pos - game_info.ball.pos).magnitude() > 1000:
         #If the opponent isn't close to the ball, reposition to shoot on net
         #Find the center of the opponent's net
-        center_of_net = Vec3(0,game_info.team_sign*5120,game_info.ball.pos.z)
+        center_of_net = Vec3(0, 5120, game_info.ball.pos.z)
 
         #If the ball is left, go right, and vice versa.  
         if game_info.ball.pos.x > 0:
@@ -231,7 +230,7 @@ def go_for_ball(game_info, shot_on_goal, controller_input, persistent):
 def wait_in_net(game_info, controller_input, persistent):
     current_state = game_info.me
     #Find our net
-    center_of_net = Vec3(0,-game_info.team_sign*5120,0)
+    center_of_net = Vec3(0,-5120,0)
 
     #Know where the ball is so we can face it
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -276,9 +275,9 @@ def wait_far_post(game_info, controller_input, persistent):
     current_state = game_info.me
     #Find our net
     if game_info.ball.pos.x > 0:
-        far_post = Vec3(-900,-game_info.team_sign*5000,0)
+        far_post = Vec3(-900,-5000,0)
     else:
-        far_post = Vec3(900,-game_info.team_sign*5000,0)
+        far_post = Vec3(900,-5000,0)
 
     #Know where the ball is so we can face it
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,

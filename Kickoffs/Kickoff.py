@@ -83,7 +83,6 @@ class Kickoff():
             controller_input, persistent = Kickoffs.Fast_Kickoffs.far_back(self.game_info,
                                                                self.old_game_info,
                                                                self.game_info.opponent_distance,
-                                                               self.game_info.team_sign,
                                                                controller_input,
                                                                self.persistent)
 
@@ -92,7 +91,6 @@ class Kickoff():
             controller_input, persistent = Kickoffs.Fast_Kickoffs.offcenter(self.game_info,
                                                                 self.old_game_info,
                                                                 self.game_info.opponent_distance,
-                                                                self.game_info.team_sign,
                                                                 x_sign,
                                                                 controller_input,
                                                                 self.persistent)
@@ -102,7 +100,6 @@ class Kickoff():
             controller_input, persistent = Kickoffs.Fast_Kickoffs.diagonal(self.game_info,
                                                                self.old_game_info,
                                                                self.game_info.opponent_distance,
-                                                               self.game_info.team_sign,
                                                                x_sign,
                                                                controller_input,
                                                                self.persistent)

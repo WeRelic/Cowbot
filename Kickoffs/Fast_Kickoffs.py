@@ -3,7 +3,7 @@ from Maneuvers import *
 from GameState import *
 
 
-def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_input, persistent):
+def far_back(game_info, old_game_info, opponent_distance, controller_input, persistent):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -12,7 +12,7 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
 
 
     #Set which boost we want based on team.
-    if team_sign == 1:
+    if game_info.team_sign == 1:
         first_boost = 7
     else:
         first_boost = 26
@@ -74,16 +74,16 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
 #########################################################################################################
 
 
-def offcenter(game_info, old_game_info, opponent_distance, team_sign, x_sign, controller_input, persistent):
+def offcenter(game_info, old_game_info, opponent_distance, x_sign, controller_input, persistent):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
     #Offset added to the ball position for our initial steer
-    offset = Vec3(x_sign*team_sign*625,0,0)
+    offset = Vec3(x_sign*625,0,0)
 
     #Set which boost we want based on team.
-    if team_sign == 1:
+    if game_info.team_sign == 1:
         first_boost = 7
     else:
         first_boost = 26
@@ -120,15 +120,15 @@ def offcenter(game_info, old_game_info, opponent_distance, team_sign, x_sign, co
 #########################################################################################################
 
 
-def diagonal(game_info, old_game_info,opponent_distance, team_sign, x_sign, controller_input, persistent):
+def diagonal(game_info, old_game_info,opponent_distance, x_sign, controller_input, persistent):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
-    offset = Vec3(x_sign*team_sign*750,0,0)
+    offset = Vec3(x_sign*750,0,0)
 
     #Set which boost we want based on team and side.
-    if team_sign == 1:
+    if game_info.team_sign == 1:
         if x_sign == -1:
             first_boost = 11
         else:

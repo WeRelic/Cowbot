@@ -9,48 +9,70 @@ class GameState:
     def __init__(self, packet, rigid_body_tick, utils_game, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices, me_jumped_last_frame):
         
         #Framerate.  Eventually phase this out for time_delta instead.
-        self.fps = 120
+        #elf.fps = 120
 
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
         self.first_frame_of_kickoff = False
         self.kickoff_position = "Other"
 
-        #Ball info
-        self.ball = Ball(packet)
-
-        #Info for own car
-        self.me = Car(packet,
-                      rigid_body_tick,
-                      me_jumped_last_frame,
-                      my_index,
-                      my_index)
-        self.my_index = my_index
-
-        #Info for other cars
+        #Team info
         self.my_team = my_team
         if self.my_team == 0:
             self.team_sign = 1
         else:
             self.team_sign = -1
+
+        
+        #Ball info
+        self.ball = Ball(packet, self.team_sign)
+
+        #My car info
+        self.me = Car(packet,
+                      rigid_body_tick,
+                      me_jumped_last_frame,
+                      my_index,
+                      my_index,
+                      self.team_sign)
+        self.my_index = my_index
+
+        #Other car info
         self.teammates = []
         self.opponents = []
 
         for i in range(packet.num_cars):
             if i != my_index:
                 if i in teammate_indices:
-                    self.teammates.append(Car(packet, rigid_body_tick, None, i, my_index))
+                    self.teammates.append(Car(packet,
+                                              rigid_body_tick,
+                                              None,
+                                              i,
+                                              my_index,
+                                              self.team_sign))
                 else:
-                    self.opponents.append(Car(packet, rigid_body_tick, None, i, my_index))
+                    self.opponents.append(Car(packet,
+                                              rigid_body_tick,
+                                              None,
+                                              i,
+                                              my_index,
+                                              self.team_sign))
 
         #Boost info
         self.big_boosts = []
         self.boosts = []
         for i in range(field_info.num_boosts):
             pad = field_info.boost_pads[i]
-            pad_pos = Vec3(pad.location.x, pad.location.y, pad.location.z)
-            self.boosts.append(Boostpad(i, pad_pos, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
+            pad_pos = Vec3(self.team_sign*pad.location.x,
+                           self.team_sign*pad.location.y,
+                           pad.location.z)
+            self.boosts.append(Boostpad(i,
+                                        pad_pos,
+                                        packet.game_boosts[i].is_active,
+                                        packet.game_boosts[i].timer))
             if pad.is_full_boost:
-                self.big_boosts.append(Boostpad(i, pad_pos, packet.game_boosts[i].is_active, packet.game_boosts[i].timer))
+                self.big_boosts.append(Boostpad(i,
+                                                pad_pos,
+                                                packet.game_boosts[i].is_active,
+                                                packet.game_boosts[i].timer))
 
         #Other Game info
         self.game_time = packet.game_info.seconds_elapsed
@@ -123,7 +145,7 @@ class Orientation:
 
 
 
-def Ball(packet, state = None):
+def Ball(packet, team_sign, state = None):
 
     #Packet is used for the current ball state in game.
     #State can be used instead to get a BallState object for a prediction in the future.
@@ -134,7 +156,7 @@ def Ball(packet, state = None):
         x = packet.game_ball.physics.location.x
         y = packet.game_ball.physics.location.y
         z = packet.game_ball.physics.location.z
-        pos = Vec3( x, y, z )
+        pos = Vec3( team_sign*x, team_sign*y, z )
 
         #Rotation
         pitch = packet.game_ball.physics.rotation.pitch
@@ -143,37 +165,42 @@ def Ball(packet, state = None):
         rot = Orientation( pitch = pitch,
                            yaw = yaw,
                            roll = roll )
+        if team_sign == -1:
+            rot = Orientation( pitch = pitch,
+                               yaw = rotate_to_range(yaw + pi, [-pi, pi]),
+                               roll = roll )
 
+        
         #Velocity
         vx = packet.game_ball.physics.velocity.x
         vy = packet.game_ball.physics.velocity.y
         vz = packet.game_ball.physics.velocity.z
-        vel = Vec3( vx, vy, vz )
+        vel = Vec3( team_sign*vx, team_sign*vy, vz )
 
         #Angular velocity
         omegax = packet.game_ball.physics.angular_velocity.x
         omegay = packet.game_ball.physics.angular_velocity.y
         omegaz = packet.game_ball.physics.angular_velocity.z
-        omega = Vec3( omegax, omegay, omegaz )
+        omega = Vec3( team_sign*omegax, team_sign*omegay, omegaz )
 
         #Miscellaneous
         last_touch = packet.game_ball.latest_touch
-        hit_location = Vec3(last_touch.hit_location.x,
-                                 last_touch.hit_location.y,
-                                 last_touch.hit_location.z)
+        hit_location = Vec3(team_sign*last_touch.hit_location.x,
+                            team_sign*last_touch.hit_location.y,
+                            last_touch.hit_location.z)
 
     else:
         #Position
         x = state.x
         y = state.y
         z = state.z
-        pos = Vec3(x, y, z)
+        pos = Vec3(team_sign*x, team_sign*y, z)
 
         #Velocity
         velx = state.velx
         vely = state.vely
         velz = state.velz
-        vel = Vec3(vx, vy, vz)
+        vel = Vec3(team_sign*vx, team_sign*vy, vz)
 
         #Rotation
         pitch = state.pitch
@@ -182,12 +209,16 @@ def Ball(packet, state = None):
         rot = Orientation( pitch = pitch,
                            yaw = yaw,
                            roll = roll )
+        if team_sign == -1:
+            rot = Orientation( pitch = pitch,
+                               yaw = rotate_to_range(yaw + pi, [-pi,pi]),
+                               roll = roll )
 
         #Angular velocity
         omegax = state.omegax
         omegay = state.omegay
         omegaz = state.omegaz
-        omega = Vec3(omegax, omegay, omegaz)
+        omega = Vec3(team_sign*omegax, team_sign*omegay, omegaz)
 
 
     return BallState(pos = pos,
@@ -282,30 +313,33 @@ def Car(packet,
         rigid_body_tick,
         jumped_last_frame,
         index,
-        my_index):
+        my_index,
+        team_sign):
 
     '''
     Gets the game info for a given car, and returns the values.  Should be fed into a CarState object.
     '''
 
     this_car = packet.game_cars[index]
-    pos = Vec3( this_car.physics.location.x,
-                this_car.physics.location.y,
+    pos = Vec3( team_sign*this_car.physics.location.x,
+                team_sign*this_car.physics.location.y,
                 this_car.physics.location.z )
     
     pitch = this_car.physics.rotation.pitch
     yaw = this_car.physics.rotation.yaw
+    if team_sign == -1:
+        yaw = rotate_to_range(this_car.physics.rotation.yaw + pi, [-pi, pi])
     roll = this_car.physics.rotation.roll
     rot = Orientation( pitch = pitch,
                             yaw = yaw,
                             roll = roll )
-    
-    vel = Vec3( this_car.physics.velocity.x,
-                this_car.physics.velocity.y,
+
+    vel = Vec3( team_sign*this_car.physics.velocity.x,
+                team_sign*this_car.physics.velocity.y,
                 this_car.physics.velocity.z )
     
-    omega = Vec3( this_car.physics.angular_velocity.x,
-                  this_car.physics.angular_velocity.y,
+    omega = Vec3( team_sign*this_car.physics.angular_velocity.x,
+                  team_sign*this_car.physics.angular_velocity.y,
                   this_car.physics.angular_velocity.z )
 
     demo = this_car.is_demolished

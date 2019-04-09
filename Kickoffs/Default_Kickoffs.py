@@ -2,7 +2,7 @@ from Mechanics import *
 from Maneuvers import *
 
 
-def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_input):
+def far_back(game_info, old_game_info, opponent_distance, controller_input):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -11,7 +11,7 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
     if abs(current_state.pos.y) > 3000:
         #If we're far away, fast dodge to speed up
         controller_input = FastDodge(current_state,
-                                     current_state.copy_state(pos = Vec3(-250*team_sign,0,0)),
+                                     current_state.copy_state(pos = Vec3(-250,0,0)),
                                      old_state,
                                      100, boost_threshold = 1250,
                                      direction = -1).input()
@@ -52,14 +52,14 @@ def far_back(game_info, old_game_info, opponent_distance, team_sign, controller_
 #########################################################################################################
 
 
-def back_left(game_info, old_game_info, opponent_distance, team_sign, x_sign, controller_input):
+def back_left(game_info, old_game_info, opponent_distance, controller_input):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
 
     #Set which boost we want based on team.
-    if team_sign == 1:
+    if game_info.team_sign == 1:
         first_boost = 7
     else:
         first_boost = 26
@@ -67,13 +67,13 @@ def back_left(game_info, old_game_info, opponent_distance, team_sign, x_sign, co
     if abs(current_state.pos.x) > 80 and abs(current_state.pos.y) > 3200:
         #If we're not near the center-line of the field, boost towards the first small boost
         controller_input = GroundTurn(current_state,
-                                      current_state.copy_state(pos=game_info.boosts[first_boost].pos+Vec3(0,team_sign*200,0))).input()
+                                      current_state.copy_state(pos=game_info.boosts[first_boost].pos+Vec3(0,200,0))).input()
         controller_input.boost = 1
             
     elif abs(current_state.pos.y) > 1200:
         #If we're far away, fast dodge to speed up.
         controller_input = FastDodge(current_state,
-                                     current_state.copy_state(pos = Vec3(-450*team_sign,0,0)),
+                                     current_state.copy_state(pos = Vec3(-450,0,0)),
                                      old_state,
                                      boost_to_use = 100,
                                      oversteer = False,
@@ -114,14 +114,14 @@ def back_left(game_info, old_game_info, opponent_distance, team_sign, x_sign, co
 #########################################################################################################
 
 
-def back_right(game_info, old_game_info, opponent_distance, team_sign, x_sign, controller_input):
+def back_right(game_info, old_game_info, opponent_distance, controller_input):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
 
     #Set which boost we want based on team.
-    if team_sign == 1:
+    if game_info.team_sign == 1:
         first_boost = 7
     else:
         first_boost = 26
@@ -129,13 +129,13 @@ def back_right(game_info, old_game_info, opponent_distance, team_sign, x_sign, c
     if abs(current_state.pos.x) > 80 and abs(current_state.pos.y) > 3200:
         #If we're not near the center-line of the field, boost towards the first small boost
         controller_input = GroundTurn(current_state,
-                                      current_state.copy_state(pos=game_info.boosts[first_boost].pos+Vec3(0,team_sign*200,0))).input()
+                                      current_state.copy_state(pos=game_info.boosts[first_boost].pos+Vec3(0,200,0))).input()
         controller_input.boost = 1
             
     elif abs(current_state.pos.y) > 1200:
         #If we're far away, fast dodge to speed up.
         controller_input = FastDodge(current_state,
-                                     current_state.copy_state(pos = Vec3(450 * team_sign,0,0)),
+                                     current_state.copy_state(pos = Vec3(450 * 0,0)),
                                      old_state,
                                      boost_to_use = 100,
                                      oversteer = False,
@@ -177,14 +177,14 @@ def back_right(game_info, old_game_info, opponent_distance, team_sign, x_sign, c
 #########################################################################################################
 
 
-def left(game_info, old_game_info,opponent_distance, team_sign, x_sign, controller_input):
+def left(game_info, old_game_info,opponent_distance, controller_input):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
 
     #Set which boost we want based on team.
-    if team_sign == 1:
+    if game_info.team_sign == 1:
         first_boost = 11
     else:
         first_boost = 22
@@ -192,14 +192,14 @@ def left(game_info, old_game_info,opponent_distance, team_sign, x_sign, controll
     if game_info.boosts[first_boost].is_active:
         #If we haven't taken the small boost yet, drive towards it
         controller_input = GroundTurn(current_state,
-                                      current_state.copy_state(pos = game_info.boosts[first_boost].pos + Vec3(x_sign*125,0,0))).input()
+                                      current_state.copy_state(pos = game_info.boosts[first_boost].pos + Vec3(125,0,0))).input()
         controller_input.boost = 1
 
 
     elif abs(current_state.pos.y) > 1200:
         #If we've taken the boost but are still far away, fast dodge to speed up`
         controller_input = FastDodge(current_state,
-                                     current_state.copy_state(pos = Vec3(x_sign*500,0,0)),
+                                     current_state.copy_state(pos = Vec3(500,0,0)),
                                      old_state,
                                      boost_to_use = 100,
                                      boost_threshold = 1000,
@@ -239,14 +239,14 @@ def left(game_info, old_game_info,opponent_distance, team_sign, x_sign, controll
 
 #########################################################################################################
 
-def right(game_info, old_game_info, opponent_distance, team_sign, x_sign, controller_input):
+def right(game_info, old_game_info, opponent_distance, controller_input):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
 
     #Set which boost we want based on team.
-    if team_sign == 1:
+    if game_info.team_sign == 1:
         first_boost = 10
     else:
         first_boost = 23
@@ -254,13 +254,13 @@ def right(game_info, old_game_info, opponent_distance, team_sign, x_sign, contro
     if game_info.boosts[first_boost].is_active:
         #If we haven't taken the small boost yet, drive towards it
         controller_input = GroundTurn(current_state,
-                                      current_state.copy_state(pos = game_info.boosts[first_boost].pos + Vec3(x_sign*125,0,0))).input()
+                                      current_state.copy_state(pos = game_info.boosts[first_boost].pos + Vec3(125,0,0))).input()
         controller_input.boost = 1
 
     elif abs(current_state.pos.y) > 1200:
         #If we've taken the boost but are still far away, fast dodge to speed up
         controller_input = FastDodge(current_state,
-                                     current_state.copy_state(pos = Vec3(x_sign*500,0,0)),
+                                     current_state.copy_state(pos = Vec3(500,0,0)),
                                      old_state,
                                      boost_to_use = 100,
                                      boost_threshold = 1000,
