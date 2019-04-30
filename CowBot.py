@@ -16,7 +16,7 @@ from EvilGlobals import renderer
 from BallPrediction import *
 from StateSetting import *
 
-TESTING = False
+TESTING = True
 
 
 class BooleanAlgebraCow(BaseAgent):
@@ -63,7 +63,10 @@ class BooleanAlgebraCow(BaseAgent):
         #Put testing-only variables here
         if TESTING:
             self.state = "Reset"
-            #self.ball_pos = None
+            self.target_boost_index = 0
+            self.path_plan = "ArcLineArc"
+            self.path_switch = True
+            self.path_following_state = None
         
 
         
@@ -103,7 +106,7 @@ class BooleanAlgebraCow(BaseAgent):
                                    self.jumped_last_frame)
 
         if self.old_game_info == None:
-            #This avoids TypeErros on calls to old_game_info on the first frame of a kickoff.
+            #This avoids TypeErrors on calls to old_game_info on the first frame of a kickoff.
             #The first frame shouldn't be calling previous frame information anyway
             self.old_game_info = self.game_info
 
@@ -127,9 +130,94 @@ class BooleanAlgebraCow(BaseAgent):
         #Check if it's a kickoff.  If so, run kickoff code.
         self.kickoff_position = update_kickoff_position(self.game_info,
                                                         self.kickoff_position)
+        if TESTING:
+            print(self.path_following_state)
+            turn_radius = min_radius(1410)
+            boost_list = [33,28,23,21,14,11,6,0,5,10,12,19,22,27]
+            current_boost = self.game_info.boosts[boost_list[self.target_boost_index]]
+            next_boost = self.game_info.boosts[boost_list[(self.target_boost_index + 1) % len(boost_list)]]
 
-        #test_precdiction = PredictionPath(self.get_ball_prediction_struct())
 
+            boost_pair_angle = atan2(next_boost.pos.y - current_boost.pos.y, next_boost.pos.x - current_boost.pos.x)
+            delta_theta = abs(rotate_to_range(self.game_info.me.rot.yaw - boost_pair_angle, [-pi,pi]))
+            theta = self.game_info.me.rot.yaw
+            start_tangent = Vec3(cos(theta), sin(theta), 0)
+            if self.path_following_state == None and delta_theta > pi/3:
+                self.path_following_state = "First Arc"
+                theta = self.game_info.me.rot.yaw
+                start_tangent = Vec3(cos(theta), sin(theta), 0)
+                self.path = ArcLineArc(start = self.game_info.me.pos,
+                                       end = current_boost.pos,
+                                       start_tangent = start_tangent,
+                                       end_tangent = next_boost.pos - current_boost.pos,
+                                       radius1 = turn_radius,
+                                       radius2 = turn_radius,
+                                       current_state = self.game_info.me)
+
+            elif self.path_following_state == "First Arc":
+                self.path = ArcLineArc(start = self.game_info.me.pos,
+                                       end = current_boost.pos,
+                                       start_tangent = start_tangent,
+                                       end_tangent = next_boost.pos - current_boost.pos,
+                                       radius1 = turn_radius,
+                                       radius2 = turn_radius,
+                                       current_state = self.game_info.me)
+
+                if (self.game_info.me.pos - self.path.transition1).magnitude() < 150:
+                    self.path_following_state = "Switch to Line"
+
+            elif self.path_following_state == "Switch to Line":
+                self.path = LineArcPath(start = self.game_info.me.pos,
+                                        start_tangent = start_tangent,
+                                        end = self.path.end,
+                                        end_tangent = self.path.end_tangent,
+                                        radius = self.path.radius2,
+                                        current_state = self.game_info.me)
+                self.path_following_state = "Line"
+
+            elif self.path_following_state == "Line":
+                self.path = LineArcPath(start = self.game_info.me.pos,
+                                        end = self.path.end,
+                                        start_tangent = start_tangent,
+                                        end_tangent = self.path.end_tangent,
+                                        radius = self.path.radius,
+                                        current_state = self.game_info.me)
+
+                if (self.game_info.me.pos - self.path.transition).magnitude() < 150:
+                    self.path_following_state = "Switch to Arc"
+
+            elif self.path_following_state == "Switch to Arc":
+                    self.path = ArcPath(start = self.path.transition,
+                                        start_tangent = self.path.transition,
+                                        end = self.path.end,
+                                        end_tangent = self.path.end_tangent,
+                                        radius = self.path.radius,
+                                        current_state = self.game_info.me)
+
+                    self.path_following_state = "Final Arc"
+
+            elif self.path_following_state == "Final Arc":
+                self.path = ArcPath(start = self.game_info.me.pos,
+                                    start_tangent = start_tangent,
+                                    end = self.path.end,
+                                    end_tangent = self.path.end_tangent,
+                                    radius = self.path.radius,
+                                    current_state = self.game_info.me)
+                
+                if (self.game_info.me.pos - self.path.end).magnitude() < 150:
+                    self.path_following_state = None
+
+
+            else:
+                #If we're facing the right way and not following another path,
+                #just GroundTurn towards the target
+                self.path_following_state == None
+                self.path = WaypointPath([current_boost.pos], current_state = self.game_info.me)
+
+
+            if (self.game_info.me.pos - current_boost.pos).magnitude() < 150:
+                self.target_boost_index = (self.target_boost_index + 1) % len(boost_list)
+                
 
         ###############################################################################################
         #Testing 
@@ -137,6 +225,15 @@ class BooleanAlgebraCow(BaseAgent):
 
 
         if TESTING:
+            controller_input = SimpleControllerState()
+
+            controller_input = self.path.input()
+
+
+            return controller_input
+
+
+        ''' AERIAL TESTING - Important, but not implemented anywhere else yet!
             self.timer += self.game_info.dt
 
             if self.state == "Reset":
@@ -144,17 +241,17 @@ class BooleanAlgebraCow(BaseAgent):
                 self.timer = 0
 
                 #Set the game state
-                ball_pos = Vec3(0, 0, 2200)
+                ball_pos = Vec3(0, 0, 1000)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(-500, -2200, 300),
+                                                             vel = Vec3(0, -2200, 800),
                                                              omega = Vec3(0,0,0))
 
-                car_pos = Vec3(-500, -4800, 15)
+                car_pos = Vec3(0, -2000, 15)
                 car_state = self.zero_car_state.copy_state(pos = car_pos,
                                                            vel = Vec3(0, 0, 0),
                                                            rot = Orientation(pitch = 0,
-                                                                             yaw = pi/2,
+                                                                             yaw = -pi/2,
                                                                              roll = 0),
                                                            boost = 100)
 
@@ -162,34 +259,28 @@ class BooleanAlgebraCow(BaseAgent):
                                               current_state = car_state,
                                               ball_state = ball_state))
                 self.state = "Wait"
-                return SimpleControllerState()
+                controller_state = SimpleControllerState()
+                controller_state.boost = 1
+                return controller_state
 
             elif self.state == "Wait":
                 if self.timer > 0.2:
+                    self.state = "Boost"
+
+
+            elif self.state == "Boost":
+                controller_state = SimpleControllerState()
+                controller_state.boost = 1
+                if self.timer > 0.5:
                     self.state = "Initialize"
-                return SimpleControllerState()
+
+                
+                return controller_state
 
 
             elif self.state == "Initialize":
                 self.persistent.aerial.check = True
-                prediction = utils.simulation.Ball(self.game_info.utils_game.ball)
-                self.ball_predictions = [prediction.location]
-
-                for i in range(100):
-
-                    prediction.step(1/60)
-
-                    self.ball_predictions.append(prediction.location)
-
-                    if prediction.location[2] > 150:
-
-                        self.persistent.aerial.action.target = prediction.location
-                        self.persistent.aerial.action.arrival_time = prediction.time
-                        simulation = self.persistent.aerial.action.simulate()
-
-                        if (vec3_to_Vec3(simulation.location) - vec3_to_Vec3(self.persistent.aerial.action.target)).magnitude() < 30:
-                            self.target_ball = utils.simulation.Ball(prediction)
-                            break
+                self.persistent = aerial_prediction(self.game_info, self.persistent)
 
                 self.state = "Go"
 
@@ -199,18 +290,18 @@ class BooleanAlgebraCow(BaseAgent):
 
                 #Controller inputs and persistent mechanics
                 controller_input, self.persistent = aerial(vec3_to_Vec3(self.persistent.aerial.action.target),
-                                                           Vec3(-1,0,-1),
+                                                           Vec3(0,0,1),
                                                            self.game_info.dt,
                                                            self.persistent)
-                if self.timer > 3:
+                if self.timer > 5:
                     self.state = "Reset"
-                return controller_input
+                return controller_input'''
 
 
 
 
         ###############################################################################################
-        #Run either kickoffs or Cowculate
+        #Run either Kickoff or Cowculate
         ###############################################################################################
 
         if self.current_plan == "Kickoff":
@@ -235,9 +326,6 @@ class BooleanAlgebraCow(BaseAgent):
                                self.current_plan,
                                self.persistent)
 
-            
-        
-
 
 
         ###############################################################################################
@@ -259,3 +347,18 @@ class BooleanAlgebraCow(BaseAgent):
         if output.throttle == 0:
             output.throttle = 0.01
         return output
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

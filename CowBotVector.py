@@ -27,6 +27,9 @@ class Vec3:
     def __list__(self):
         return [self.x, self.y, self.z]
 
+    def __neg__(self):
+        return Vec3(-self.x, -self.y, -self.z)
+
 
 
 
@@ -63,16 +66,18 @@ class Vec3:
     def dot( self, other ):
             return ( self.x * other.x ) + ( self.y * other.y ) + ( self.z * other.z )
     
-
     def magnitude( self ):
         return sqrt( ( self.x**2 ) + ( self.y**2 ) + ( self.z**2 ) )
 
     def normalize( self ):
         return self.scalar_multiply( 1/(self.magnitude()) )
 
-    def rotate_2d( self, theta ):
-        vec_2d = Vec3(self.x, self.y, 0)
-        return vec_2d.cross(Vec3(0,0,1))
+    #Return the 2d normal vector
+    def normal_2d( self ):
+        return Vec3(self.y, -self.x, 0)
 
-    # TODO: 3D rotations
+    def Vec3_to_2d( self ):
+        #This just discards the z component
+        return Vec3(self.x, self.y, 0)
 
+    

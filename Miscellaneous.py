@@ -1,5 +1,5 @@
 from math import pi
-from math import log, cos, sin, asin
+from math import log, cos, sin, asin, atan2
 
 from rlutilities.linear_algebra import mat3, vec3
 import rlbot.utils.game_state_util as framework
@@ -129,3 +129,85 @@ def Vec3_to_vec3(vector):
 
 def vec3_to_Vec3(vector):
     return Vec3(vector[0], vector[1], vector[2])
+
+
+
+def is_in_map(location):
+    '''
+    Checks if a Vec3 is in the map or not
+    '''
+
+    if abs(location.x) > 4096:
+        return False
+    if abs(location.y) > 5120:
+        return False
+    if location.z > 2044:
+        return False
+    if location.z < 0:
+        return False
+    return True
+
+
+def angle_to(target, start, initial_angle):
+    '''
+    Take a location, and a location/yaw pair and returns the angle of turn needed.
+    '''
+
+    
+    angle_to_target = atan2(target.y - start.y , target.x - start.x)
+    return rotate_to_range(angle_to_target - initial_angle, [-pi,pi])
+
+
+
+def min_radius(speed):
+    '''
+    Returns the maximum achievable curvature of a turn at a given velocity.
+    This comes from Chip's notes. Powerslide is not considered.
+    '''
+
+    if speed <= 500:
+        max_curvature = 0.0069 + ( speed * (1/500) * (0.00398 - 0.0069) )
+
+    elif speed <= 1000:
+        max_curvature = 0.00398 + ( (speed-500) * (1/500) * (0.00235 - 0.00398) )
+
+    elif speed <= 1500:
+        max_curvature = 0.00235 + ( (speed-1000) * (1/500) * (0.001375 - 0.00235) )
+
+    elif speed <= 1750:
+        max_curvature = 0.001375 + ( (speed-1500) * (1/250) * (0.0011 - 0.001375) )
+
+    elif speed <= 2300:
+        max_curvature = 0.0011 + ( (speed-1750) * (1/550) * (0.00088 - 0.0011) )
+
+
+    return 1/max_curvature
+
+
+
+
+def max_speed(radius):
+    '''
+    Returns the maximum achievable speed of a turn of a given radius.
+    This comes from Chip's notes. Powerslide is not considered.
+    '''
+
+    curvature = 1/radius
+
+    if curvature >= 0.00088:
+        max_curvature = 2300 - ( (curvature-0.00088) * (1/550) * (0.00088 - 0.0011) )
+
+    elif curvature >= 0.0011:
+        max_curvature = 1750 - ( (curvature-0.0011) * (1/250) * (0.0011 - 0.001375) )
+
+    elif curvature >= 0.001375:
+        max_curvature = 1500 - ( (curvature-0.001375) * (1/500) * (0.001375 - 0.00235) )
+
+    elif curvature >= 0.00235:
+        max_curvature = 1000 - ( (curvature-0.00235) * (1/500) * (0.00235 - 0.00398) )
+
+    elif curvature >= 0.00088:
+        max_curvature = 500 - ( (curvature-0.00398) * (1/500) * (0.000398 - 0.0069) )
+
+
+    return 1/max_curvature

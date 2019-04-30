@@ -1,4 +1,5 @@
 renderer = None
+from CowBotVector import *
 
 
 def draw_arc_3d( center, radius, start_angle, delta_angle, steps ):
@@ -9,12 +10,12 @@ def draw_arc_3d( center, radius, start_angle, delta_angle, steps ):
     '''
 
     first_point = center + Vec3(cos(start_angle), sin(start_angle), 0).scalar_multiply(radius)
-    locations = [ [first_point.x, first_point.y , 0] ]
+    locations = [ [first_point.x, first_point.y , 50] ]
 
 
     for theta in range(steps):
         next_point = center + Vec3(cos(start_angle + (delta_angle*(theta/steps))), sin(start_angle + (delta_angle*(theta/steps))),0).scalar_multiply(radius)
-        locations.append([ next_point.x, next_point.y, 0 ])
+        locations.append([ next_point.x, next_point.y, 50 ])
 
     return locations
 
@@ -27,11 +28,11 @@ def draw_circle_3d( center, radius, steps ):
     '''
 
     first_point = center + Vec3(1,0,0).scalar_multiply(radius)
-    locations = [ [first_point.x, first_point.y , 0] ]
+    locations = [ [first_point.x, first_point.y , 50] ]
 
 
     for theta in range(steps):
         next_point = center + Vec3(cos((2*pi)*(theta/steps)),sin((2*pi)*(theta/steps)),0).scalar_multiply(radius)
-        locations.append([ next_point.x, next_point.y, 0 ])
+        locations.append([ next_point.x, next_point.y, 50 ])
 
     return locations
