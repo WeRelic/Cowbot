@@ -10,7 +10,7 @@ def one_frame_derivative(f, old_f, fps):
     return (f - old_f) / (1 / fps)
 
 
-def cap_magnitude(x, magnitude):
+def cap_magnitude(x, magnitude = 1):
     '''
     caps off a variable at a certain max magnitude.
     Will be mostly used with magnitude = 1.

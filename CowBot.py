@@ -5,15 +5,17 @@ from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 import rlutilities as utils
 
-from CowBotVector import *
+from BallPrediction import *
 from CowBotInit import *
+from CowBotVector import *
 from Cowculate import *
+from EvilGlobals import renderer
 from GameState import *
 from Kickoffs.Kickoff import *
 from Mechanics import *
+from Pathing.Pathing import *
+from Pathing.Path_Planning import *
 from Planning import *
-from EvilGlobals import renderer
-from BallPrediction import *
 from StateSetting import *
 
 TESTING = True
@@ -31,6 +33,10 @@ class BooleanAlgebraCow(BaseAgent):
         self.kickoff_position = "Other"
         self.kickoff_data = None
         self.jumped_last_frame = None
+        self.path_state = None
+        self.path = None
+        self.waypoint_index = 2
+
 
         self.utils_game = None
 
@@ -57,20 +63,15 @@ class BooleanAlgebraCow(BaseAgent):
 
         
         self.persistent = PersistentMechanics()
-        self.timer = 0
+        self.timer = 8
 
         
         #Put testing-only variables here
         if TESTING:
             self.state = "Reset"
-            self.target_boost_index = 0
             self.path_plan = "ArcLineArc"
             self.path_switch = True
-            self.path_following_state = None
-        
-
-        
-
+            
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
 
         ###############################################################################################
@@ -131,92 +132,13 @@ class BooleanAlgebraCow(BaseAgent):
         self.kickoff_position = update_kickoff_position(self.game_info,
                                                         self.kickoff_position)
         if TESTING:
-            print(self.path_following_state)
-            turn_radius = min_radius(1410)
-            boost_list = [33,28,23,21,14,11,6,0,5,10,12,19,22,27]
-            current_boost = self.game_info.boosts[boost_list[self.target_boost_index]]
-            next_boost = self.game_info.boosts[boost_list[(self.target_boost_index + 1) % len(boost_list)]]
-
-
-            boost_pair_angle = atan2(next_boost.pos.y - current_boost.pos.y, next_boost.pos.x - current_boost.pos.x)
-            delta_theta = abs(rotate_to_range(self.game_info.me.rot.yaw - boost_pair_angle, [-pi,pi]))
-            theta = self.game_info.me.rot.yaw
-            start_tangent = Vec3(cos(theta), sin(theta), 0)
-            if self.path_following_state == None and delta_theta > pi/3:
-                self.path_following_state = "First Arc"
-                theta = self.game_info.me.rot.yaw
-                start_tangent = Vec3(cos(theta), sin(theta), 0)
-                self.path = ArcLineArc(start = self.game_info.me.pos,
-                                       end = current_boost.pos,
-                                       start_tangent = start_tangent,
-                                       end_tangent = next_boost.pos - current_boost.pos,
-                                       radius1 = turn_radius,
-                                       radius2 = turn_radius,
-                                       current_state = self.game_info.me)
-
-            elif self.path_following_state == "First Arc":
-                self.path = ArcLineArc(start = self.game_info.me.pos,
-                                       end = current_boost.pos,
-                                       start_tangent = start_tangent,
-                                       end_tangent = next_boost.pos - current_boost.pos,
-                                       radius1 = turn_radius,
-                                       radius2 = turn_radius,
-                                       current_state = self.game_info.me)
-
-                if (self.game_info.me.pos - self.path.transition1).magnitude() < 150:
-                    self.path_following_state = "Switch to Line"
-
-            elif self.path_following_state == "Switch to Line":
-                self.path = LineArcPath(start = self.game_info.me.pos,
-                                        start_tangent = start_tangent,
-                                        end = self.path.end,
-                                        end_tangent = self.path.end_tangent,
-                                        radius = self.path.radius2,
-                                        current_state = self.game_info.me)
-                self.path_following_state = "Line"
-
-            elif self.path_following_state == "Line":
-                self.path = LineArcPath(start = self.game_info.me.pos,
-                                        end = self.path.end,
-                                        start_tangent = start_tangent,
-                                        end_tangent = self.path.end_tangent,
-                                        radius = self.path.radius,
-                                        current_state = self.game_info.me)
-
-                if (self.game_info.me.pos - self.path.transition).magnitude() < 150:
-                    self.path_following_state = "Switch to Arc"
-
-            elif self.path_following_state == "Switch to Arc":
-                    self.path = ArcPath(start = self.path.transition,
-                                        start_tangent = self.path.transition,
-                                        end = self.path.end,
-                                        end_tangent = self.path.end_tangent,
-                                        radius = self.path.radius,
-                                        current_state = self.game_info.me)
-
-                    self.path_following_state = "Final Arc"
-
-            elif self.path_following_state == "Final Arc":
-                self.path = ArcPath(start = self.game_info.me.pos,
-                                    start_tangent = start_tangent,
-                                    end = self.path.end,
-                                    end_tangent = self.path.end_tangent,
-                                    radius = self.path.radius,
-                                    current_state = self.game_info.me)
-                
-                if (self.game_info.me.pos - self.path.end).magnitude() < 150:
-                    self.path_following_state = None
-
-
-            else:
-                #If we're facing the right way and not following another path,
-                #just GroundTurn towards the target
-                self.path_following_state == None
-                self.path = WaypointPath([current_boost.pos], current_state = self.game_info.me)
-
-
-            if (self.game_info.me.pos - current_boost.pos).magnitude() < 150:
-                self.target_boost_index = (self.target_boost_index + 1) % len(boost_list)
+              boost_list = [10,5,21,10,6]
+              waypoint_list = [ self.game_info.boosts[boost_list[i]].pos for i in range(len(boost_list)) ]
+              self.path, self.path_state, self.waypoint_index = follow_waypoints(self.game_info,
+                                                                                 self.path,
+                                                                                 waypoint_list,
+                                                                                 self.waypoint_index,
+                                                                                 self.path_state)
                 
 
         ###############################################################################################
