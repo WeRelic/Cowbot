@@ -1,0 +1,198 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Miscellaneous.py
+\end{center}
+
+
+\function{cap\_magnitude(x, magnitude = 1)}
+         {
+           Returns \texttt{sgn(x)*max(abs(x),magnitude)}.  The output and both arguments are floats.
+                              
+         }
+         
+
+
+
+\function{rotate\_to\_range(theta, interval)}
+         {
+           \argumenta{theta}
+                    {
+                      Float.
+                    }
+           \argumenta{interval}
+                    {
+                      List or tuple of two floats.  \texttt{interval[0]} should be strictly less than \texttt{interval[1]}.
+                    }
+
+           This function is primarily used to find an angle equivalent to \texttt{theta} but is between $-\pi$ and $\pi$.  Add and subtract multiples of the length of \texttt{interval} to \texttt{theta} until \texttt{theta} is between \texttt{interval[0]} and \texttt{interval[1]}. Return the final theta.
+         }
+
+
+
+
+\function{car\_coordinates\_2d(current\_state, direction)}
+         {
+           Throws out the $z$-component and rotates the $x$ and $y$ components to the car-basis.  Returns a \texttt{Vec3} with zero $z$-component.
+
+           \argumenta{current\_state}
+                     {
+                       \texttt{CarState}.  The state of the car we're working with.
+                     }
+           \argumenta{direction}
+                     {
+                       \texttt{Vec3}.  The direction vector from the car to the target.
+                     }
+         }
+
+
+
+\function{angles\_are\_close(angle1, angle2, epsilon)}
+         {
+           Returns a Boolean, True if \texttt{angle1} (float) and \texttt{angle2} (float) are within \texttt{epsilon} (float) of each other.
+         }
+
+
+
+
+
+\function{left\_or\_right(current\_state, target\_pos)}
+         {
+           Check if the car should turn left or right to face towards the target.  Returns +1 for right and -1 for left.
+
+           \argumenta{current\_state}
+                     {
+                       \texttt{CarState}.  The current state of the car.
+                     }
+                     
+
+
+           \argumenta{target\_pos}
+                     {
+                       \texttt{Vec3}. The point on the field we are trying to point towards.
+                     }
+                     
+         }
+         
+
+
+
+\function{rot\_to\_mat3(rot}
+         {
+           Takes \texttt{rot}, an \texttt{Orientation} object, and returns the corresponding RLU \texttt{mat3} object.
+         }
+
+
+
+
+\function{pyr\_to\_matrix(pyr)}
+         {
+           TODO: Change all ``pyr'' notation to ``ypr'' to match the convention used by RL.\\
+           Takes an Euler angle orientation (pitch, yaw, roll) and returns the orientation matrix \texttt{[front, left, up]}.
+         }
+
+
+
+
+\function{Vec3\_to\_Vector3(vector)}
+         {
+           Takes a \texttt{Vec3} (CowBot) and returns the corresponding \texttt{Vector3} (framework).
+         }
+
+
+         
+         
+\function{Vec3\_to\_vec3(vector)}
+         {
+           Takes a \texttt{Vec3} (CowBot) and returns the corresponding \texttt{vec3} (RLU).
+         }
+
+         
+
+\function{vec3\_to\_Vec3(vector)}
+         {
+           Takes a \texttt{vec3} (RLU) and returns the corresponding \texttt{Vec3} (CowBot).
+         }
+
+
+
+
+
+
+\function{is\_in\_map(location)}      
+         {
+           Takes \texttt{location} (Vec3) and returns a Boolean, True if \texttt{location} is inside the game map.  Rudimentary for now, can definitly be improved over time.
+         }
+
+
+
+\function{angle\_to(target, start, initial\_angle)}
+         {
+           Takes a target location \texttt{target} (\texttt{Vec3}), a starting location \texttt{start} (\texttt{Vec3}), and a starting yaw \texttt{initial\_angle} (float between $-\pi$ and $\pi$).\\
+           Returns the angle between the initial yaw and the angle needed to face the target.
+         }
+
+
+
+
+
+\function{min\_radius(speed)}
+         {
+           Returns the minimum radius (float) possible given an input speed (float).  Comes from Chip's notes on ground handling.  Data was taken for an Octane, turns in a plank body will likely be slightly wider.
+         }
+
+
+
+\function{max\_speed(radius)}
+         {
+           Returns the maximum speed (float) possible given an input radius (float).  Comes from Chip's notes on ground handling.  Data was taken for an Octane, turns in a plank body will likely be slightly wider.
+         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

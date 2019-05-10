@@ -5,29 +5,41 @@ from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 import rlutilities as utils
 
-from BallPrediction import *
-from CowBotInit import *
-from CowBotVector import *
-from Cowculate import *
+from BallPrediction import * #Not used yet.  Maybe will be used here, maybe only in Planning.py?
+import CowBotInit #only used for find_teammates_and_opponents - move more into this file?
+from CowBotVector import * #Not needed here?
+from Cowculate import * #deprecate and rename planning?
 from EvilGlobals import renderer
 from GameState import *
 from Kickoffs.Kickoff import *
-from Mechanics import *
-from Pathing.Pathing import *
+from Mechanics import * #Only for the PersistentMechanics class? Try to remove this if I can.
+from Pathing.Pathing import * #I don't think we need this either, only via path_planning
 from Pathing.Path_Planning import *
 from Planning import *
-from StateSetting import *
+from StateSetting import * #Only needed for testing?
 
+#A useful flag for testing code.
+#When True, all match logic will be ignored.
+#Planning will still take place, but can be overridden,
+#and no action will be taken outside of the "if TESTING:" blocks.
 TESTING = True
 
 
 class BooleanAlgebraCow(BaseAgent):
+
+    '''
+    This is the class within which our entire bot lives.
+    Anything not saved to an attribute of this class will be deleted after an input for the frame is returned.
+    We never explicitly call any methods of this class.  The framework calls initialize_agent once at the start,
+    and it calls get_output at the start of each frame.  All of our logic lives inside get_output.
+    '''
 
     def initialize_agent(self):
         #This runs once before the bot starts up
         self.is_init = True
         self.teammate_indices = []
         self.opponent_indices = []
+
         self.old_game_info = None
         self.game_info = None
         self.kickoff_position = "Other"
@@ -37,12 +49,16 @@ class BooleanAlgebraCow(BaseAgent):
         self.path = None
         self.waypoint_index = 2
 
-
+        self.old_plan = None
+        self.current_plan = None
+        self.old_kickoff_data = None
         self.utils_game = None
 
         #This will be used to remember opponent actions.  Maybe load in bots preemptively one day?
         self.memory = None
 
+        #These are used to specify or set states in the code.  State setting
+        #using state.copy_state() doesn't work as expected.
         self.zero_ball_state = BallState(pos = None,
                                          rot = None,
                                          vel = None,
@@ -78,23 +94,17 @@ class BooleanAlgebraCow(BaseAgent):
         #Startup and frame info
         ###############################################################################################
 
-        #Initialization info
+        #Initialization info - move all of this into CowBotInit?
         if self.is_init:
             self.is_init = False
             self.field_info = self.get_field_info()
-
+ 
             #Find self and teams
-            team_info = find_self_and_teams(packet, self.index, self.team)
+            team_info = CowBotInit.find_self_and_teams(packet, self.index, self.team)
             self.teammate_indices = team_info[0]
             self.opponent_indices = team_info[1]
-            self.jumped_last_frame_list = []
-            for car in packet.game_cars:
-                self.jumped_last_frame_list.append(False)
 
-            self.old_plan = None
-            self.current_plan = None
-            self.old_kickoff_data = None
-
+            
             self.utils_game = utils.simulation.Game(self.index, self.team)
             utils.simulation.Game.set_mode("soccar")
 
@@ -107,12 +117,13 @@ class BooleanAlgebraCow(BaseAgent):
                                    self.jumped_last_frame)
 
         if self.old_game_info == None:
-            #This avoids TypeErrors on calls to old_game_info on the first frame of a kickoff.
+            #This avoids AttributeErrors on calls to old_game_info on the first frame of a kickoff.
             #The first frame shouldn't be calling previous frame information anyway
             self.old_game_info = self.game_info
 
         #Update persistent mechanics if we're not doing them, otherwise let them do their thing.
         #The checks will be set to true when the mechanic is called.
+        #Eventually this might get swallowed into a bigger state machine.
         if not self.persistent.aerial_turn.check:
             self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
         self.persistent.aerial_turn.check = False
@@ -240,7 +251,7 @@ class BooleanAlgebraCow(BaseAgent):
                                             None,
                                             self.persistent)
 
-            output, persistent = self.kickoff_data.input()
+            output, self.persistent = self.kickoff_data.input()
 
         else:
             output, self.persistent = Cowculate(self.game_info,
@@ -265,7 +276,7 @@ class BooleanAlgebraCow(BaseAgent):
         self.persistent.aerial_turn.check = False
 
 
-        #Make sure we don't get stuck turtling.
+        #Make sure we don't get stuck turtling. Not sure how effective this is.
         if output.throttle == 0:
             output.throttle = 0.01
         return output

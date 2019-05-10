@@ -1,0 +1,12 @@
+\BOOKMARK [1][-]{section.1}{update\137kickoff\137position\(game\137info, kickoff\137position\)}{}% 1
+\BOOKMARK [2][-]{subsection.1.1}{game\137info}{section.1}% 2
+\BOOKMARK [2][-]{subsection.1.2}{kickoff\137position}{section.1}% 3
+\BOOKMARK [1][-]{section.2}{check\137kickoff\137position\(current\137state\)}{}% 4
+\BOOKMARK [2][-]{subsection.2.1}{current\137state}{section.2}% 5
+\BOOKMARK [1][-]{section.3}{class Kickoff}{}% 6
+\BOOKMARK [2][-]{subsection.3.1}{game\137info}{section.3}% 7
+\BOOKMARK [2][-]{subsection.3.2}{old\137game\137info}{section.3}% 8
+\BOOKMARK [2][-]{subsection.3.3}{kickoff\137position}{section.3}% 9
+\BOOKMARK [2][-]{subsection.3.4}{memory}{section.3}% 10
+\BOOKMARK [2][-]{subsection.3.5}{persistent}{section.3}% 11
+\BOOKMARK [2][-]{subsection.3.6}{self.input\(\)}{section.3}% 12

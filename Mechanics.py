@@ -1,9 +1,3 @@
-import rlutilities as util
-from rlutilities.mechanics import AerialTurn, Aerial
-import rlutilities.linear_algebra as linear
-
-from Miscellaneous import *
-
 '''
 
    In this file we define classes for the lowest level mechancis,
@@ -13,9 +7,13 @@ from Miscellaneous import *
 
 
 '''
-
-from rlbot.agents.base_agent import SimpleControllerState
 from math import atan2, pi, sin, cos, sqrt
+
+import rlutilities as util #Not needed here
+from rlutilities.mechanics import AerialTurn, Aerial #I think this can work without these, but uses the objects that come from it.
+import rlutilities.linear_algebra as linear #unnecessary as well?
+from rlbot.agents.base_agent import SimpleControllerState
+
 from CowBotVector import *
 from Miscellaneous import *
 
@@ -95,9 +93,7 @@ def aerial_rotation(target_rot, dt, persistent):
 
 class AirDodge:
     '''
-    Handles inputting air dodges.  Maybe prediction will go in here as well.
-    It might be better to keep prediction in a different module, and make 
-    this one specifically for once I've decided on what to do.
+    Handles inputting air dodges. 
     '''
 
 
@@ -170,7 +166,7 @@ class JumpTurn:
 
         #Turn in the right direction.
         if self.turn_direction ==0:
-            raise TypeError("turn direction should be 1 or -1")
+            raise AttributeError("turn direction should be 1 or -1")
         controller_input.yaw = self.turn_direction
 
         return controller_input

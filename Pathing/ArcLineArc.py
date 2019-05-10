@@ -11,7 +11,7 @@ from rlbot.agents.base_agent import SimpleControllerState
 from CowBotVector import *
 from Miscellaneous import *
 import EvilGlobals
-from Maneuvers import *
+from Maneuvers import * #Not needed?
 from Pathing.Pathing import GroundPath, PathPiece
 
 
@@ -122,7 +122,7 @@ class ArcLineArc(GroundPath):
 
     def find_lengths(self):
         '''
-        Find the legnth of an ArcLineArc path.  Returns the lengths of the segments
+        Find the length of an ArcLineArc path.  Returns the lengths of the segments
         in the order they're traversed.
         '''
         

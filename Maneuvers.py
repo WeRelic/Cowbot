@@ -42,21 +42,18 @@ class FastDodge:
     '''
 
 
-    def __init__(self, current_state, goal_state, old_state, boost_to_use = 30,
-                 direction = 1, oversteer = True, boost_threshold = None, fps = 120):
+    def __init__(self, current_state, goal_state, old_state,
+                 direction = 1, oversteer = True, boost_threshold = None):
         '''
         direction = 1 for right, direction = -1 for left.
         '''
         
-        self.boost = current_state.boost
         self.current_state = current_state
-        self.goal_state = goal_state
         self.old_state = old_state
-        self.boost_to_use = boost_to_use
+        self.goal_state = goal_state
+        self.boost = self.current_state.boost
         self.direction = left_or_right(current_state, goal_state.pos)
-        self.fps = fps
         self.oversteer = oversteer
-        
 
         #If we don't have a boost threshold, find it based on how much boost we want to use.
         if boost_threshold == None:
@@ -67,8 +64,6 @@ class FastDodge:
         self.accel_threshold = min(1000, self.boost_threshold)
 
         self.dodge_direction = Vec3(1/sqrt(2), self.direction * (1/sqrt(2)), 0)
-        self.dodge_threshold = 1
-        self.jump_height = 0
 
         
         #questionable if we're still turning
@@ -96,7 +91,7 @@ class FastDodge:
         '''
         The final call to get the controller_input for the maneuver.
         '''
-        
+
         controller_input = SimpleControllerState()
         if self.current_state.wheel_contact:
             #Speed up on the ground, turn as needed, then jump
@@ -110,9 +105,9 @@ class FastDodge:
             elif ( abs(self.current_state.rot.yaw - self.dodge_angle) < 0.2 ):
                 #Once we turn partway, jump and turn the rest of the way
                 if self.dodge_angle - self.current_state.rot.yaw > 0:
-                    controller_input = JumpTurn(self.current_state, self.jump_height, 1).input()
+                    controller_input = JumpTurn(self.current_state, 0, 1).input()
                 else:
-                    controller_input = JumpTurn(self.current_state, self.jump_height, -1).input()
+                    controller_input = JumpTurn(self.current_state, 0, -1).input()
 
             else:
                 #Once we're up to speed, and not turned enough, turn away from the dodge
@@ -124,7 +119,7 @@ class FastDodge:
 
         elif not ( angles_are_close(self.current_state.rot.yaw, self.dodge_angle, 0.2) ):
             #Turn a bit more while in the air before dodging
-            controller_input = JumpTurn(self.current_state, self.jump_height, self.turn_direction).input()
+            controller_input = JumpTurn(self.current_state, 0, self.turn_direction).input()
 
         elif self.current_state.pos.z > 50:
             #Once we're finally turned enough, dodge

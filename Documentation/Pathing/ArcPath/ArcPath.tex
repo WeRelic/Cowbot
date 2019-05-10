@@ -1,0 +1,109 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Pathing.ArcLineArc.py
+\end{center}
+
+TODO: Clean up \texttt{\_\_init()\_\_} so it's not as much a wall of code.
+
+
+\class{ArcPath}
+      {
+
+        \argumenta{start}
+                  {
+                    \texttt{Vec3}.  The starting point for the path.
+                  }
+        \argumenta{end}
+                  {
+                    \texttt{Vec3}.  The ending point for the path.                    
+                  }
+        \argumenta{start\_tangent}
+                  {
+                    Nonzero \texttt{Vec3}.  The tangent to the path at \texttt{start}.
+                  }
+        \argumenta{end\_tangent}
+                  {
+                    Nonzero \texttt{Vec3}.  The tangent to the path at \texttt{end}.
+                  }
+        \argumenta{radius}
+                  {
+                    Float.  The signed radius of the arc.  Positive for CW, negative for CCW.
+                  }
+        \argumenta{current\_state}
+                  {
+                    \texttt{CarState}.  The current state of our car, probably from \texttt{game\_info.me}.
+                  }
+
+
+        \attribute{center}
+                  {
+                    \texttt{Vec3}. The location of the center of the circle the arc lies along.
+                  }
+        \attribute{length}
+                  { TODO: This attribute isn't currently implemented.
+                    Float.  The length of the arc.
+                  }
+
+
+
+
+
+
+        \method{draw\_path()}
+               {
+                 Uses the RLBot renderer to draw the ArcLineArc path on screen.  Disable for tournament versions.
+               }
+               
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      }
+      
+         
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

@@ -1,0 +1,124 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Pathing.Pathing.py
+\end{center}
+
+TODO: Remove the arguments in ``follow\_x(current\_state)'', since they are methods of the path object anyway - they can access \texttt{self.current\_state} directly.
+
+
+
+This module is the parent to all of the path-type classes.
+
+\class{GroundPath}
+      {
+        \attribute{length}
+                  {
+                    Float. The length of the path.
+                  }
+        \attribute{time\_to\_traverse}
+                  {
+                    Float.  The estimated time needed to follow the path.
+                  }
+        \attribute{waypoints}
+                  {
+                    A list of \texttt{Vec3} waypoints.  Not currently used.
+                  }
+        \attribute{current\_state}
+                  {
+                    \texttt{CarState}.  The current state of our car.
+                  }
+        \method{input()}
+                  {
+                    Returns the final controller input to follow a \texttt{GroundPath}.  \texttt{input()} achieves this by calling the appropriate ``follow\_x'' method.
+                  }
+        \method{follow\_arc(current\_state)}
+                  {
+                    Called by \texttt{input()} to follow a circular arc.
+                  }
+        \method{follow\_line(current\_state)}
+                  {
+                    Called by \texttt{input()} to follow a line segment.
+                  }
+        \method{follow\_curve(current\_state)}
+                  {
+                    Called by \texttt{input()} to follow a general curve.  Currently does nothing, plans are to give a curve as a sequence of points and this methods turns between them.
+                  }
+        \method{follow\_waypoint(current\_state)}
+                  {
+                    Called by \texttt{input()} to drive towards a waypoint.  This just uses \texttt{GroundTurn}, and should only be used for fairly small angles.
+                  }
+ 
+
+      }
+      
+
+
+\class{PathPiece}
+      {
+        TODO: Direction should be +1 for CW and -1 for CCW.\\
+        \attribute{shape}
+                  {
+                    String. The tag that tells \texttt{GroundPath.input()} which type of path we're trying to follow.  Currently supports ``Line'', ``Arc'', ``Waypoint'', and ``Curve''.
+                  }
+        \attribute{start}
+                  {
+                    \texttt{Vec3}.  The starting position of the path.
+                  }
+        \attribute{end}
+                  {
+                    \texttt{Vec3}.  The ending position of the path.
+                  }
+        \attribute{start\_tangent}
+                  {
+                    Nonzero \texttt{Vec3}. The tangent vector to the path at \texttt{self.start}.
+                  }
+        \attribute{end\_tangent}
+                  {
+                    Nonzero \texttt{Vec3}. The tangent vector to the path at \texttt{self.end}.                   
+                  }
+        \attribute{direction}
+                  {
+                    +1 or -1.  The direction to turn around a circular arc - +1 for CW, -1 for CCW.
+                  }
+        \attribute{waypoint}
+                  {
+                    \texttt{Vec3}.  The next point to drive towards in a path specified via waypoints.
+                  }
+                  
+      }
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

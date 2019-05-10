@@ -1,0 +1,61 @@
+\BOOKMARK [1][-]{section.1}{class GameState}{}% 1
+\BOOKMARK [2][-]{subsection.1.1}{self.is\137kickoff\137pause}{section.1}% 2
+\BOOKMARK [2][-]{subsection.1.2}{self.kickoff\137position}{section.1}% 3
+\BOOKMARK [2][-]{subsection.1.3}{self.my\137team}{section.1}% 4
+\BOOKMARK [2][-]{subsection.1.4}{self.team\137sign}{section.1}% 5
+\BOOKMARK [2][-]{subsection.1.5}{self.ball}{section.1}% 6
+\BOOKMARK [2][-]{subsection.1.6}{self.me}{section.1}% 7
+\BOOKMARK [2][-]{subsection.1.7}{self.my\137index}{section.1}% 8
+\BOOKMARK [2][-]{subsection.1.8}{self.teammates}{section.1}% 9
+\BOOKMARK [2][-]{subsection.1.9}{self.opponents}{section.1}% 10
+\BOOKMARK [2][-]{subsection.1.10}{self.big\137boosts}{section.1}% 11
+\BOOKMARK [2][-]{subsection.1.11}{self.boosts}{section.1}% 12
+\BOOKMARK [2][-]{subsection.1.12}{self.game\137time}{section.1}% 13
+\BOOKMARK [2][-]{subsection.1.13}{self.utils\137game}{section.1}% 14
+\BOOKMARK [2][-]{subsection.1.14}{self.dt}{section.1}% 15
+\BOOKMARK [2][-]{subsection.1.15}{self.opponent\137distance}{section.1}% 16
+\BOOKMARK [1][-]{section.2}{class Orientation}{}% 17
+\BOOKMARK [2][-]{subsection.2.1}{self.pitch}{section.2}% 18
+\BOOKMARK [2][-]{subsection.2.2}{self.yaw}{section.2}% 19
+\BOOKMARK [2][-]{subsection.2.3}{self.roll}{section.2}% 20
+\BOOKMARK [2][-]{subsection.2.4}{self.matrix}{section.2}% 21
+\BOOKMARK [2][-]{subsection.2.5}{self.front}{section.2}% 22
+\BOOKMARK [2][-]{subsection.2.6}{self.left}{section.2}% 23
+\BOOKMARK [2][-]{subsection.2.7}{self.up}{section.2}% 24
+\BOOKMARK [1][-]{section.3}{Ball\(packet, team\137sign, state = None\)}{}% 25
+\BOOKMARK [1][-]{section.4}{class BallState}{}% 26
+\BOOKMARK [2][-]{subsection.4.1}{self.pos}{section.4}% 27
+\BOOKMARK [2][-]{subsection.4.2}{self.rot}{section.4}% 28
+\BOOKMARK [2][-]{subsection.4.3}{self.vel}{section.4}% 29
+\BOOKMARK [2][-]{subsection.4.4}{self.omega}{section.4}% 30
+\BOOKMARK [2][-]{subsection.4.5}{self.last\137touch}{section.4}% 31
+\BOOKMARK [2][-]{subsection.4.6}{self.hit\137location}{section.4}% 32
+\BOOKMARK [2][-]{subsection.4.7}{self.copy\137state}{section.4}% 33
+\BOOKMARK [3][-]{subsubsection.4.7.1}{pos}{subsection.4.7}% 34
+\BOOKMARK [3][-]{subsubsection.4.7.2}{rot}{subsection.4.7}% 35
+\BOOKMARK [3][-]{subsubsection.4.7.3}{vel}{subsection.4.7}% 36
+\BOOKMARK [3][-]{subsubsection.4.7.4}{omega}{subsection.4.7}% 37
+\BOOKMARK [1][-]{section.5}{Car}{}% 38
+\BOOKMARK [1][-]{section.6}{class CarState}{}% 39
+\BOOKMARK [2][-]{subsection.6.1}{self.pos}{section.6}% 40
+\BOOKMARK [2][-]{subsection.6.2}{self.rot}{section.6}% 41
+\BOOKMARK [2][-]{subsection.6.3}{self.vel}{section.6}% 42
+\BOOKMARK [2][-]{subsection.6.4}{self.omega}{section.6}% 43
+\BOOKMARK [2][-]{subsection.6.5}{self.demo}{section.6}% 44
+\BOOKMARK [2][-]{subsection.6.6}{self.wheel\137contact}{section.6}% 45
+\BOOKMARK [2][-]{subsection.6.7}{self.supersonic}{section.6}% 46
+\BOOKMARK [2][-]{subsection.6.8}{self.jumped}{section.6}% 47
+\BOOKMARK [2][-]{subsection.6.9}{self.double\137jumped}{section.6}% 48
+\BOOKMARK [2][-]{subsection.6.10}{self.boost}{section.6}% 49
+\BOOKMARK [2][-]{subsection.6.11}{self.index}{section.6}% 50
+\BOOKMARK [2][-]{subsection.6.12}{self.jumped\137last\137frame}{section.6}% 51
+\BOOKMARK [2][-]{subsection.6.13}{self.copy\137state}{section.6}% 52
+\BOOKMARK [3][-]{subsubsection.6.13.1}{pos}{subsection.6.13}% 53
+\BOOKMARK [3][-]{subsubsection.6.13.2}{rot}{subsection.6.13}% 54
+\BOOKMARK [3][-]{subsubsection.6.13.3}{vel}{subsection.6.13}% 55
+\BOOKMARK [3][-]{subsubsection.6.13.4}{omega}{subsection.6.13}% 56
+\BOOKMARK [1][-]{section.7}{class Boostpad}{}% 57
+\BOOKMARK [2][-]{subsection.7.1}{self.index}{section.7}% 58
+\BOOKMARK [2][-]{subsection.7.2}{self.pos}{section.7}% 59
+\BOOKMARK [2][-]{subsection.7.3}{self.is\137active}{section.7}% 60
+\BOOKMARK [2][-]{subsection.7.4}{self.timer}{section.7}% 61

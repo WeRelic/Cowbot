@@ -1,0 +1,17 @@
+\BOOKMARK [1][-]{section.1}{class ArcLineArc}{}% 1
+\BOOKMARK [2][-]{subsection.1.1}{start}{section.1}% 2
+\BOOKMARK [2][-]{subsection.1.2}{end}{section.1}% 3
+\BOOKMARK [2][-]{subsection.1.3}{start\137tangent}{section.1}% 4
+\BOOKMARK [2][-]{subsection.1.4}{end\137tangent}{section.1}% 5
+\BOOKMARK [2][-]{subsection.1.5}{radius1}{section.1}% 6
+\BOOKMARK [2][-]{subsection.1.6}{radius2}{section.1}% 7
+\BOOKMARK [2][-]{subsection.1.7}{current\137state}{section.1}% 8
+\BOOKMARK [2][-]{subsection.1.8}{self.start\137normal}{section.1}% 9
+\BOOKMARK [2][-]{subsection.1.9}{self.end\137normal}{section.1}% 10
+\BOOKMARK [2][-]{subsection.1.10}{self.center1}{section.1}% 11
+\BOOKMARK [2][-]{subsection.1.11}{self.center2}{section.1}% 12
+\BOOKMARK [2][-]{subsection.1.12}{self.transition1}{section.1}% 13
+\BOOKMARK [2][-]{subsection.1.13}{self.transition2}{section.1}% 14
+\BOOKMARK [2][-]{subsection.1.14}{self.is\137valid}{section.1}% 15
+\BOOKMARK [2][-]{subsection.1.15}{self.find\137lengths\(\)}{section.1}% 16
+\BOOKMARK [2][-]{subsection.1.16}{self.draw\137path\(\)}{section.1}% 17

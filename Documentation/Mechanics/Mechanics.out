@@ -1,0 +1,22 @@
+\BOOKMARK [1][-]{section.1}{class PersistentMechanics}{}% 1
+\BOOKMARK [1][-]{section.2}{class Mechanic}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{self.check}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{self.action}{section.2}% 4
+\BOOKMARK [1][-]{section.3}{class AirDodge}{}% 5
+\BOOKMARK [2][-]{subsection.3.1}{self.direction}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.2}{self.jumped\137last\137frame}{section.3}% 7
+\BOOKMARK [2][-]{subsection.3.3}{self.input\(\)}{section.3}% 8
+\BOOKMARK [1][-]{section.4}{class JumpTurn}{}% 9
+\BOOKMARK [2][-]{subsection.4.1}{self.current\137state}{section.4}% 10
+\BOOKMARK [2][-]{subsection.4.2}{self.jump\137height}{section.4}% 11
+\BOOKMARK [2][-]{subsection.4.3}{self.turn\137direction}{section.4}% 12
+\BOOKMARK [2][-]{subsection.4.4}{self.input\(\)}{section.4}% 13
+\BOOKMARK [1][-]{section.5}{class QuickTurn}{}% 14
+\BOOKMARK [2][-]{subsection.5.1}{self.direction}{section.5}% 15
+\BOOKMARK [2][-]{subsection.5.2}{self.boost}{section.5}% 16
+\BOOKMARK [2][-]{subsection.5.3}{self.input\(\)}{section.5}% 17
+\BOOKMARK [1][-]{section.6}{class CancelledFastDodge}{}% 18
+\BOOKMARK [2][-]{subsection.6.1}{self.double\137jumped}{section.6}% 19
+\BOOKMARK [2][-]{subsection.6.2}{self.dodge\137direction}{section.6}% 20
+\BOOKMARK [2][-]{subsection.6.3}{self.current\137state}{section.6}% 21
+\BOOKMARK [2][-]{subsection.6.4}{self.input\(\)}{section.6}% 22

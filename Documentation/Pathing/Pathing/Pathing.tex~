@@ -1,0 +1,73 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: StateSetting.py
+\end{center}
+
+
+\function{rot\_to\_Rotator(rot)}
+         {
+           Takes a \texttt{rot} object (CowBot) and returns a \texttt{Rotator} object (framework).
+         }
+
+
+\function{set\=state(game\_info, ball\_state, current\_state, teammates\_state, opponents\_state, boosts\_state, game\_info\_state)}
+         {
+    This will set the game state as specified.  Most of the code is translating between different state objects.
+    \texttt{game\_info} (\texttt{GameState} (CowBot)) is passed solely for the indices of each car, because I have no way of knowing that a priori.\\
+    Seeing as it's unlikely I'll want to mess with boost pads anytime soon, I'm skipping that for now.  I believe they're also broken since RLBot 1.15.0.\\
+    \texttt{ball\_state} (\texttt{BallState} (CowBot)) and \texttt{current\_state} (\texttt{CarState} (CowBot)) are the states of the ball and our car, respectively.
+    \texttt{teammates\_state} and \texttt{opponents\_state} (lists of \texttt{CarState} (CowBot)) hold the states of our teammates' and opponents' cars, respectively.
+    \texttt{boosts\_state} and \texttt{game\_info\_state} are currently skipped and should always be None.
+         }
+         
+
+
+
+\function{state\_to\_physics(state)}
+         {
+           Takes a partial \texttt{CarState} or \texttt{BallState} and returns the corresponding \texttt{Physics} object (framework).
+         }
+         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

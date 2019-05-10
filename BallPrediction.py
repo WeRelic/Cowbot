@@ -176,21 +176,3 @@ def aerial_prediction(game_info, persistent):
 
 
     return persistent
-
-
-
-
-'''
-def make_prediction_path(prediction, end):
-    prediction_list = [prediction]
-    for i in range(end):
-   '''     
-
-
-
-
-
-
-
-
-

@@ -1,0 +1,157 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Maneuvers.py
+\end{center}
+
+
+
+\class{FastDodge}
+      {
+
+        A class to take the current situation, in which we want to go fast, and output a reasonable dodge to accelate quickly.  Lots of room for improvement here.  Careful of changes - \texttt{DefaultKickoffs.py} uses this mechanic in its current form. 
+
+
+        \attribute{current\_state}
+                  {
+                    \texttt{Carstate}.  Typically fed in as \texttt{game\_info.me}
+                  }
+        \attribute{old\_state}
+                  {
+                    \texttt{Carstate}.  This is just \texttt{current\_state} from the previous frame.
+                  }
+        \attribute{goal\_state}
+                  {
+                    \texttt{Carstate}.  The state we would like our car to be in at the end.  Usually just position and orientation updates to the current state using \texttt{copy\_state()}.
+                  }
+
+        \attribute{direction}
+                  {
+                    +1 or -1.  +1 for right, -1 for left.  Chosen by \texttt{Miscellaneous.py} based on \texttt{current\_state} and \texttt{goal\_state}.
+                  }
+
+        \attribute{oversteer}
+                  {
+                    Boolean.  True if we want to turn past the target, then flip back towards it.  This is needed for some existing code, but I'm probably going to stop using it.  Especially since I believe that with a cancelled dodge it just isn't faster to oversteer.
+                  }
+
+        \attribute{boost\_threshold}
+                  {
+                    Float.  The speed at which the bot will stop boosting on the ground and jump to begin the dodge.  If not provided the class calculates a default value that is good enough for the precision currently used in the rest of the process.
+                  }
+
+        \method{input()}
+               {
+                 Returns the controller input for the maneuver.
+               }
+
+      }
+      
+
+
+
+
+\class{GroundTurn}
+      {
+
+        Call this maneuver to turn towards a specified target state while on the ground.  I will improve and optimize this over time, currently it's fairly naive, but still good enough.  Eventually this may or may not include wall driving, we'll see about that once we get there.
+
+        
+        \attribute{current\_state}
+                  {
+                    \texttt{CarState}.  The current state of the bot, typically from \texttt{game\_info.me}.
+                  }
+        \attribute{target\_state}
+                  {
+                    \texttt{CarState}.  The target state of the maneuver, typically from setting position in \texttt{copy\_state()}.
+                  }
+
+        \attribute{can\_reverse}
+                  {
+                    Boolean.  Set to True if the bot should try to go backwards.  I'm still not sure how this should be implemented, but some sort of backwards driving is necessary.
+                  }
+        \method{input()}
+               {
+                 Returns the controller input for the maneuver.
+               }
+
+      }
+      
+
+\class{NavigateTo}
+      {
+
+        A maneuver to drive to and stop on a target, then readjust to face a direction.
+        
+        \attribute{current\_state}
+                  {
+                    \texttt{CarState}.  The current state of the bot, typically from \texttt{game\_info.me}.
+                  }
+
+        \attribute{goal\_state}
+                  {
+                    \texttt{CarState}.  The target state of the maneuver, typically from setting position and Orientation in \texttt{copy\_state()}.
+                  }
+        \method{input()}
+               {
+                 Returns the controller input for the maneuver.                 
+               }
+
+      }
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

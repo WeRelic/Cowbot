@@ -1,0 +1,228 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Mechanics.py
+\end{center}
+
+
+
+\class{PersistentMechanics}
+      {
+        A container to store objects that must be preserved across frames.\\
+        Takes no arguments, and is called once in the initialization of CowBot. Shouldn't be used elsewhere.
+      }
+
+
+
+\class{Mechanic}
+      {
+        A class to hold a mechanic that needs to be preserved across frames.\\
+        Initialization takes no arguments, and is initialized once per mechanic when CowBot is initialized. As of now this shouldn't be used elsewhere, but that could change if the the overall structure of the code changes.\\
+        \attribute{check}
+                  {
+                    A Boolean that is \texttt{True} only on frames where the bot is performing the mechanic.
+                  }
+
+        \attribute{action}
+                  {
+                    The actual mechanic object.  Both current use cases are RLU objects (Aerial and AerialTurn).
+
+                  }
+      }
+      
+
+
+
+
+
+
+
+\class{AirDodge}
+      {
+        The mechanic to dodge in the air.  Initialization takes two arguments: \texttt{direction} and \texttt{jumped\_last\_frame}.
+
+
+
+        \attribute{direction}
+                  {
+                    Vec3 relative to car coordinates. The intended direction to dodge.
+                  }
+
+
+        \attribute{jumped\_last\_frame}
+                  {
+                    Boolean. True if the bot sent a ``jump'' input on the prior frame.
+                  }
+
+
+        \method{input()}
+               {
+                 Returns an empty input if \texttt{jumped\_last\_frame} is True.  This ensures an attempted dodge doesn't just continue holding the jump button after takeoff.
+                 Otherwise returns a dodge in \texttt{direction} relative to the car: \texttt{jump} is set to 1, \texttt{yaw} is set to \texttt{direction.y}, and \texttt{pitch} is set to \texttt{-direction.x}.  This accounts for the +x-direction being forward and the +y-direction being to the left.
+               }
+
+
+        
+      }
+
+
+
+
+
+
+
+\class{JumpTurn}
+      {
+        A mechanic to jump and turn while in the air.  Very coarse, used primarily for turning while sitting still.  This use case will be deprecated as pathing improves.  50/50s are potentially another use case, turning in the air to dodge from a better angle.
+
+
+        \attribute{current\_state}
+                  {
+                    The current state of the car, usually gotten from \texttt{game\_into.me}.  This class uses z-position and \texttt{wheel\_contact}.
+                  }
+
+
+        \attribute{jump\_height}
+                  {
+                    Float. How high the car should be (in uu from the ground) before we stop holding jump.  If set to zero, the bot inputs a one-frame jump.
+                  }
+
+
+
+        \attribute{turn\_direction}
+                  {
+                    +1 or -1.  Whether to turn clockwise (+1) or counterclockwise (-1).
+                  }
+
+
+        \method{input()}
+                  {
+                    Returns the controller input for the mechanic.  If \texttt{jump\_height} is zero, then \texttt{controller\_input.jump} is set to one only while the car is on the ground.  Otherwise jump is held until the car reaches \texttt{jump\_height} (this can easily be improved later on, if I want to use it).  Hold yaw to turn in the specified direction while in the air (basic control loop to reach a specified orientation might also be good here eventually).
+                  }
+        
+      }
+
+
+
+\class{QuickTurn}
+      {
+
+        A powerslide turn for turning a small amount quickly.  Designed to be used in fast dodges.  Possibly deprecated there in light of cancelled diagonal dodges.  Maybe still useful for turning on the ball to shoot or dribble.
+
+        \attribute{direction}
+                  {
+                    +1 or -1.  The direction to turn: +1 for clockwise (right), -1 for counterclockwise (left).
+                  }
+
+        
+
+        \attribute{boost}
+                  {
+                    0 or 1.  Whether or not to use boost (1) or not use boost (0).
+                  }
+        
+       
+        \method{input()}
+               {
+                 Returns the controller input for the mechanic.  Hold throttle always.  Hold handbrake always.  Boost if \texttt{self.boost == 1}.  Set steer to \texttt{self.direction}.
+               }
+        
+
+      }
+
+
+
+
+
+
+
+
+
+\class{CancelledFastDodge}
+      {
+
+        A cancelled forward-diagonal dodge to accelerate quickly.  Used in kickoffs and eventually will be used for general purpose large-scale repositioning.  We can choose left or right.  Call this mechanic once the car is in the air and ready to dodge - it will dodge as long as it's high enough off the ground.
+
+
+
+        \attribute{double\_jumped}
+                  {
+                    Boolean.  True if the car is in the air and has already double jumped or dodged.
+                  }
+
+
+        \attribute{dodge\_direction}
+                  {
+                    +1 or -1.  +1 for a right dodge, -1 for a left dodge.
+                  }
+
+
+        \attribute{current\_state}
+                  {
+                    \texttt{CarState} object.  Usually will be set to \texttt{game\_info.me}.  This class actually only uses \texttt{current\_state.jumped\_last\_frame}.
+                  }
+        
+        \method{input()}
+                  {
+                    Returns the controller input for the mechanic.  Once the car is above 50uu, it will dodge forward+\texttt{direction}.  Until then, it boosts.  After the dodge, it continues boosting (check for max speed later) and pulls back on pitch to cancel the forward portion of the dodge.
+                  }
+
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

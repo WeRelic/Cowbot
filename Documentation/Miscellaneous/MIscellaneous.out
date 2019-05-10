@@ -1,0 +1,20 @@
+\BOOKMARK [1][-]{section.1}{cap\137magnitude\(x, magnitude = 1\)}{}% 1
+\BOOKMARK [1][-]{section.2}{rotate\137to\137range\(theta, interval\)}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{theta}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{interval}{section.2}% 4
+\BOOKMARK [1][-]{section.3}{car\137coordinates\1372d\(current\137state, direction\)}{}% 5
+\BOOKMARK [2][-]{subsection.3.1}{current\137state}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.2}{direction}{section.3}% 7
+\BOOKMARK [1][-]{section.4}{angles\137are\137close\(angle1, angle2, epsilon\)}{}% 8
+\BOOKMARK [1][-]{section.5}{left\137or\137right\(current\137state, target\137pos\)}{}% 9
+\BOOKMARK [2][-]{subsection.5.1}{current\137state}{section.5}% 10
+\BOOKMARK [2][-]{subsection.5.2}{target\137pos}{section.5}% 11
+\BOOKMARK [1][-]{section.6}{rot\137to\137mat3\(rot}{}% 12
+\BOOKMARK [1][-]{section.7}{pyr\137to\137matrix\(pyr\)}{}% 13
+\BOOKMARK [1][-]{section.8}{Vec3\137to\137Vector3\(vector\)}{}% 14
+\BOOKMARK [1][-]{section.9}{Vec3\137to\137vec3\(vector\)}{}% 15
+\BOOKMARK [1][-]{section.10}{vec3\137to\137Vec3\(vector\)}{}% 16
+\BOOKMARK [1][-]{section.11}{is\137in\137map\(location\)}{}% 17
+\BOOKMARK [1][-]{section.12}{angle\137to\(target, start, initial\137angle\)}{}% 18
+\BOOKMARK [1][-]{section.13}{min\137radius\(speed\)}{}% 19
+\BOOKMARK [1][-]{section.14}{max\137speed\(radius\)}{}% 20

@@ -1,0 +1,58 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Pathing.LineArcPath.py
+\end{center}
+
+TODO: Clean up \texttt{\_\_init()\_\_} so it's not as much a wall of code.
+
+
+\class{ArcLineArc}
+      {
+
+        \argumenta{waypoints}
+                  {
+                    List of \texttt{Vec3}.  The list of waypoints we want to follow. \texttt{waypoints[0]} is the point we are going to head to next.
+                  }
+        \argumenta{current\_state}
+                  {
+                    \texttt{CarState}.  The current\_state of our car.
+                  }
+        \attribute{piece}
+                  {
+                    \texttt{PathPiece}.  The data to tell \texttt{follow\_path()} what it should do.
+                  }
+
+      }
+      
+         
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

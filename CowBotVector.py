@@ -31,17 +31,6 @@ class Vec3:
         return Vec3(-self.x, -self.y, -self.z)
 
 
-
-
-    #Still broken
-    #This will need an (angle, axis) pair.
-    #Alternatively we could use two angles.
-    #Also, do we really want "position" here?  Maybe "target"?
-#    def angle_to( self, position = Vec3() ):
-#        return Vec3()
-
-    #This had a default, scalar = 0.0
-    #I think it's better to require an input each time.
     def scalar_multiply( self, scalar ):
         return Vec3( self.x * scalar, self.y * scalar, self.z * scalar )
 
@@ -60,9 +49,6 @@ class Vec3:
         )
 
 
-    #Remvoing the "other = None" case
-    #In that case we should be using "magnitude" instead,
-    #or at least dot(x,x)
     def dot( self, other ):
             return ( self.x * other.x ) + ( self.y * other.y ) + ( self.z * other.z )
     
@@ -72,12 +58,21 @@ class Vec3:
     def normalize( self ):
         return self.scalar_multiply( 1/(self.magnitude()) )
 
-    #Return the 2d normal vector
     def normal_2d( self ):
+        '''
+        Return the 2d normal vector
+        '''
         return Vec3(self.y, -self.x, 0)
 
     def Vec3_to_2d( self ):
-        #This just discards the z component
+        '''
+        This just discards the z component
+        '''
         return Vec3(self.x, self.y, 0)
+
+
+
+
+
 
     

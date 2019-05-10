@@ -1,0 +1,128 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Kickoffs.Kickoff.py
+\end{center}
+
+
+
+\function{update\_kickoff\_position(game\_info, kickoff\_position)}
+         {
+           Returns the kickoff position (string).  Called by CowBot, and is the final say in whether or not we are executing a kickoff.  Calls \texttt{check\_kickoff\_position}.
+
+           \argumenta{game\_info}
+                     {
+                       \texttt{GameState}.  The state of the game for the current frame.  Can probably be replaced by \texttt{game\_info.me} here.
+                     }
+           \argumenta{kickoff\_position}
+                     {
+                       String.  The type of kickoff we are doing.  Currently can take values ``Other'' (not a standard kickoff), ``Far Back'', ``Back Left'', ``Back Right'', ``Left'', and ``Right''.  More options will be added as I handle non-standard maps.
+                     }
+         }
+         
+
+
+\function{check\_kickoff\_position(current\_state)}
+         {TODO: Update kickoff positions in the position check to the modern values.\\
+           Checks if we're close to a kickoff spawn, and returns the appropriate \texttt{kickoff\_position} string.
+
+           \argumenta{current\_state}
+                     {
+                       \texttt{CarState}. The state of our car in the current frame.
+                     }
+         }
+
+
+\class{Kickoff}
+      {
+
+        \argumenta{game\_info}
+                  {
+                     \texttt{GameState}.  The state of the game for the current frame.
+                  }
+        \argumenta{old\_game\_info}
+                  {
+                     \texttt{GameState}.  The state of the game for the previous frame.
+                  }
+        \argumenta{kickoff\_position}
+                  {
+                    String.  The type of kickoff we are doing.  Currently can take values ``Other'' (not a standard kickoff), ``Far Back'', ``Back Left'', ``Back Right'', ``Left'', and ``Right''.  More options will be added as I handle non-standard maps.
+                  }
+        \argumenta{memory}
+                  {
+                    Currently not used.  Will eventually be used to remember what the opponent has done and adapt accordingly.
+                  }
+        \argumenta{persistent}
+                  {
+                    \texttt{PersistentMechanics}. The object that stores all of our mechanics requiring data from previous frames. For now these are all RLU related.
+                  }
+           
+        \method{input()}
+               {
+                 Return the controller input needed to execute the kickoff.  Calls one of the other kickoff files.  Eventually I'll need to split this into helper functions to decide things as well.  For now it's just ``fast'' and ``default'', so it's not that messy yet.
+               }
+
+
+      }
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

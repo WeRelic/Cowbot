@@ -6,13 +6,62 @@ import rlbot.utils.game_state_util as framework
 
 from CowBotVector import *
 
+'''I don't think I'm using this anymore.
 def one_frame_derivative(f, old_f, fps):
     return (f - old_f) / (1 / fps)
+'''
+
+
+############################
+#Types transformations for other frameworks
+############################
+
+def rot_to_mat3(rot):
+    return mat3( rot.front.x, rot.left.x, rot.up.x,
+                 rot.front.y, rot.left.y, rot.up.y,
+                 rot.front.z, rot.left.z, rot.up.z )
+
+def pyr_to_matrix(pyr):
+    pitch = pyr[0]
+    yaw = pyr[1]
+    roll = pyr[2]
+
+    front = Vec3(cos(yaw)*cos(pitch),
+                 sin(yaw)*cos(pitch),
+                 sin(pitch))
+    left = Vec3(-cos(yaw)*sin(pitch)*sin(roll) - sin(yaw)*cos(roll),
+                -sin(yaw)*sin(pitch)*sin(roll) + cos(yaw)*cos(roll),
+                cos(pitch)*sin(roll))
+    up = Vec3(-cos(yaw)*sin(pitch)*cos(roll) + sin(yaw)*sin(roll),
+              -sin(yaw)*sin(pitch)*cos(roll) - cos(yaw)*sin(roll),
+              cos(pitch)*cos(roll))
+    
+    return [front, left, up]
+
+
+def Vec3_to_Vector3(vector):
+    return framework.Vector3(x = vector.x, y = vector.y, z = vector.z)
+
+def Vec3_to_vec3(vector):
+    return vec3(vector.x, vector.y, vector.z)
+
+def vec3_to_Vec3(vector):
+    return Vec3(vector[0], vector[1], vector[2])
+
+############################
+#Types transformations for other frameworks
+############################
+
+
+
+
+
+
 
 
 def cap_magnitude(x, magnitude = 1):
     '''
-    caps off a variable at a certain max magnitude.
+    Caps off a variable at a certain max magnitude.
     Will be mostly used with magnitude = 1.
     '''
     if x > magnitude:
@@ -35,7 +84,7 @@ def rotate_to_range(theta, interval):
     return theta
         
 
-#This is very broken, fix later.  For now I'm patching by just manually entering boost thresholds.
+#TODO: This is very broken, fix later.  For now I'm patching by just manually entering boost thresholds.
 def find_final_vel(v_initial, boost_amount):
     '''
     This assumes going in a straight line and already moving in the forward direction.
@@ -95,41 +144,6 @@ def left_or_right(current_state, target_pos):
         return 1
     else:
         return -1
-
-
-
-def rot_to_mat3(rot):
-    return mat3( rot.front.x, rot.left.x, rot.up.x,
-                 rot.front.y, rot.left.y, rot.up.y,
-                 rot.front.z, rot.left.z, rot.up.z )
-
-def pyr_to_matrix(pyr):
-    pitch = pyr[0]
-    yaw = pyr[1]
-    roll = pyr[2]
-
-    front = Vec3(cos(yaw)*cos(pitch),
-                 sin(yaw)*cos(pitch),
-                 sin(pitch))
-    left = Vec3(-cos(yaw)*sin(pitch)*sin(roll) - sin(yaw)*cos(roll),
-                -sin(yaw)*sin(pitch)*sin(roll) + cos(yaw)*cos(roll),
-                cos(pitch)*sin(roll))
-    up = Vec3(-cos(yaw)*sin(pitch)*cos(roll) + sin(yaw)*sin(roll),
-              -sin(yaw)*sin(pitch)*cos(roll) - cos(yaw)*sin(roll),
-              cos(pitch)*cos(roll))
-    
-    return [front, left, up]
-
-
-def Vec3_to_Vector3(vector):
-    return framework.Vector3(x = vector.x, y = vector.y, z = vector.z)
-
-def Vec3_to_vec3(vector):
-    return vec3(vector.x, vector.y, vector.z)
-
-def vec3_to_Vec3(vector):
-    return Vec3(vector[0], vector[1], vector[2])
-
 
 
 def is_in_map(location):

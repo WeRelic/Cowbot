@@ -1,5 +1,5 @@
-import rlutilities as utils
-from rlutilities.simulation import Game
+import rlutilities as utils #I don't think I need this here anymore.
+from rlutilities.simulation import Game #or this :/
 
 from CowBotVector import *
 from Miscellaneous import *
@@ -8,11 +8,7 @@ class GameState:
 
     def __init__(self, packet, rigid_body_tick, utils_game, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices, me_jumped_last_frame):
         
-        #Framerate.  Eventually phase this out for time_delta instead.
-        #elf.fps = 120
-
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
-        self.first_frame_of_kickoff = False
         self.kickoff_position = "Other"
 
         #Team info

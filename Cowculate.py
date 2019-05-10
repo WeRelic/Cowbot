@@ -1,15 +1,24 @@
-import GameState as CowState
-from CowBotVector import *
-from rlbot.agents.base_agent import SimpleControllerState
-from Testing import *
-from BallPrediction import *
-from Mechanics import *
+'''
+
+This was originally the main decision process, but it's looking like it'll be deprecated in favor of Planning and Pathing files.
+Parts are definitely worth keeping though, especially the functions at the end (at least worth looking at).
+
+'''
+
+
 from math import sin, cos
-from Maneuvers import *
-from Pathing import *
-from GamePlan import *
+
+from rlbot.agents.base_agent import SimpleControllerState
+
+from BallPrediction import * #Not used yet.  Maybe only use in planning, not here?
+from CowBotVector import *
 import EvilGlobals
+from GamePlan import * #Not currently used, will be deprecated.
+import GameState as CowState #Not needed?
+from Maneuvers import *
+from Mechanics import *
 from Miscellaneous import *
+from Pathing.Pathing import * #Not needed?
 
 
 

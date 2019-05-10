@@ -1,0 +1,371 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: GameState.py
+\end{center}
+%%%Boost order for orange team is exactly reversed.
+%TODO: Reverse boost list if on orange team, so that I can use the same numbers either way.
+
+\class{GameState}
+      {
+
+        The class that handles recording the state of the game, including information about all cars, the ball, and the boosts.  Nothing in the \texttt{game\_info} object should be modified after initiation of \texttt{GameState}.
+
+
+
+        \attribute{is\_kickoff\_pause}
+                  {
+                    Boolean.  Is True while the players are free to move during kickoff, but the clock is not yet running.
+                  }
+        \attribute{kickoff\_position}
+                  {
+                    String.  Defaults to \texttt{``Other''}, and is set and interpreted by the kickoff code.  Stores which of the five standard kickoff positions the bot is in for a kickoff.  Will be \texttt{``Other''} when not in a kickoff.
+                  }
+        \attribute{my\_team}
+                  {
+                    0 or 1.  Is 0 if our bot is on the blue team, is 1 if our bot is on the orange team.
+                  }
+        \attribute{team\_sign}
+                  {
+                    +1 or -1.  Is +1 if our bot is on the blue team, is -1 if our bot is on the orange team. This is used to mirror coordinates so that most of the code doesn't depend on which team we're on.
+                  }
+        \attribute{ball}
+                  {
+                    \texttt{BallState}.  Stores all information about the ball.
+                  }
+        \attribute{me}
+                  {
+                    \texttt{CarState}. Stores all the information about our bot's car.
+                  }
+        \attribute{my\_index}
+                  {
+                    Integer.  The index of our bot in the framework's list of game cars.
+                  }
+        \attribute{teammates}
+                  {
+                    List.  A list of \texttt{CarState}s for our teammates.
+                  }
+        \attribute{opponents}
+                  {
+                    List.  A list of \texttt{CarState}s for our opponents.                    
+                  }
+        \attribute{big\_boosts}
+                  {
+                    List.  A list of \texttt{Boostpad}s specifically for the big boosts.  This probably won't get much use in our code, and may be removed later.
+                  }
+        \attribute{boosts}
+                  {
+                    List.  A list of all \texttt{Boostpad}s on the field, with index matching the framework's index.
+                  }
+        \attribute{game\_time}
+                  {
+                    Float.   The time that has passed since the beginning of the game.
+                  }
+        \attribute{utils\_game}
+                  {
+                    \texttt{Game}.  A \texttt{Game} object from RLU.  Mainly used to get the time step and initialize the RLU mechnanics and make them work.  I never interface with it directly for other purposes.
+                  }
+        \attribute{dt}
+                  {
+                    Float.  The time elapsed since the last tick.  Used for anything resembling a derivative.
+                  }
+        \attribute{opponent\_distance}
+                  {
+                    Float.  The minimum distance from an opponent to the ball in uu.
+                  }
+
+      }
+
+
+
+
+
+
+\class{Orientation}
+      {
+
+        The object that handles all orientation related information for game objects.  Can be used as yaw-pitch-roll or a rotation matrix (eventually add quaternion support as well).  WARNING: Rocket League uses the order Yaw-Pitch-Roll for the orientation of objects, but much of the code here and in the framework uses Pitch-Yaw-Roll instead.
+
+
+        \attribute{pitch}
+                  {
+                    Float between $- \frac{\pi}{2}$ and $\frac{\pi}{2}$. Rotation about an object's $y$-axis.
+                  }
+        \attribute{yaw}
+                  {
+                    Float between $- \pi$ and $\pi$. Rotation about an object's $z$-axis.
+                  }
+        \attribute{roll}
+                  {
+                    Float between $- \pi$ and $\pi$. Rotation about an object's $x$-axis.
+                  }
+        \attribute{matrix}
+                  {
+                    List.  A list containing the vectors \texttt{front}, \texttt{left}, and \texttt{up}.  Forms a 3x3 orthogonal matrix (rotation matrix).
+                  }
+        \attribute{front}
+                  {
+                    \texttt{Vec3} unit vector.  The vector in the front-facing direction of the object.  First column of the orientation matrix.
+                  }
+        \attribute{left}
+                  {
+                    \texttt{Vec3} unit vector.  The vector in the left-facing direction of the object.  Second column of the orientation matrix.
+                  }
+        \attribute{up}
+                  {
+                    \texttt{Vec3} unit vector.  The vector in the up-facing direction of the object.  Third and final column of the orientation matrix.
+                  }
+                  
+
+      }
+
+
+
+
+
+
+\function{Ball(packet, team\_sign, state = None)}
+         {
+           \texttt{packet}: \texttt{GameTickPacket}.  The packet containing all gamestate information.\\
+           \texttt{team\_sign}: +1 or -1.  Is +1 if we are on the Blue team, -1 if we are on the Orange team.  This is used to reflect quantities so that the rest of the code is team-independent.\\
+           \texttt{state}: A framework ball prediction slice object.\\
+           \texttt{Ball} returns a \texttt{BallState} object with the parameters stored in \texttt{state} if specified, otherwise in \texttt{packet}.
+         }
+
+
+
+
+\class{BallState}
+      {
+        \attribute{pos}
+                  {
+                    \texttt{Vec3}.  The $(x , y , z)$ position of the ball.
+                  }
+        \attribute{rot}
+                  {
+                    \texttt{Orientation}.  The \texttt{Orientation} object corresponding to the ball's current 3d orientation. 
+                  }
+        \attribute{vel}
+                  {
+                    \texttt{Vec3}.  The $(v_x , v_y , v_z)$ velocity of the ball.
+                  }
+        \attribute{omega}
+                  {
+                    \texttt{Vec3}.  The $(\omega_x , \omega_y , \omega_z)$ angular velocity of the ball.
+                  }
+        \attribute{last\_touch}
+                  {
+                    Is currently broken in framework.   Also looks broken in the \texttt{GameState} code, or at least is not in terms of CowBot data types.
+                  }
+        \attribute{hit\_location}
+                  {
+                    Is currently broken in framework.   Also looks broken in the \texttt{GameState} code, or at least is not in terms of CowBot data types.                    
+                  }
+
+
+        \method{copy\_state}
+               {
+        \argumentb{pos}
+                  {
+                    \texttt{Vec3}.  The $(x , y , z)$ position of the ball.
+                  }
+        \argumentb{rot}
+                  {
+                    \texttt{Orientation}.  The \texttt{Orientation} object corresponding to the ball's current 3d orientation. 
+                  }
+        \argumentb{vel}
+                  {
+                    \texttt{Vec3}.  The $(v_x , v_y , v_z)$ velocity of the ball.
+                  }
+        \argumentb{omega}
+                  {
+                    \texttt{Vec3}.  The $(\omega_x , \omega_y , \omega_z)$ angular velocity of the ball.
+                  }                 
+               }
+
+      }
+
+
+
+
+
+
+
+\function{Car}
+
+
+\class{CarState}
+
+      {
+        \attribute{pos}
+                  {
+                    \texttt{Vec3}.  The $(x , y , z)$ position of the car.
+                  }
+        \attribute{rot}
+                  {
+                    \texttt{Orientation}.  The \texttt{Orientation} object corresponding to the car's current 3d orientation. 
+                  }
+        \attribute{vel}
+                  {
+                    \texttt{Vec3}.  The $(v_x , v_y , v_z)$ velocity of the car.
+                  }
+        \attribute{omega}
+                  {
+                    \texttt{Vec3}.  The $(\omega_x , \omega_y , \omega_z)$ angular velocity of the car.
+                  }
+        \attribute{demo}
+                  {
+                    Boolean.  True if the car is currently off the field as a result of being demoed.
+                  }
+        \attribute{wheel\_contact}
+                  {
+                    Boolean.  True if the car has wheel contact.  Can be with the ground, walls, ceiling, ball, or another car.
+                  }
+        \attribute{supersonic}
+                  {
+                    Boolean.  True if the car is supersonic.
+                  }
+        \attribute{jumped}
+                  {
+                    Boolean.  True if the car has jumped and has not yet regained wheel contact.
+                  }
+        \attribute{double\_jumped}
+                  {
+                    Boolean.  True if the car has double jumped, including dodges, and has not yet regained wheel contact.
+                  }
+        \attribute{boost}
+                  {
+                    Float.  The amount of boost that the car has.
+                  }
+        \attribute{index}
+                  {
+                    Integer.  The index of the car in the framework's game\_cars list.
+                  }
+        \attribute{jumped\_last\_frame}
+                  {
+                    Boolean.  True if the car input jump on the previous tick.  Only for our car, since we aren't allowed to look at the inputs of other cars.
+                  }
+
+        \method{copy\_state}
+               {
+        \argumentb{pos}
+                  {
+                    \texttt{Vec3}.  The $(x , y , z)$ position of the car.
+                  }
+        \argumentb{rot}
+                  {
+                    \texttt{Orientation}.  The \texttt{Orientation} object corresponding to the car's current 3d orientation. 
+                  }
+        \argumentb{vel}
+                  {
+                    \texttt{Vec3}.  The $(v_x , v_y , v_z)$ velocity of the car.
+                  }
+        \argumentb{omega}
+                  {
+                    \texttt{Vec3}.  The $(\omega_x , \omega_y , \omega_z)$ angular velocity of the car.
+                  }                 
+               }
+      }
+
+
+
+
+
+\class{Boostpad}
+      {
+        \attribute{index}
+                  {
+                    Integer.  The index of the boost pad in the list of boost pads.
+                  }
+        \attribute{pos}
+                  {
+                    \texttt{Vec3}. The $(x,y,z)$ position of the boost pad.
+                  }
+        \attribute{is\_active}
+                  {
+                    Boolean.  True if the boost is currently available to be picked up.
+                  }
+        \attribute{timer}
+                  {
+                    Float.  The time until \texttt{is\_active} becomes True again.
+                  }
+        
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

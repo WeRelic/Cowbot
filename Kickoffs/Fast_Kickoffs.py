@@ -1,6 +1,7 @@
+from CowBotVector import * #This wasn't here before, but I'm not sure how it's not needed
 from Mechanics import *
 from Maneuvers import *
-from GameState import *
+from GameState import * #Not needed?
 
 
 def far_back(game_info, old_game_info, opponent_distance, controller_input, persistent):

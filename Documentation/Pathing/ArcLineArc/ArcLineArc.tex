@@ -1,0 +1,132 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Pathing.ArcLineArc.py
+\end{center}
+
+TODO: Clean up \texttt{\_\_init()\_\_} so it's not as much a wall of code.
+
+
+\class{ArcLineArc}
+      {
+
+        \argumenta{start}
+                  {
+                    \texttt{Vec3}.  The starting point for the path.
+                  }
+        \argumenta{end}
+                  {
+                    \texttt{Vec3}.  The ending point for the path.                    
+                  }
+        \argumenta{start\_tangent}
+                  {
+                    Nonzero \texttt{Vec3}.  The tangent to the path at \texttt{start}.
+                  }
+        \argumenta{end\_tangent}
+                  {
+                    Nonzero \texttt{Vec3}.  The tangent to the path at \texttt{end}.
+                  }
+        \argumenta{radius1}
+                  {
+                    Float.  The signed radius of the first arc.  Positive for CW, negative for CCW.
+                  }
+        \argumenta{radius2}
+                  {
+                    Float.  The signed radius of the second arc.  Positive for CW, negative for CCW.
+                  }
+        \argumenta{current\_state}
+                  {
+                    \texttt{CarState}.  The current state of our car, probably from \texttt{game\_info.me}.
+                  }
+
+
+        \attribute{start\_normal}
+                  {
+                    \texttt{Vec3}.  The normal vector to the start tangent.  Facing ????
+                  }
+        \attribute{end\_normal}
+                  {
+                    \texttt{Vec3}.  The normal vector to the end tangent.  Facing ????
+                  }
+        \attribute{center1}
+                  {
+                    \texttt{Vec3}. The location of the center of the circle the first arc lies along.
+                  }
+        \attribute{center2}
+                  {
+                    \texttt{Vec3}. The location of the center of the circle the second arc lies along.
+                  }
+        \attribute{transition1}
+                  {
+                    \texttt{Vec3}. The location of the transition from the first arc to the line segment.
+                  }
+        \attribute{transition2}
+                  {
+                    \texttt{Vec3}. The location of the transition from the line segment to the second arc.
+                  }
+        \attribute{is\_valid}
+                  {
+                   Boolean.  True when the ArcLineArc is valid, using conditions added as seen fit.  TODO: Add checks that we don't leave the floor of the stadium.
+                  }
+
+        \method{find\_lengths()}
+               {
+                 Returns three floats: The length of the first arc, the length of the line segment, and the length of the second arc.
+               }
+        \method{draw\_path()}
+               {
+                 Uses the RLBot renderer to draw the ArcLineArc path on screen.  Disable for tournament versions.
+               }
+               
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      }
+      
+         
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

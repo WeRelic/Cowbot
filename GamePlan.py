@@ -2,6 +2,8 @@
 
     This file defines the GamePlan class.  GamePlan will be used for high level strategies, 
     storing planned paths, etc.  The GamePlan object is saved across frames in CowBot.py.
+    This doesn't currently do anything, and is likely to be deprecated.  Don't add
+    anything here without considering how it'll fit in.
 
 
 '''

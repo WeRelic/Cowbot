@@ -1,0 +1,66 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Pathing.Path\_Planning.py
+\end{center}
+
+
+TODO: Clean this up so it's not just one big function?
+
+
+
+
+\function{follow\_waypoints(game\_info, starting\_path, waypoint\_list, waypoint\_index, path\_following\_state)}
+         {
+           \argumenta{game\_info}
+                     {
+                       \texttt{GameState}.  The game state of the current frame.
+                     }
+           \argumenta{starting\_path}
+                     {
+                       \texttt{GroundPath}.  The path that was used in the previous frame, and will either be updated or continued here.  Could also be of type \texttt{ArcLineArc}, etc., but will have base class \texttt{GroundPath}.
+                     }
+           \argumenta{waypoint\_list}
+                     {
+                       List of \texttt{Vec3}.  The sequence of points we want to drive through on our path.  Current testing uses boost locations, but any points on the ground of the field will work.
+                     }
+           \argumenta{waypoint\_index}
+                     {
+                       Integer.  An index to keep track of how far along \texttt{waypoint\_list} we are.
+                     }
+           \argumenta{path\_following\_state}
+                     {
+                       String.  The marker to keep track of where we are along a path piece.  This controls how we update our path to move from one piece to the next.  Possible values are currently \texttt{None}, ``First Arc'', ``Switch to Line'', ``Line'', ``Switch to Arc'', and ``Final Arc''.  TODO: Replace \texttt{None} with ``Other''.
+                     }
+         }
+         
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

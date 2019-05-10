@@ -1,0 +1,147 @@
+\documentclass{article}
+\usepackage{Macros}
+
+\newcommand{\class}[1]{\section{class \texttt{#1}}}
+\newcommand{\attribute}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\method}[1]{\subsection{\texttt{self.#1}}}
+\newcommand{\function}[1]{\section{\texttt{#1}}}
+\newcommand{\argumenta}[1]{\subsection{\texttt{#1}}}
+\newcommand{\argumentb}[1]{\subsubsection{\texttt{#1}}}
+
+
+\begin{document}
+\begin{flushleft}
+
+\begin{center}
+  Cowbot Documentation: Kickoffs.Default\_Kickoffs.py
+\end{center}
+
+
+
+\function{far\_back(game\_info, old\_game\_info, opponent\_distance, controller\_input, persistent)}
+         {
+           Returns the controller input (SimpleControllerState) for a far-back default kickoff.
+
+
+           \argumenta{game\_info}
+                     {
+                       \texttt{GameState}.  The state of the game for the current frame.  Can probably be replaced by \texttt{game\_info.me} here.
+                     }
+           \argumenta{old\_game\_info}
+                     {
+                       \texttt{GameState}.  The state of the game for the current frame.  Can probably be replaced by \texttt{game\_info.me} here.
+                     }
+           \argumenta{opponent\_distance}
+                     {
+                       Float.  The least distance from an opponent to the ball.
+                     }
+           \argumenta{controller\_input}
+                     {
+                       \texttt{SimpleControllerState}.  The controller input.  I'm not sure why this needs to be passed in.  TODO: Check on this later.
+                     }
+           \argumenta{persistent}
+                     {
+                       \texttt{PersistentMechanics}.  The holder for our mechanics that require information from previous frames (mostly RLU related).
+                     }
+         }
+         
+
+
+
+
+\function{offcenter(game\_info, old\_game\_info, opponent\_distance, controller\_input, persistent)}
+         {
+           Returns the controller input (SimpleControllerState) for a offcenter default kickoff.
+
+
+           \argumenta{game\_info}
+                     {
+                       \texttt{GameState}.  The state of the game for the current frame.  Can probably be replaced by \texttt{game\_info.me} here.
+                     }
+           \argumenta{old\_game\_info}
+                     {
+                       \texttt{GameState}.  The state of the game for the current frame.  Can probably be replaced by \texttt{game\_info.me} here.
+                     }
+           \argumenta{opponent\_distance}
+                     {
+                       Float.  The least distance from an opponent to the ball.
+                     }
+           \argumenta{x\_sign}
+                     {
+                       +1 or -1.  +1 if we're taking the kickoff from the right, -1 if from the left.
+                     }
+           \argumenta{controller\_input}
+                     {
+                       \texttt{SimpleControllerState}.  The controller input.  I'm not sure why this needs to be passed in.  TODO: Check on this later.
+                     }
+           \argumenta{persistent}
+                     {
+                       \texttt{PersistentMechanics}.  The holder for our mechanics that require information from previous frames (mostly RLU related).
+                     }
+         }
+
+
+
+
+\function{diagonal(game\_info, old\_game\_info, opponent\_distance, controller\_input, persistent)}
+         {
+           Returns the controller input (SimpleControllerState) for a diagonal default kickoff.
+
+
+           \argumenta{game\_info}
+                     {
+                       \texttt{GameState}.  The state of the game for the current frame.  Can probably be replaced by \texttt{game\_info.me} here.
+                     }
+           \argumenta{old\_game\_info}
+                     {
+                       \texttt{GameState}.  The state of the game for the current frame.  Can probably be replaced by \texttt{game\_info.me} here.
+                     }
+           \argumenta{opponent\_distance}
+                     {
+                       Float.  The least distance from an opponent to the ball.
+                     }
+           \argumenta{x\_sign}
+                     {
+                       +1 or -1.  +1 if we're taking the kickoff from the right, -1 if from the left.
+                     }
+           \argumenta{controller\_input}
+                     {
+                       \texttt{SimpleControllerState}.  The controller input.  I'm not sure why this needs to be passed in.  TODO: Check on this later.
+                     }
+           \argumenta{persistent}
+                     {
+                       \texttt{PersistentMechanics}.  The holder for our mechanics that require information from previous frames (mostly RLU related).
+                     }
+         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+\end{flushleft}
+\end{document}

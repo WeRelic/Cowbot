@@ -1,5 +1,5 @@
-from Mechanics import *
 from Maneuvers import *
+from Mechanics import *
 
 
 def far_back(game_info, old_game_info, opponent_distance, controller_input):
