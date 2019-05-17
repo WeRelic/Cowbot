@@ -9,9 +9,7 @@
 '''
 from math import atan2, pi, sin, cos, sqrt
 
-import rlutilities as util #Not needed here
 from rlutilities.mechanics import AerialTurn, Aerial #I think this can work without these, but uses the objects that come from it.
-import rlutilities.linear_algebra as linear #unnecessary as well?
 from rlbot.agents.base_agent import SimpleControllerState
 
 from CowBotVector import *
@@ -35,11 +33,18 @@ class Mechanic:
     Each mechanic has a check, which records if the mechanics 
     is currently operating, so that we don't overwrite it while it's running.
     Each mechanic also has an action, which will be the corresponding object from RLU.
+    Mechanic.data will be used for any planning that needs to be recorded, e.g., the takeoff time 
+    for an aerial.
+    Mechanic.initialize will be used as a flag to know when we should start the mechanic;
+    e.g., it's changed to True once the game time is greater than the planned takeoff
+    time for an aerial.
     '''
 
     def __init__( self ):
         self.check = False
         self.action = None
+        self.data = None
+        self.initialize = False
 
 
 #############################################################################################
@@ -233,7 +238,7 @@ class CancelledFastDodge:
     def input(self):
         controller_input = SimpleControllerState()
 
-        if self.current_state.pos.z < 50:
+        if self.current_state.pos.z < 30:
             #If we're too close to the ground to dodge, just keep boosting.
             controller_input.boost = 1
             return controller_input

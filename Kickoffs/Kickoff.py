@@ -69,7 +69,6 @@ class Kickoff():
 
     def input(self):
 
-        controller_input = SimpleControllerState()
 
         #Check left or right, and set the sign to keep track.
         #Right means +1, Left means -1.
@@ -83,7 +82,6 @@ class Kickoff():
             controller_input, persistent = Kickoffs.Fast_Kickoffs.far_back(self.game_info,
                                                                self.old_game_info,
                                                                self.game_info.opponent_distance,
-                                                               controller_input,
                                                                self.persistent)
 
         elif self.position == "Back Left" or self.position == "Back Right":
@@ -92,7 +90,6 @@ class Kickoff():
                                                                 self.old_game_info,
                                                                 self.game_info.opponent_distance,
                                                                 x_sign,
-                                                                controller_input,
                                                                 self.persistent)
             
         elif self.position == "Left" or self.position == "Right":
@@ -101,7 +98,6 @@ class Kickoff():
                                                                self.old_game_info,
                                                                self.game_info.opponent_distance,
                                                                x_sign,
-                                                               controller_input,
                                                                self.persistent)
 
         return controller_input, self.persistent

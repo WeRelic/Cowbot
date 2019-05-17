@@ -1,5 +1,7 @@
+from functools import partial
 from math import pi
 from math import log, cos, sin, asin, atan2
+
 
 from rlutilities.linear_algebra import mat3, vec3
 import rlbot.utils.game_state_util as framework
@@ -49,13 +51,8 @@ def vec3_to_Vec3(vector):
     return Vec3(vector[0], vector[1], vector[2])
 
 ############################
-#Types transformations for other frameworks
+#
 ############################
-
-
-
-
-
 
 
 
@@ -225,3 +222,22 @@ def max_speed(radius):
 
 
     return 1/max_curvature
+
+
+
+
+
+
+
+#Functions to return a condition for ball prediction
+def condition(pred = None, max_time = None):
+    if pred[-1].time - pred[0].time < max_time:
+        return True
+    else:
+        return False
+
+
+
+def predict_for_time(time):
+    return partial(condition, max_time = time)
+

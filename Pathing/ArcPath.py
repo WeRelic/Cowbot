@@ -10,7 +10,6 @@ from rlbot.agents.base_agent import SimpleControllerState
 
 from CowBotVector import *
 import EvilGlobals
-from Maneuvers import * #Not needed?
 from Miscellaneous import *
 from Pathing.Pathing import GroundPath, PathPiece
 
@@ -69,8 +68,7 @@ class ArcPath(GroundPath):
 
         length_circle = self.phi * abs(self.radius)
 
-
-        self.draw_path()
+        #self.draw_path()
 
 
     def draw_path( self ):

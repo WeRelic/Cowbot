@@ -2,7 +2,7 @@ from Maneuvers import *
 from Mechanics import *
 
 
-def far_back(game_info, old_game_info, opponent_distance, controller_input):
+def far_back(game_info, old_game_info, opponent_distance):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -52,7 +52,7 @@ def far_back(game_info, old_game_info, opponent_distance, controller_input):
 #########################################################################################################
 
 
-def back_left(game_info, old_game_info, opponent_distance, controller_input):
+def back_left(game_info, old_game_info, opponent_distance):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -114,7 +114,7 @@ def back_left(game_info, old_game_info, opponent_distance, controller_input):
 #########################################################################################################
 
 
-def back_right(game_info, old_game_info, opponent_distance, controller_input):
+def back_right(game_info, old_game_info, opponent_distance):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -177,7 +177,7 @@ def back_right(game_info, old_game_info, opponent_distance, controller_input):
 #########################################################################################################
 
 
-def left(game_info, old_game_info,opponent_distance, controller_input):
+def left(game_info, old_game_info,opponent_distance):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
@@ -197,7 +197,7 @@ def left(game_info, old_game_info,opponent_distance, controller_input):
 
 
     elif abs(current_state.pos.y) > 1200:
-        #If we've taken the boost but are still far away, fast dodge to speed up`
+        #If we've taken the boost but are still far away, fast dodge to speed up
         controller_input = FastDodge(current_state,
                                      current_state.copy_state(pos = Vec3(500,0,0)),
                                      old_state,
@@ -239,7 +239,7 @@ def left(game_info, old_game_info,opponent_distance, controller_input):
 
 #########################################################################################################
 
-def right(game_info, old_game_info, opponent_distance, controller_input):
+def right(game_info, old_game_info, opponent_distance):
     current_state = game_info.me
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,

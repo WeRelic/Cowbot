@@ -1,6 +1,3 @@
-import rlutilities as utils #I don't think I need this here anymore.
-from rlutilities.simulation import Game #or this :/
-
 from CowBotVector import *
 from Miscellaneous import *
 
@@ -55,7 +52,12 @@ class GameState:
         #Boost info
         self.big_boosts = []
         self.boosts = []
-        for i in range(field_info.num_boosts):
+        for index in range(field_info.num_boosts):
+            #This way we can pretend we're always on blue.
+            if self.team_sign == 1:
+                i = index
+            else:
+                i = 33 - index
             pad = field_info.boost_pads[i]
             pad_pos = Vec3(self.team_sign*pad.location.x,
                            self.team_sign*pad.location.y,

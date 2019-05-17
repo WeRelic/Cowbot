@@ -1,4 +1,5 @@
 import rlutilities as utils
+from rlutilities.mechanics import AerialTurn, Aerial
 
 from CowBotVector import *
 from GameState import *
@@ -8,28 +9,32 @@ class BallPredictionSlice:
 
     def __init__(self, current_slice, prev_slice):
 
-        #Position, rotation, velocity, omega for the current slice
-        self.x = current_slice.physics.location.x
-        self.y = current_slice.physics.location.y
-        self.z = current_slice.physics.location.z
-        self.pos = Vec3(self.x, self.y, self.z)
-        
-        pitch = current_slice.physics.rotation.pitch
-        yaw = current_slice.physics.rotation.yaw
-        roll = current_slice.physics.rotation.roll
-        self.rot = Orientation(pyr = [ pitch, yaw, roll] )
 
-        self.vx = current_slice.physics.velocity.x
-        self.vy = current_slice.physics.velocity.y
-        self.vz = current_slice.physics.velocity.z
+        #Position, rotation, velocity, omega for the current slice
+        self.x = current_slice.location[0]
+        self.y = current_slice.location[1]
+        self.z = current_slice.location[2]
+        self.pos = Vec3(self.x, self.y, self.z)
+
+        '''
+        Irrelevant for a ball.  No idea if a puck will ever be supported.
+        pitch = current_slice.pitch
+        yaw = current_slice.yaw
+        roll = current_slice.roll
+        self.rot = Orientation(pyr = [ pitch, yaw, roll] )
+        '''
+
+        self.vx = current_slice.velocity[0]
+        self.vy = current_slice.velocity[1]
+        self.vz = current_slice.velocity[2]
         self.vel = Vec3(self.vx, self.vy, self.vz)
-        
-        self.omegax = current_slice.physics.angular_velocity.x
-        self.omegay = current_slice.physics.angular_velocity.y
-        self.omegaz = current_slice.physics.angular_velocity.z
+
+        self.omegax = current_slice.angular_velocity[0]
+        self.omegay = current_slice.angular_velocity[1]
+        self.omegaz = current_slice.angular_velocity[2]
         self.omega = Vec3(self.omegax, self.omegay, self.omegaz)
-        
-        self.time = current_slice.game_seconds
+
+        self.time = current_slice.time
 
         ########################################################
 
@@ -37,28 +42,30 @@ class BallPredictionSlice:
 
             #Position, rotation, velocity, omega for the previous slice,
             #assuming we have a previous slice
-            self.old_x = prev_slice.physics.location.x
-            self.old_y = prev_slice.physics.location.y
-            self.old_z = prev_slice.physics.location.z
+            self.old_x = prev_slice.pos.x
+            self.old_y = prev_slice.pos.y
+            self.old_z = prev_slice.pos.z
             self.old_pos = Vec3(self.x, self.y, self.z)
-            
-            old_pitch = prev_slice.physics.rotation.pitch
-            old_yaw = prev_slice.physics.rotation.yaw
-            old_roll = prev_slice.physics.rotation.roll
-            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
 
-            
-            self.old_vx = prev_slice.physics.velocity.x
-            self.old_vy = prev_slice.physics.velocity.y
-            self.old_vz = prev_slice.physics.velocity.z
+            '''
+            Irrelevant for a ball.  No idea if a puck will ever be supported.
+            old_pitch = prev_slice.rotation.pitch
+            old_yaw = prev_slice.rotation.yaw
+            old_roll = prev_slice.rotation.roll
+            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
+            '''
+
+            self.old_vx = prev_slice.vel.x
+            self.old_vy = prev_slice.vel.y
+            self.old_vz = prev_slice.vel.z
             self.old_vel = Vec3(self.vx, self.vy, self.vz)
-            
-            self.old_omegax = prev_slice.physics.angular_velocity.x
-            self.old_omegay = prev_slice.physics.angular_velocity.y
-            self.old_omegaz = prev_slice.physics.angular_velocity.z
-            self.old_omega = Vec3(self.omegax, self.omegay, self.omegaz)
-            
-            self.old_time = prev_slice.game_seconds
+
+            self.old_omegax = prev_slice.omega.x
+            self.old_omegay = prev_slice.omega.y
+            self.old_omegaz = prev_slice.omega.z
+            self.old_omega = Vec3(self.old_omegax, self.old_omegay, self.old_omegaz)
+
+            self.old_time = prev_slice.time
 
         ########################################################
 
@@ -94,14 +101,20 @@ class BallPredictionSlice:
 
 class PredictionPath:
 
-    def __init__(self, pred):
+    def __init__(self, utils_game, condition):
+        prediction = utils.simulation.Ball(utils_game.ball)
+
         #Assemble a list of the slices in our predicted path.
         self.slices = []
         #For the first slice, there is no previous slice.
-        self.slices.append(BallPredictionSlice(pred.slices[0], None))
-        for i in range(1, pred.num_slices):
+        self.slices.append(BallPredictionSlice(prediction, None))
+        i = 1
+        while condition(self.slices):
             #For all other slices, we have a previous slice.
-            self.slices.append(BallPredictionSlice(pred.slices[i], pred.slices[i - 1]))
+            prediction.step(1/60)
+            self.slices.append(BallPredictionSlice(prediction, self.slices[i - 1]))
+            i +=1 
+
 
     ######################
 
@@ -112,6 +125,7 @@ class PredictionPath:
             if abs(step.time - time) <= 1/60:
                 return step
         #If time is too far in the future, it won't be in the prediction
+        #print("Time called is beyond prediction time")
         return None
 
     ######################
@@ -119,11 +133,11 @@ class PredictionPath:
     def check_on_net(self):
         #Check if at some point the ball is between the posts and behind the goal line.
         for step in self.slices.keys():
-            if abs(step.x) < 0 and step.y > 5130:
+            if abs(step.x) < 800 and step.y > 5120 -92.75:
                 return "Orange"
-            elif abs(step.x) < 0 and step.y < -5130:
+            elif abs(step.x) < 800 and step.y < -5120 -92.75:
                 return "Blue"
-        return None
+        return False
 
     ######################
 
@@ -147,32 +161,88 @@ class PredictionPath:
 
 
 
-
-
-
-
-
+###############################################################################################
+#Aerial timing code
+###############################################################################################
 
 
 
 def aerial_prediction(game_info, persistent):
+    '''
+    Checks where in the future an aerial will put us hitting the ball, and updates our persistent
+    aerial object to have that time and place as the target data.
+    '''
     prediction = utils.simulation.Ball(game_info.utils_game.ball)
-    ball_predictions = [prediction.location]
-    
+
     for i in range(100):
         
         prediction.step(1/60)
-        
-        ball_predictions.append(prediction.location)
-        
+
         if prediction.location[2] > 150:
-            
             persistent.aerial.action.target = prediction.location
             persistent.aerial.action.arrival_time = prediction.time
             simulation = persistent.aerial.action.simulate()
-            
             if (vec3_to_Vec3(simulation.location) - vec3_to_Vec3(persistent.aerial.action.target)).magnitude() < 30:
                 break
 
-
     return persistent
+
+
+
+
+
+def get_ball_arrival(game_info,
+                     condition):
+    '''
+    Returns the time and location at which the ball first satisfies condition.
+    condition is a function that takes in a location and returns a Boolean.
+    '''
+
+    aerial = Aerial(game_info.utils_game.my_car)
+    prediction = utils.simulation.Ball(game_info.utils_game.ball)
+    
+    for i in range(100):
+
+        prediction.step(1/60)
+        prediction.step(1/60)
+        
+        if condition(vec3_to_Vec3(prediction.location)):
+            return prediction.time, prediction.location
+
+
+
+
+def choose_stationary_takeoff_time(game_info,
+                                   target_loc,
+                                   target_time):
+    '''
+    Decides when to take off for an aerial based on a given target time and place.
+    Assumes we're sitting still to start with.
+    '''
+
+    aerial = Aerial(game_info.utils_game.my_car)
+
+    aerial.target = target_loc
+    current_time = game_info.game_time
+    test_interval = [current_time, target_time]
+    while abs(test_interval[1] - test_interval[0]) > 1/30:
+        test_time = (test_interval[0] + test_interval[1]) / 2
+        aerial.arrival_time = test_time
+        simulation = aerial.simulate()
+        if vec3_to_Vec3(simulation.location - aerial.target).magnitude() < 100:
+            test_interval = [test_interval[0], test_time]
+        else:
+            test_interval = [test_time, test_interval[1]]
+    return target_time - (test_interval[1] - current_time)
+
+
+
+
+def is_ball_in_front_of_net(location):
+    '''
+    Returns whether or not the ball is in front of the net, disregarding y-coordinates.
+    '''
+
+    #Check if x is between +/- (goal width + ball radius)
+    #and if z is below (goal height + ball radius- (fudge factor to avoid the crossbar))
+    return (abs(location.x) < 893+92.75) and location.z < 642.775+92.75-20

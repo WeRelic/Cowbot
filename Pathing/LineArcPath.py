@@ -10,7 +10,6 @@ from rlbot.agents.base_agent import SimpleControllerState
 
 from CowBotVector import *
 import EvilGlobals
-from Maneuvers import * #Not needed?
 from Miscellaneous import *
 from Pathing.Pathing import GroundPath, PathPiece
 
@@ -60,7 +59,7 @@ class LineArcPath(GroundPath):
         if (center_to_end_unit_vector.dot(self.start_tangent)) < 0:
             self.phi = abs(self.phi-(2*pi))
 
-        self.draw_path()
+        #self.draw_path()
 
 
     def draw_path( self ):

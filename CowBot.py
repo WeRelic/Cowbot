@@ -4,26 +4,27 @@ import random
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 import rlutilities as utils
+from rlutilities.mechanics import AerialTurn, Aerial
 
 from BallPrediction import * #Not used yet.  Maybe will be used here, maybe only in Planning.py?
 import CowBotInit #only used for find_teammates_and_opponents - move more into this file?
-from CowBotVector import * #Not needed here?
 from Cowculate import * #deprecate and rename planning?
-from EvilGlobals import renderer
-from GameState import *
+import EvilGlobals
+from GamePlan import GamePlan
+from GameState import GameState
 from Kickoffs.Kickoff import *
 from Mechanics import * #Only for the PersistentMechanics class? Try to remove this if I can.
-from Pathing.Pathing import * #I don't think we need this either, only via path_planning
 from Pathing.Path_Planning import *
 from Planning import *
-from StateSetting import * #Only needed for testing?
+
 
 #A useful flag for testing code.
 #When True, all match logic will be ignored.
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
-TESTING = True
-
+TESTING = False
+if TESTING:
+    from StateSetting import *
 
 class BooleanAlgebraCow(BaseAgent):
 
@@ -49,8 +50,7 @@ class BooleanAlgebraCow(BaseAgent):
         self.path = None
         self.waypoint_index = 2
 
-        self.old_plan = None
-        self.current_plan = None
+        self.plan = GamePlan()
         self.old_kickoff_data = None
         self.utils_game = None
 
@@ -79,21 +79,26 @@ class BooleanAlgebraCow(BaseAgent):
 
         
         self.persistent = PersistentMechanics()
-        self.timer = 8
-
+        self.timer = 0
         
         #Put testing-only variables here
         if TESTING:
             self.state = "Reset"
-            self.path_plan = "ArcLineArc"
-            self.path_switch = True
+            self.target_loc = None
+            self.target_time = None
+            self.takeoff_time = None
+            self.start_time = None
+            #self.state = "Reset"
+            #self.path_plan = "ArcLineArc"
+            #self.path_switch = True
+            pass
             
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
 
         ###############################################################################################
         #Startup and frame info
         ###############################################################################################
-
+        
         #Initialization info - move all of this into CowBotInit?
         if self.is_init:
             self.is_init = False
@@ -136,10 +141,12 @@ class BooleanAlgebraCow(BaseAgent):
         #Planning
         ###############################################################################################
 
-        self.current_plan = make_plan(self.game_info,
-                                      self.old_plan)
+        self.plan = make_plan(self.game_info,
+                              self.plan.old_plan,
+                              self.persistent)
 
-        #Check if it's a kickoff.  If so, run kickoff code.
+        print(self.plan.layers, self.plan.old_plan)
+        #Check if it's a kickoff.  If so, we'll run kickoff code later on.
         self.kickoff_position = update_kickoff_position(self.game_info,
                                                         self.kickoff_position)
         if TESTING:
@@ -150,7 +157,11 @@ class BooleanAlgebraCow(BaseAgent):
                                                                                  waypoint_list,
                                                                                  self.waypoint_index,
                                                                                  self.path_state)
-                
+
+
+        self.prediction = PredictionPath(self.game_info.utils_game, predict_for_time(3))
+        #EvilGlobals.draw_ball_path(self.prediction)
+
 
         ###############################################################################################
         #Testing 
@@ -158,33 +169,27 @@ class BooleanAlgebraCow(BaseAgent):
 
 
         if TESTING:
-            controller_input = SimpleControllerState()
-
-            controller_input = self.path.input()
-
-
-            return controller_input
-
-
-        ''' AERIAL TESTING - Important, but not implemented anywhere else yet!
-            self.timer += self.game_info.dt
+            return SimpleControllerState()
+            if self.state != "Reset":
+                self.timer = self.game_info.game_time - self.start_time
 
             if self.state == "Reset":
                 #Reset everything
                 self.timer = 0
+                self.start_time = self.game_info.game_time
 
                 #Set the game state
-                ball_pos = Vec3(0, 0, 1000)
+                ball_pos = Vec3(2000, -5010, 1000)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(0, -2200, 800),
+                                                             vel = Vec3(-700, 0, 800),
                                                              omega = Vec3(0,0,0))
 
-                car_pos = Vec3(0, -2000, 15)
+                car_pos = Vec3(-600, -5300, 15)
                 car_state = self.zero_car_state.copy_state(pos = car_pos,
                                                            vel = Vec3(0, 0, 0),
                                                            rot = Orientation(pitch = 0,
-                                                                             yaw = -pi/2,
+                                                                             yaw = pi/3,
                                                                              roll = 0),
                                                            boost = 100)
 
@@ -192,28 +197,39 @@ class BooleanAlgebraCow(BaseAgent):
                                               current_state = car_state,
                                               ball_state = ball_state))
                 self.state = "Wait"
-                controller_state = SimpleControllerState()
-                controller_state.boost = 1
-                return controller_state
+                return SimpleControllerState()
 
             elif self.state == "Wait":
                 if self.timer > 0.2:
-                    self.state = "Boost"
+                    self.state = "Plan"
+                return SimpleControllerState()
 
 
-            elif self.state == "Boost":
-                controller_state = SimpleControllerState()
-                controller_state.boost = 1
-                if self.timer > 0.5:
+            elif self.state == "Plan":
+                try:
+                    self.target_time, self.target_loc = get_ball_arrival(self.game_info,
+                                                                         ball_is_in_front_of_net)
+                except TypeError:
+                    return SimpleControllerState()
+                self.takeoff_time = choose_stationary_takeoff_time(self.game_info,
+                                                              self.target_loc,
+                                                              self.target_time)
+                self.target_loc -= Vec3_to_vec3(Vec3(0,0,40))
+                self.state = "Patience"
+                return SimpleControllerState()
+
+
+            elif self.state == "Patience":
+                if self.game_info.game_time > self.takeoff_time:
                     self.state = "Initialize"
 
-                
-                return controller_state
+                return SimpleControllerState()
 
 
             elif self.state == "Initialize":
                 self.persistent.aerial.check = True
-                self.persistent = aerial_prediction(self.game_info, self.persistent)
+                self.persistent.aerial.action.target = self.target_loc
+                self.persistent.aerial.action.arrival_time = self.target_time
 
                 self.state = "Go"
 
@@ -228,7 +244,7 @@ class BooleanAlgebraCow(BaseAgent):
                                                            self.persistent)
                 if self.timer > 5:
                     self.state = "Reset"
-                return controller_input'''
+                return controller_input
 
 
 
@@ -237,7 +253,7 @@ class BooleanAlgebraCow(BaseAgent):
         #Run either Kickoff or Cowculate
         ###############################################################################################
 
-        if self.current_plan == "Kickoff":
+        if self.plan.layers[0] == "Kickoff":
             if self.old_kickoff_data != None:
                 self.kickoff_data = Kickoff(self.game_info,
                                             self.old_game_info,
@@ -254,17 +270,17 @@ class BooleanAlgebraCow(BaseAgent):
             output, self.persistent = self.kickoff_data.input()
 
         else:
-            output, self.persistent = Cowculate(self.game_info,
-                               self.old_game_info,
-                               self.current_plan,
-                               self.persistent)
+            output, self.persistent = Cowculate(self.plan,
+                                                self.game_info,
+                                                self.old_game_info,
+                                                self.prediction,
+                                                self.persistent)
 
 
 
         ###############################################################################################
         #Update previous frame variables.
         ###############################################################################################
-        self.old_plan = self.current_plan
         self.old_game_info = self.game_info
         self.old_kickoff_data = self.kickoff_data
         if output.jump == 1:
@@ -273,6 +289,7 @@ class BooleanAlgebraCow(BaseAgent):
             self.jumped_last_frame = False
 
 
+        #I feel like this line breaks aerial turning, but I don't remember why it's here in the first place
         self.persistent.aerial_turn.check = False
 
 
@@ -280,14 +297,6 @@ class BooleanAlgebraCow(BaseAgent):
         if output.throttle == 0:
             output.throttle = 0.01
         return output
-
-
-
-
-
-
-
-
 
 
 

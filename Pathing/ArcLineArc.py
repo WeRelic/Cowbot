@@ -11,7 +11,6 @@ from rlbot.agents.base_agent import SimpleControllerState
 from CowBotVector import *
 from Miscellaneous import *
 import EvilGlobals
-from Maneuvers import * #Not needed?
 from Pathing.Pathing import GroundPath, PathPiece
 
 
@@ -115,7 +114,7 @@ class ArcLineArc(GroundPath):
                                        end_tangent = (self.transition1 - self.start).normalize(),
                                        direction = direction)
 
-            self.draw_path()
+            #self.draw_path()
 
 
         #############################################################################################
