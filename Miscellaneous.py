@@ -44,11 +44,11 @@ def pyr_to_matrix(pyr):
 def Vec3_to_Vector3(vector):
     return framework.Vector3(x = vector.x, y = vector.y, z = vector.z)
 
-def Vec3_to_vec3(vector):
-    return vec3(vector.x, vector.y, vector.z)
+def Vec3_to_vec3(vector, team_sign):
+    return vec3(- vector.x, - vector.y, vector.z)
 
-def vec3_to_Vec3(vector):
-    return Vec3(vector[0], vector[1], vector[2])
+def vec3_to_Vec3(vector, team_sign):
+    return Vec3(team_sign*vector[0], team_sign*vector[1], vector[2])
 
 ############################
 #
@@ -228,6 +228,58 @@ def max_speed(radius):
 
 
 
+def throttle_acceleration(speed, throttle = 1.0):
+    '''
+    Returns the acceleration from a given throttle in [0,1]
+    Assume we are driving parallel to "forward", positive is forward, negative is backward
+    '''
+
+    if speed < 0:
+        return 3500
+    elif speed < 1400:
+        return 1600 - (speed*( (1600-160)/1400 ))
+    elif speed < 1410:
+        return 160 - ( speed*(160/10) )
+    else:
+        return 0
+
+def boost_acceleration(speed):
+    '''
+    Returns the acceleration from a given throttle in [0,1]
+    Assume we are driving straight in the direction of the throttle.
+    '''
+
+    if speed < 2310:
+        return 991.667 + throttle_acceleration(speed)
+    else:
+        return 0
+
+
+
+def linear_time_to_reach(game_info,
+               location):
+    '''
+    Returns how long it will take to drive to the given location.
+    Currently supports only locations more or less directly in front, holding boost while we have it.
+    '''
+
+    distance = (location.to_2d() - game_info.me.pos.to_2d()).magnitude()
+
+    sim_pos = 0
+    sim_vel = game_info.me.vel.magnitude()
+    sim_time = game_info.game_time
+    dt = 1/120 #Doesn't need to be the FPS, just a convenient value
+    while sim_pos < distance:
+        sim_pos += sim_vel*dt
+        if game_info.me.boost > 33.3 * sim_time:
+            accel = boost_acceleration(sim_vel)
+        else:
+            accel = throttle_acceleration(sim_vel)
+        sim_vel += accel*dt
+        sim_time += dt
+    return sim_time
+
+
 
 #Functions to return a condition for ball prediction
 def condition(pred = None, max_time = None):
@@ -240,4 +292,8 @@ def condition(pred = None, max_time = None):
 
 def predict_for_time(time):
     return partial(condition, max_time = time)
+
+
+
+
 

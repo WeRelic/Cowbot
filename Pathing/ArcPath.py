@@ -34,10 +34,10 @@ class ArcPath(GroundPath):
         '''
 
         self.phi = None
-        self.start = start.Vec3_to_2d()
-        self.end = end.Vec3_to_2d()
-        self.start_tangent = start_tangent.Vec3_to_2d().normalize()
-        self.end_tangent = end_tangent.Vec3_to_2d().normalize()
+        self.start = start.to_2d()
+        self.end = end.to_2d()
+        self.start_tangent = start_tangent.to_2d().normalize()
+        self.end_tangent = end_tangent.to_2d().normalize()
         self.radius = radius
         self.current_state = current_state
 

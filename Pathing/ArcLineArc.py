@@ -35,16 +35,16 @@ class ArcLineArc(GroundPath):
         __init__ does all the calculations for setting up the path
         '''
         #Make sure tangents aren't the zero vector
-        if start_tangent.Vec3_to_2d().magnitude() == 0:
+        if start_tangent.to_2d().magnitude() == 0:
             print(ValueError("start_tangent can't be length zero"))
-        if end_tangent.Vec3_to_2d().magnitude() == 0:
+        if end_tangent.to_2d().magnitude() == 0:
             print(ValueError("end_tangent can't be length zero"))
 
         self.current_state = current_state
-        self.start = start.Vec3_to_2d()
-        self.end = end.Vec3_to_2d()
-        self.start_tangent = start_tangent.Vec3_to_2d().normalize()
-        self.end_tangent = end_tangent.Vec3_to_2d().normalize()
+        self.start = start.to_2d()
+        self.end = end.to_2d()
+        self.start_tangent = start_tangent.to_2d().normalize()
+        self.end_tangent = end_tangent.to_2d().normalize()
         self.radius1 = radius1
         self.radius2 = radius2
         self.start_normal = self.start_tangent.normal_2d().normalize()

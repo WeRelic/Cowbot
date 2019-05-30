@@ -53,6 +53,7 @@ class BooleanAlgebraCow(BaseAgent):
         self.plan = GamePlan()
         self.old_kickoff_data = None
         self.utils_game = None
+        self.old_inputs = SimpleControllerState()
 
         #This will be used to remember opponent actions.  Maybe load in bots preemptively one day?
         self.memory = None
@@ -77,7 +78,7 @@ class BooleanAlgebraCow(BaseAgent):
                                        boost = None,
                                        jumped_last_frame = None)
 
-        
+
         self.persistent = PersistentMechanics()
         self.timer = 0
         
@@ -119,7 +120,7 @@ class BooleanAlgebraCow(BaseAgent):
         self.game_info = GameState(packet, self.get_rigid_body_tick(), self.utils_game,
                                    self.field_info, self.name, self.index,
                                    self.team, self.teammate_indices, self.opponent_indices,
-                                   self.jumped_last_frame)
+                                   self.old_inputs)
 
         if self.old_game_info == None:
             #This avoids AttributeErrors on calls to old_game_info on the first frame of a kickoff.
@@ -214,7 +215,7 @@ class BooleanAlgebraCow(BaseAgent):
                 self.takeoff_time = choose_stationary_takeoff_time(self.game_info,
                                                               self.target_loc,
                                                               self.target_time)
-                self.target_loc -= Vec3_to_vec3(Vec3(0,0,40))
+                self.target_loc -= Vec3_to_vec3(Vec3(0,0,40), team_sign)
                 self.state = "Patience"
                 return SimpleControllerState()
 
@@ -238,7 +239,7 @@ class BooleanAlgebraCow(BaseAgent):
             elif self.state == "Go":
 
                 #Controller inputs and persistent mechanics
-                controller_input, self.persistent = aerial(vec3_to_Vec3(self.persistent.aerial.action.target),
+                controller_input, self.persistent = aerial(vec3_to_Vec3(self.persistent.aerial.action.target, team_sign),
                                                            Vec3(0,0,1),
                                                            self.game_info.dt,
                                                            self.persistent)
@@ -283,10 +284,7 @@ class BooleanAlgebraCow(BaseAgent):
         ###############################################################################################
         self.old_game_info = self.game_info
         self.old_kickoff_data = self.kickoff_data
-        if output.jump == 1:
-            self.jumped_last_frame = True
-        else:
-            self.jumped_last_frame = False
+        self.old_inputs = output
 
 
         #I feel like this line breaks aerial turning, but I don't remember why it's here in the first place

@@ -33,16 +33,16 @@ class LineArcLine(GroundPath):
         '''
 
         #Make sure tangents aren't the zero vector
-        if start_tangent.Vec3_to_2d().magnitude() == 0:
+        if start_tangent.to_2d().magnitude() == 0:
             print(ValueError("start_tangent can't be length zero"))
             return None
        
 
         self.phi = None
-        self.start = start.Vec3_to_2d()
-        self.end = end.Vec3_to_2d()
-        self.start_tangent = start_tangent.Vec3_to_2d().normalize()
-        self.transition1 = transition1.Vec3_to_2d()
+        self.start = start.to_2d()
+        self.end = end.to_2d()
+        self.start_tangent = start_tangent.to_2d().normalize()
+        self.transition1 = transition1.to_2d()
         self.radius = radius
 
         self.center = self.transition1 + self.start_tangent.normal_2d().scalar_multiply(radius)
@@ -69,7 +69,7 @@ class LineArcLine(GroundPath):
         p3 = Vec3(x3, y3, 0)
         radius_vector = p3 - p0
 
-        self.end_tangent = (radius_vector).Vec3_to_2d().normal_2d().normalize()
+        self.end_tangent = (radius_vector).to_2d().normal_2d().normalize()
 
         self.transition2 = p3
 

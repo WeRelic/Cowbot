@@ -1,3 +1,5 @@
+from math import tan
+
 import rlutilities as utils
 from rlutilities.mechanics import AerialTurn, Aerial
 
@@ -162,7 +164,7 @@ class PredictionPath:
 
 
 ###############################################################################################
-#Aerial timing code
+#Useful prediction functions
 ###############################################################################################
 
 
@@ -182,12 +184,33 @@ def aerial_prediction(game_info, persistent):
             persistent.aerial.action.target = prediction.location
             persistent.aerial.action.arrival_time = prediction.time
             simulation = persistent.aerial.action.simulate()
-            if (vec3_to_Vec3(simulation.location) - vec3_to_Vec3(persistent.aerial.action.target)).magnitude() < 30:
+            if (vec3_to_Vec3(simulation.location, game_info.team_sign) - vec3_to_Vec3(persistent.aerial.action.target, game_info.team_sign)).magnitude() < 30:
                 break
 
     return persistent
 
 
+
+def ground_prediction(game_info, persistent):
+    '''
+    Checks where in the future an aerial will put us hitting the ball, and updates our persistent
+    aerial object to have that time and place as the target data.
+    '''
+    prediction = utils.simulation.Ball(game_info.utils_game.ball)
+
+    for i in range(100):
+        
+        prediction.step(1/60)
+
+        if prediction.location[2] > 150:
+            persistent.hit_ball.action.target = prediction.location
+            persistent.hit_ball.action.arrival_time = prediction.time
+            if prediction.time - game_info.game_time > drive_time(game_info,
+                                                                  prediction.location,
+                                                                  game_info.me.boost):
+                break
+
+    return persistent
 
 
 
@@ -204,10 +227,9 @@ def get_ball_arrival(game_info,
     for i in range(100):
 
         prediction.step(1/60)
-        prediction.step(1/60)
         
-        if condition(vec3_to_Vec3(prediction.location)):
-            return prediction.time, prediction.location
+        if condition(vec3_to_Vec3(prediction.location, game_info.team_sign), vec3_to_Vec3(prediction.velocity, game_info.team_sign)):
+            return prediction.time, vec3_to_Vec3(prediction.location, game_info.team_sign)
 
 
 
@@ -222,14 +244,14 @@ def choose_stationary_takeoff_time(game_info,
 
     aerial = Aerial(game_info.utils_game.my_car)
 
-    aerial.target = target_loc
+    aerial.target = Vec3_to_vec3(target_loc, game_info.team_sign)
     current_time = game_info.game_time
     test_interval = [current_time, target_time]
     while abs(test_interval[1] - test_interval[0]) > 1/30:
         test_time = (test_interval[0] + test_interval[1]) / 2
         aerial.arrival_time = test_time
         simulation = aerial.simulate()
-        if vec3_to_Vec3(simulation.location - aerial.target).magnitude() < 100:
+        if vec3_to_Vec3(simulation.location - aerial.target, game_info.team_sign).magnitude() < 100:
             test_interval = [test_interval[0], test_time]
         else:
             test_interval = [test_time, test_interval[1]]
@@ -246,3 +268,44 @@ def is_ball_in_front_of_net(location):
     #Check if x is between +/- (goal width + ball radius)
     #and if z is below (goal height + ball radius- (fudge factor to avoid the crossbar))
     return (abs(location.x) < 893+92.75) and location.z < 642.775+92.75-20
+
+
+
+def is_ball_in_scorable_box(loc,
+                            vel,
+                            theta_top = pi/6,
+                            theta_side = pi/6,
+                            max_distance = 1500):
+    '''
+    Returns whether location is in the angled box in front of net of the given dimensions
+    '''
+
+    goal_distance = loc.y + 5120
+    if loc.x < 0:
+        x_sign = -1
+    else:
+        x_sign = 1
+
+    near_post_vector = Vec3(x_sign*920, -5120, 0) - Vec3(loc.x, loc.y, 0)
+    far_post_vector = Vec3(-x_sign*920, -5120, 0) - Vec3(loc.x, loc.y, 0)
+
+    angle_to_near_post = atan2(near_post_vector.y, near_post_vector.x)
+    angle_to_far_post = atan2(far_post_vector.y, far_post_vector.x)
+    ball_towards_net = (x_sign*angle_to_far_post < x_sign*atan2(vel.y, vel.x) < x_sign*angle_to_near_post)
+
+    if loc.y > -5120 + max_distance:
+        #If the ball is far away from the net, it's not scorable
+        return False
+    elif abs(loc.x) > 893 + goal_distance*tan(theta_side):
+        #If the ball is far to the side, the angle is too tight to score
+        return False
+    elif loc.z > 642.775 + goal_distance*tan(theta_top):
+        #If the ball is too high, the angle is too tight to score
+        return False
+    elif not ball_towards_net and loc.z < 150:
+        return False
+    else:
+        return True
+
+
+

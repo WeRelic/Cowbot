@@ -24,6 +24,7 @@ class PersistentMechanics:
     def __init__( self ):
         self.aerial_turn = Mechanic()
         self.aerial = Mechanic()
+        self.hit_ball = Mechanic()
 
 
 
@@ -52,7 +53,7 @@ class Mechanic:
 #############################################################################################
 
 
-def aerial(target, up, dt, persistent):
+def aerial(target, up, dt, team_sign, persistent):
     '''
     Takes a target, an up-vector, a time delta (float), and a PersistentMechanics object.
     The front vector of the car is determined by the aerial controller, so up
@@ -61,8 +62,8 @@ def aerial(target, up, dt, persistent):
     These are the steps to access RLUtilities' Aerial functions. All the math happens there.
     '''
     persistent.aerial.check = True
-    persistent.aerial.action.target = Vec3_to_vec3(target)
-    persistent.aerial.action.up = Vec3_to_vec3(up)
+    persistent.aerial.action.target = Vec3_to_vec3(target, team_sign)
+    persistent.aerial.action.up = Vec3_to_vec3(up, team_sign)
     persistent.aerial.action.step(dt)
     controller_input = persistent.aerial.action.controls
 
@@ -238,14 +239,14 @@ class CancelledFastDodge:
     def input(self):
         controller_input = SimpleControllerState()
 
-        if self.current_state.pos.z < 30:
+        if self.current_state.pos.z < 40:
             #If we're too close to the ground to dodge, just keep boosting.
             controller_input.boost = 1
             return controller_input
 
         if not self.double_jumped:
             #If we haven't double jumped yet, dodge
-            return AirDodge(Vec3(1/sqrt(2), self.dodge_direction / sqrt(2), 0), self.current_state.jumped_last_frame).input()
+            return AirDodge(self.dodge_direction, self.current_state.jumped_last_frame).input()
 
 
         else:

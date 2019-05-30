@@ -79,26 +79,24 @@ class Kickoff():
 
         if self.position == "Far Back":
             #Run the straight kickoff
-            controller_input, persistent = Kickoffs.Fast_Kickoffs.far_back(self.game_info,
+            controller_input = Kickoffs.Default_Kickoffs.far_back(self.game_info,
                                                                self.old_game_info,
-                                                               self.game_info.opponent_distance,
-                                                               self.persistent)
+                                                               self.game_info.opponent_distance)
 
         elif self.position == "Back Left" or self.position == "Back Right":
             #Run the offcenter kickoff
-            controller_input, persistent = Kickoffs.Fast_Kickoffs.offcenter(self.game_info,
-                                                                self.old_game_info,
-                                                                self.game_info.opponent_distance,
-                                                                x_sign,
-                                                                self.persistent)
+            controller_input = Kickoffs.Default_Kickoffs.offcenter(self.game_info,
+                                                                   self.old_game_info,
+                                                                   self.game_info.opponent_distance,
+                                                                   x_sign)
+
             
-        elif self.position == "Left" or self.position == "Right":
+        elif self.position == "Right" or self.position == "Left":
             #Run the diagonal kickoff
-            controller_input, persistent = Kickoffs.Fast_Kickoffs.diagonal(self.game_info,
+            controller_input = Kickoffs.Default_Kickoffs.diagonal(self.game_info,
                                                                self.old_game_info,
                                                                self.game_info.opponent_distance,
-                                                               x_sign,
-                                                               self.persistent)
+                                                               x_sign)
 
         return controller_input, self.persistent
 

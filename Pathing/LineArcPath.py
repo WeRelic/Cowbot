@@ -34,15 +34,15 @@ class LineArcPath(GroundPath):
         '''
 
         self.phi = None
-        self.start = start.Vec3_to_2d()
-        self.end = end.Vec3_to_2d()
+        self.start = start.to_2d()
+        self.end = end.to_2d()
         self.start_tangent = start_tangent
         self.end_tangent = end_tangent
         self.radius = radius
         self.current_state = current_state
 
         self.center = self.end + self.end_tangent.normal_2d().scalar_multiply(radius)
-        self.transition = self.center - (start_tangent).Vec3_to_2d().normal_2d().scalar_multiply(radius)
+        self.transition = self.center - (start_tangent).to_2d().normal_2d().scalar_multiply(radius)
 
         self.piece = PathPiece(shape = "Line",
                                start = self.start,

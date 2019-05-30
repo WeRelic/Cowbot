@@ -3,7 +3,7 @@ from Miscellaneous import *
 
 class GameState:
 
-    def __init__(self, packet, rigid_body_tick, utils_game, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices, me_jumped_last_frame):
+    def __init__(self, packet, rigid_body_tick, utils_game, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices, my_old_inputs):
         
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
         self.kickoff_position = "Other"
@@ -15,7 +15,15 @@ class GameState:
         else:
             self.team_sign = -1
 
-        
+        if my_old_inputs.jump == 1:
+            me_jumped_last_frame = True
+        else:
+            me_jumped_last_frame = False
+
+
+        #The inputs this bot returned last frame.
+        self.inputs = my_old_inputs
+
         #Ball info
         self.ball = Ball(packet, self.team_sign)
 
@@ -317,7 +325,6 @@ def Car(packet,
     '''
     Gets the game info for a given car, and returns the values.  Should be fed into a CarState object.
     '''
-
     this_car = packet.game_cars[index]
     pos = Vec3( team_sign*this_car.physics.location.x,
                 team_sign*this_car.physics.location.y,

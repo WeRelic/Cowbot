@@ -64,7 +64,7 @@ class Vec3:
         '''
         return Vec3(self.y, -self.x, 0)
 
-    def Vec3_to_2d( self ):
+    def to_2d( self ):
         '''
         This just discards the z component
         '''
