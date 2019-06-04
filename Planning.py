@@ -23,8 +23,9 @@ def make_plan(game_info, old_plan, persistent):
         Mid Boost-
     Goal:
         Go to net
-        Wait
+        Wait_in_net
         Far post
+        Far Boost
         Prep for Aerial
     Recover:
         Ground
@@ -59,6 +60,30 @@ def make_plan(game_info, old_plan, persistent):
     if len(game_info.teammates) > 1:
         second_teammate_pos = game_info.teammates[1].pos
 
+    if current_state.pos.x > 0:
+        distance_to_far_boost = (current_state.pos - game_info.boosts[3].pos).magnitude()
+        distance_to_far_post = (current_state.pos - Vec3(-1150, -5120+80, 0)).magnitude()
+    else:
+        distance_to_far_boost = (current_state.pos - game_info.boosts[4].pos).magnitude()
+        distance_to_far_post = (current_state.pos - Vec3(1150, -5120+80, 0)).magnitude()
+
+    teammate_in_net = False
+    teammate_far_post = False
+    if game_info.ball.pos.x > 0:
+        ball_x_sign = 1
+    else:
+        ball_x_sign = -1
+    for mate in game_info.teammates:
+        if check_in_net(mate.pos):
+            teammate_in_net = True
+        if check_far_post(mate.pos, ball_x_sign):
+            teammate_far_post = True
+
+    teammate_is_back = False
+    for mate in game_info.teammates:
+        if mate.pos.y < -2500:
+            teammate_is_back = True
+
     #TODO: Update what counts as "corner"
     ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
     ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
@@ -73,9 +98,12 @@ def make_plan(game_info, old_plan, persistent):
             break
         else: opponent_is_close = False
     teammate_ball_distance = 100000
+    teammate_distance_to_far_post = 100000
     for mate in game_info.teammates:
         if (mate.pos - game_info.ball.pos).magnitude() < teammate_ball_distance:
             teammate_ball_distance = (mate.pos - game_info.ball.pos).magnitude()
+        if (mate.pos - Vec3(-ball_x_sign*1150,-5120+80,0)).magnitude() < teammate_distance_to_far_post:
+            teammate_distance_to_far_post = (mate.pos - Vec3(-ball_x_sign*1150,-5120+80,0)).magnitude()
 
 
     #######################################################################
@@ -86,7 +114,11 @@ def make_plan(game_info, old_plan, persistent):
         #If it's a kickoff, and we're strictly the closest on our team, run Kickoff code.
         #If someone is at least as close as us, go get boost.
         #Wait a split second (if same distance), and if they leave, go for ball
-        if len(game_info.teammates) > 0 and teammate_ball_distance < ball_distance + 50:
+        print(teammate_ball_distance, ball_distance)
+        if len(game_info.teammates) > 0 and teammate_ball_distance > ball_distance - 50 and current_state.pos.x > 0:
+            #left goes :(
+            plan.layers[0] = "Kickoff"
+        elif len(game_info.teammates) > 0 and teammate_ball_distance < ball_distance + 50:
             #TODO: Check if teammate is taking a boost, if they are, go for the other one
             plan.layers[0] = "Boost"
         else:
@@ -110,6 +142,8 @@ def make_plan(game_info, old_plan, persistent):
         elif relative_ball_position < -250:
             #If we were going for the ball, but the ball is behind us, go for boost.
             plan.layers[0] = "Boost"
+        elif team_mode != "1v1" and teammate_is_back and teammate_ball_distance > ball_distance:
+            plan.layers[0] = "Ball"
         elif ball_in_offensive_corner and game_info.me.boost < 60:
             #Maybe try to center?
             plan.layers[0] = "Boost"
@@ -141,7 +175,19 @@ def make_plan(game_info, old_plan, persistent):
             plan.layers[1] = "Clear"
             plan.layers[2] = "Hit ball"
         elif team_mode != "1v1":
-            plan.layers[0] = "Goal"
+            if not teammate_is_back:
+                plan.layers[0] = "Goal"
+            elif game_info.ball.pos.x > 0:
+                plan.layers[0] = "Ball"
+                for mate in game_info.teammates:
+                    if mate.pos.x > current_state.pos.x:
+                        plan.layers[0] = "Goal"
+            else:
+                plan.layers[0] = "Ball"
+                for mate in game_info.teammates:
+                    if mate.pos.x < current_state.pos.x:
+                        plan.layers[0] = "Goal"
+            
         elif is_ball_in_front_of_net(game_info.ball.pos) and team_mode == "1v1":
             #Predict when the ball will be in front of the net.
             plan.layers[0] = "Ball"
@@ -151,7 +197,7 @@ def make_plan(game_info, old_plan, persistent):
             plan.layers[0] = "Goal"
 
     elif old_plan[0] == "Recover":
-        if old_plan[1] == "Ground" and have_steering_control:
+        if old_plan[1] == "Ground":# and have_steering_control: This doesn't work as hoped yet.
             if current_state.boost < 60:
                 plan.layers[0] = "Boost"
             else:
@@ -165,10 +211,20 @@ def make_plan(game_info, old_plan, persistent):
 
     if plan.layers[0] == "Boost" and plan.layers[1] == None:
         if not game_info.is_kickoff_pause:
-            if game_info.ball.pos.x > 0 :
-                plan.layers[1] = "Back Boost-"
+            if game_info.ball.pos.x > 0:
+                if game_info.boosts[15].is_active:
+                    plan.layers[1] = "Mid Boost-"
+                elif game_info.boosts[3].is_active:
+                    plan.layers[1] = "Back Boost-"
+                else:
+                    plan.layers[1] = "Back Boost+"
             else:
-                plan.layers[1] = "Back Boost+"
+                if game_info.boosts[18].is_active:
+                    plan.layers[1] = "Mid Boost+"
+                elif game_info.boosts[4].is_active:
+                    plan.layers[1] = "Back Boost+"
+                else:
+                    plan.layers[1] = "Back Boost-"
         else:
             if current_state.pos.x < 0:
                 plan.layers[1] = "Back Boost-"
@@ -198,16 +254,39 @@ def make_plan(game_info, old_plan, persistent):
     #######################################################################
     elif plan.layers[0] == "Goal":
         #Wait far post instead sometimes
-        if distance_to_net > 500:
-            plan.layers[1] = "Go to net"
-        elif ball_in_defensive_corner or ball_in_offensive_corner:
-            plan.layers[1] = "Wait"
-        elif ball_arrival != None:
-            if ball_arrival[1].z > 200:
-                plan.layers[1] = "Wait"
+        if team_mode == "1v1":
+            if distance_to_net > 500:
+                plan.layers[1] = "Go to net"
+            elif ball_in_defensive_corner or ball_in_offensive_corner:
+                plan.layers[1] = "Wait_in_net"
+            elif ball_arrival != None:
+                if ball_arrival[1].z > 200:
+                    plan.layers[1] = "Wait_in_net"
+            else:
+                plan.layers[1] = "Wait_in_net"
+        elif not check_in_net(current_state.pos) and not check_far_post(current_state.pos, ball_x_sign) and not teammate_distance_to_far_post < distance_to_far_post:
+            if teammate_in_net and teammate_far_post and distance_to_far_boost > 500:
+                plan.layers[1] = "Go to far boost"
+            elif teammate_in_net and teammate_far_post:
+                plan.layers[1] = "Wait on far boost"
+            elif teammate_in_net and distance_to_far_post > 500:
+                plan.layers[1] = "Go to far post"
+            elif teammate_in_net:
+                plan.layers[1] = "Wait on far post"
+            elif distance_to_net > 500:
+                plan.layers[1] = "Go to net"
+            else:
+                plan.layers[1] = "Wait_in_net"
+        elif not check_in_net(current_state.pos):
+            if teammate_in_net:
+                plan.layers[1] = "Wait on far post"
+            elif distance_to_net > 500:
+                plan.layers[1] = "Go to net"
+            else:
+                plan.layers[1] = "Wait in net"
         else:
-            plan.layers[1] = "Wait"
-
+            plan.layers[1] = "Wait in net"
+                
     #######################################################################
     elif plan.layers[0] == "Recover":
         if current_state.wheel_contact:
@@ -326,52 +405,35 @@ def check_team_mode(game_info):
     else:
         return "Other"
 
+###########################
+
+def check_in_net(pos):
+    if abs(pos.x) > 880:
+        return False
+    if pos.y > -5120+150:
+        return False
+    if pos.z > 650:
+        return False
+    return True
 
 
 
+
+
+
+###########################
+
+
+def check_far_post(pos, ball_x_sign):
+    '''
+    x_sign marks which side of the field the ball is on, so that we know what the far post is
+    '''
+    if (pos - Vec3(-ball_x_sign*1150)).magnitude() < 500:
+        return True
+    return False
 
 
 #TODO: Add time estimates for getting to the ball, and predicting when it'll roll into the center of the field.  This will let us take shots more reliably, since we'll be getting there _before_ it rolls out of reach.
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-''' Old 2v2 code.  Probably not worth much, but it belongs here instead of in Cowculate anyway.
-
-    elif len(game_info.teammates) > 0:
-        #Team code, likely very bad
-        ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
-        teammate_in_net = abs(game_info.teammates[0].pos.x) < 900 and game_info.teammates[0].pos.y < -4700
-
-        if game_info.ball.pos.y > -1500:
-            #Don't go into the opponents' half
-            controller_input, persistent = wait_in_net(game_info, persistent)
-        elif teammate_in_net and not shot_on_goal:
-            #Don't cut off teammate unless you need to make a save
-            controller_input, persistent = wait_far_post(game_info, persistent)
-        elif ball_in_defensive_corner:
-            #Wait in net if the ball is in the corner and teammate isn't in net
-            controller_input, persistent = wait_in_net(game_info, persistent)
-        else:
-            controller_input, persistent = go_for_ball(game_info, shot_on_goal, persistent)
-
-    else:
-        #If it's a 1v1, go for the ball next
-        #Turn towards ball, and boost if on the ground and not supersonic.
-        controller_input = GroundTurn(current_state, current_state.copy_state(pos = game_info.ball.pos)).input()
-        if current_state.vel.magnitude() < 2250 and current_state.wheel_contact:
-            controller_input.boost = 1
-'''

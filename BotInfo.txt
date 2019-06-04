@@ -1,0 +1,9 @@
+Discord Name: Lie Algebra Cow#1533
+Bot Name: Boolean Algebra Calf
+Bot Requirements/Setup Instructions: Python, Updated RLU
+
+Fun Facts/Information you'd like the caster to know:
+Beep Boop Moo.
+
+Pick List:
+TBD

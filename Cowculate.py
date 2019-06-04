@@ -62,9 +62,16 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
 #############################################################################
 
     elif plan.layers[0] == "Goal":
-        #Find the center of our net
+        #Useful locations
         center_of_net = Vec3(0,-5120,0)
-
+        if game_info.ball.pos.x > 0:
+            far_post = Vec3(-1150, -5120+80, 0)
+            far_boost = game_info.boosts[3].pos
+        else:
+            far_post = Vec3(1150, -5120+80, 0)
+            far_boost = game_info.boosts[4].pos
+            
+            
         if plan.layers[1] == "Go to net":
             #Turn towards the center of our net
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
@@ -75,7 +82,27 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
             elif current_state.rot.roll < - 0.15:
                 controller_input.steer = -1
 
-        elif plan.layers[1] == "Wait":
+        elif plan.layers[1] == "Go to far post":
+            #Turn towards the center of our net
+            controller_input = GroundTurn(current_state, current_state.copy_state(pos = far_post)).input()
+
+            #If we start to go up the wall on the way, turn back down.
+            if current_state.rot.roll > 0.15:
+                controller_input.steer = 1
+            elif current_state.rot.roll < - 0.15:
+                controller_input.steer = -1
+
+        elif plan.layers[1] == "Go to far boost":
+            #Turn towards the center of our net
+            controller_input = GroundTurn(current_state, current_state.copy_state(pos = far_boost)).input()
+
+            #If we start to go up the wall on the way, turn back down.
+            if current_state.rot.roll > 0.15:
+                controller_input.steer = 1
+            elif current_state.rot.roll < - 0.15:
+                controller_input.steer = -1
+
+        elif plan.layers[1] == "Wait in net":
 
             if plan.layers[2] == "Prep for Aerial":
                 target_time, target_loc = get_ball_arrival(game_info,
@@ -109,21 +136,27 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
                 rot = Orientation(pyr = [current_state.rot.pitch, ball_angle, current_state.rot.roll] )
                 controller_input = NavigateTo(current_state, current_state.copy_state(pos = center_of_net, rot = rot)).input()
 
-        elif plan.layers[1] == "Far Post":
+        elif plan.layers[1] == "Wait on far post":
 
-            #Find the far post.
-            if game_info.ball.pos.x > 0:
-                far_post = Vec3(-900,-5000,0)
-            else:
-                far_post = Vec3(900,-5000,0)
 
             #Know where the ball is so we can face it
             ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                                (game_info.ball.pos - current_state.pos).x)
 
             #Go to the post, stop, then turn in place to face the ball.
-            rot = Orientation(pyr = [current_state.pitch, ball_angle, current_state.roll] )
+            rot = Orientation( pyr = [current_state.rot.pitch, ball_angle, current_state.rot.roll] )
             controller_input = NavigateTo(current_state, current_state.copy_state(pos = far_post, rot = rot)).input()
+
+        elif plan.layers[1] == "Wait on far boost":
+
+
+            #Know where the ball is so we can face it
+            ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
+                               (game_info.ball.pos - current_state.pos).x)
+
+            #Go to the post, stop, then turn in place to face the ball.
+            rot = Orientation(pyr = [current_state.rot.pitch, ball_angle, current_state.rot.roll] )
+            controller_input = NavigateTo(current_state, current_state.copy_state(pos = far_boost, rot = rot)).input()
 
 
 #############################################################################
