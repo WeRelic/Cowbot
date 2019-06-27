@@ -253,7 +253,7 @@ class NavigateTo:
             #Wiggle to face ball
             #Check if the goal is ahead of or behind us, and throttle in that direction
             goal_angle = atan2((self.goal_state.pos - self.current_state.pos).y, (self.goal_state.pos - self.current_state.pos).x)
-            if angle_difference(goal_angle,self.current_state.rot.yaw) > pi/2:
+            if abs(angle_difference(goal_angle,self.current_state.rot.yaw)) > pi/2:
                 correction_sign = -1
             else:
                 correction_sign = 1
