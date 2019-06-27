@@ -45,7 +45,7 @@ def Vec3_to_Vector3(vector):
     return framework.Vector3(x = vector.x, y = vector.y, z = vector.z)
 
 def Vec3_to_vec3(vector, team_sign):
-    return vec3(- vector.x, - vector.y, vector.z)
+    return vec3(team_sign*vector.x, team_sign*vector.y, vector.z)
 
 def vec3_to_Vec3(vector, team_sign):
     return Vec3(team_sign*vector[0], team_sign*vector[1], vector[2])

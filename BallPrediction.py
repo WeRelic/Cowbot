@@ -224,13 +224,13 @@ def get_ball_arrival(game_info,
     aerial = Aerial(game_info.utils_game.my_car)
     prediction = utils.simulation.Ball(game_info.utils_game.ball)
     
-    for i in range(100):
+    for i in range(200):
 
         prediction.step(1/60)
-        
+        prediction.step(1/60)
+
         if condition(vec3_to_Vec3(prediction.location, game_info.team_sign), vec3_to_Vec3(prediction.velocity, game_info.team_sign)):
             return prediction.time, vec3_to_Vec3(prediction.location, game_info.team_sign)
-
 
 
 
@@ -252,9 +252,12 @@ def choose_stationary_takeoff_time(game_info,
         aerial.arrival_time = test_time
         simulation = aerial.simulate()
         if vec3_to_Vec3(simulation.location - aerial.target, game_info.team_sign).magnitude() < 100:
+            print('hi')
             test_interval = [test_interval[0], test_time]
         else:
+            print('bye')
             test_interval = [test_time, test_interval[1]]
+    print((test_interval[0] - current_time), target_time - current_time)
     return target_time - (test_interval[1] - current_time)
 
 

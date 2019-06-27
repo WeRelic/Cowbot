@@ -232,7 +232,7 @@ def make_plan(game_info, old_plan, persistent):
 
     #######################################################################
     #Layer 2
-    ###############k########################################################
+    #######################################################################
 
     if plan.layers[0] == "Ball":
         if persistent.aerial.initialize:
@@ -264,8 +264,8 @@ def make_plan(game_info, old_plan, persistent):
     persistent.hit_ball.initialize = False
 
 
-    if plan.layers != plan.old_plan:
-        print(plan.layers, plan.old_plan, game_info.my_index)
+    #if plan.layers != plan.old_plan:
+    #print(plan.layers, plan.old_plan, game_info.my_index)
 
     #Get ready for next frame, and return
     plan.old_plan = plan.layers

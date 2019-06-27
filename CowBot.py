@@ -46,7 +46,7 @@ class BooleanAlgebraCow(BaseAgent):
         self.kickoff_position = "Other"
         self.kickoff_data = None
         self.jumped_last_frame = None
-        self.path_state = None
+        self.path_state = 'Reset'
         self.path = None
         self.waypoint_index = 2
 
@@ -169,7 +169,7 @@ class BooleanAlgebraCow(BaseAgent):
 
 
         if TESTING:
-            return SimpleControllerState()
+            #return SimpleControllerState()
             if self.state != "Reset":
                 self.timer = self.game_info.game_time - self.start_time
 
@@ -179,10 +179,10 @@ class BooleanAlgebraCow(BaseAgent):
                 self.start_time = self.game_info.game_time
 
                 #Set the game state
-                ball_pos = Vec3(2000, -5010, 1000)
+                ball_pos = Vec3(2000, -10, 1000)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(-700, 0, 800),
+                                                             vel = Vec3(-700, -1000, 800),
                                                              omega = Vec3(0,0,0))
 
                 car_pos = Vec3(-600, -5300, 15)
@@ -208,13 +208,21 @@ class BooleanAlgebraCow(BaseAgent):
             elif self.state == "Plan":
                 try:
                     self.target_time, self.target_loc = get_ball_arrival(self.game_info,
-                                                                         ball_is_in_front_of_net)
+                                                                         is_ball_in_scorable_box)
                 except TypeError:
                     return SimpleControllerState()
                 self.takeoff_time = choose_stationary_takeoff_time(self.game_info,
                                                               self.target_loc,
                                                               self.target_time)
-                self.target_loc -= Vec3_to_vec3(Vec3(0,0,40), team_sign)
+
+                if self.game_info.game_time < self.target_time:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(vec3_to_Vec3(self.persistent.aerial.action.target, 1), self.game_info.team_sign), 10, 10, True, EvilGlobals.renderer.red())
+                    EvilGlobals.renderer.end_rendering()
+                else:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(vec3_to_Vec3(self.persistent.aerial.action.target, 1), self.game_info.team_sign), 10, 10, True, EvilGlobals.renderer.blue())
+                    EvilGlobals.renderer.end_rendering()
                 self.state = "Patience"
                 return SimpleControllerState()
 
@@ -228,19 +236,29 @@ class BooleanAlgebraCow(BaseAgent):
 
             elif self.state == "Initialize":
                 self.persistent.aerial.check = True
-                self.persistent.aerial.action.target = self.target_loc
+                self.persistent.aerial.action.target = Vec3_to_vec3(self.target_loc, self.game_info.team_sign)
                 self.persistent.aerial.action.arrival_time = self.target_time
 
                 self.state = "Go"
+                
 
                 return SimpleControllerState()
 
             elif self.state == "Go":
-
+                if self.game_info.game_time < self.target_time:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(vec3_to_Vec3(self.persistent.aerial.action.target, 1), self.game_info.team_sign), 10, 10, True, EvilGlobals.renderer.red())
+                    EvilGlobals.renderer.end_rendering()
+                else:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(vec3_to_Vec3(self.persistent.aerial.action.target, 1), self.game_info.team_sign), 10, 10, True, EvilGlobals.renderer.blue())
+                    EvilGlobals.renderer.end_rendering()
+                print(self.target_time, self.game_info.game_time)
                 #Controller inputs and persistent mechanics
-                controller_input, self.persistent = aerial(vec3_to_Vec3(self.persistent.aerial.action.target, team_sign),
+                controller_input, self.persistent = aerial(vec3_to_Vec3(self.persistent.aerial.action.target, self.game_info.team_sign),
                                                            Vec3(0,0,1),
                                                            self.game_info.dt,
+                                                           self.game_info.team_sign,
                                                            self.persistent)
                 if self.timer > 5:
                     self.state = "Reset"
@@ -288,7 +306,7 @@ class BooleanAlgebraCow(BaseAgent):
 
 
         #I feel like this line breaks aerial turning, but I don't remember why it's here in the first place
-        self.persistent.aerial_turn.check = False
+        #self.persistent.aerial_turn.check = False
 
 
         #Make sure we don't get stuck turtling. Not sure how effective this is.

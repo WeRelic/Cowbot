@@ -119,19 +119,17 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
             if plan.layers[2] == "Prep for Aerial":
                 target_time, target_loc = get_ball_arrival(game_info,
                                                            is_ball_in_scorable_box)
-
-                '''
+                
                 EvilGlobals.renderer.begin_rendering()
-                EvilGlobals.renderer.draw_rect_3d(target_loc, 10, 10, True, EvilGlobals.renderer.red())
+                EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(target_loc, game_info.team_sign), 10, 10, True, EvilGlobals.renderer.red())
                 EvilGlobals.renderer.end_rendering()
-                '''
-
+                
 
                 if game_info.game_time > choose_stationary_takeoff_time(game_info,
                                                                         target_loc,
                                                                         target_time) - 1/40:
                     if target_loc.z > 200 and -50 < current_state.vel.y < 200:
-                        #TODO: Deal with aerials while moving 
+                        #TODO: Deal with aerials while moving
                         persistent.aerial.check = True
                         persistent.aerial.initialize = True
                         persistent.aerial.action.target = Vec3_to_vec3(target_loc, game_info.team_sign)
@@ -192,11 +190,15 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
 
         else:
             if plan.layers[2] == "Aerial":
-                '''
-                EvilGlobals.renderer.begin_rendering()
-                EvilGlobals.renderer.draw_rect_3d(persistent.aerial.action.target, 10, 10, True, EvilGlobals.renderer.green())
-                EvilGlobals.renderer.end_rendering()
-                '''
+
+                if game_info.game_time < persistent.aerial.action.arrival_time:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(persistent.aerial.action.target, 10, 10, True, EvilGlobals.renderer.green())
+                    EvilGlobals.renderer.end_rendering()
+                else:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(persistent.aerial.action.target, 10, 10, True, EvilGlobals.renderer.blue())
+                    EvilGlobals.renderer.end_rendering()
 
                 controller_input, persistent = aerial(vec3_to_Vec3(persistent.aerial.action.target, game_info.team_sign),
                                                       Vec3(0,0,1),
