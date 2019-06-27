@@ -3,10 +3,11 @@ from Miscellaneous import *
 
 class GameState:
 
-    def __init__(self, packet, rigid_body_tick, utils_game, field_info, my_name, my_index, my_team, teammate_indices, opponent_indices, my_old_inputs):
+    def __init__(self, packet, rigid_body_tick, utils_game, field_info, my_index, my_team, teammate_indices, opponent_indices, my_old_inputs):
         
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
         self.kickoff_position = "Other"
+        self.my_name = packet.game_cars[my_index].name
 
         #Team info
         self.my_team = my_team
@@ -15,11 +16,11 @@ class GameState:
         else:
             self.team_sign = -1
 
+
         if my_old_inputs.jump == 1:
             me_jumped_last_frame = True
         else:
             me_jumped_last_frame = False
-
 
         #The inputs this bot returned last frame.
         self.inputs = my_old_inputs
@@ -56,6 +57,15 @@ class GameState:
                                               i,
                                               my_index,
                                               self.team_sign))
+        self.team_mode = None
+        if len(self.teammates) == 0:
+            self.team_mode = "1v1"
+        elif len(self.teammates) == 1:
+            self.team_mode = "2v2"
+        elif len(self.teammates) == 2:
+            self.team_mode = "3v3"
+        else:
+            self.team_mode = "Other"
 
         #Boost info
         self.big_boosts = []
@@ -190,10 +200,10 @@ def Ball(packet, team_sign, state = None):
         omega = Vec3( team_sign*omegax, team_sign*omegay, omegaz )
 
         #Miscellaneous
-        last_touch = packet.game_ball.latest_touch
-        hit_location = Vec3(team_sign*last_touch.hit_location.x,
-                            team_sign*last_touch.hit_location.y,
-                            last_touch.hit_location.z)
+        latest_touch = packet.game_ball.latest_touch
+        hit_location = Vec3(team_sign*latest_touch.hit_location.x,
+                            team_sign*latest_touch.hit_location.y,
+                            latest_touch.hit_location.z)
 
     else:
         #Position
@@ -231,7 +241,7 @@ def Ball(packet, team_sign, state = None):
                      rot = rot,
                      vel = vel,
                      omega = omega,
-                     last_touch = last_touch,
+                     latest_touch = latest_touch,
                      hit_location = hit_location)
 
 
@@ -242,7 +252,7 @@ class BallState:
                   rot = None,
                   vel = None,
                   omega = None,
-                  last_touch = None,
+                  latest_touch = None,
                   hit_location = None):
 
         self.pos = None
@@ -271,7 +281,7 @@ class BallState:
             self.omegaz = omega.z
             self.omega = omega
 
-        self.last_touch = last_touch
+        self.latest_touch = latest_touch
         self.hit_location = hit_location
 
 

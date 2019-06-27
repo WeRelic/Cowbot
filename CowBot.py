@@ -15,7 +15,7 @@ from GameState import GameState
 from Kickoffs.Kickoff import *
 from Mechanics import * #Only for the PersistentMechanics class? Try to remove this if I can.
 from Pathing.Path_Planning import *
-from Planning import *
+from Planning.Planning import *
 
 
 #A useful flag for testing code.
@@ -64,7 +64,7 @@ class BooleanAlgebraCow(BaseAgent):
                                          rot = None,
                                          vel = None,
                                          omega = None,
-                                         last_touch = None,
+                                         latest_touch = None,
                                          hit_location = None)
         self.zero_car_state = CarState(pos = None,
                                        rot = None,
@@ -118,7 +118,7 @@ class BooleanAlgebraCow(BaseAgent):
 
         #Game state info
         self.game_info = GameState(packet, self.get_rigid_body_tick(), self.utils_game,
-                                   self.field_info, self.name, self.index,
+                                   self.field_info, self.index,
                                    self.team, self.teammate_indices, self.opponent_indices,
                                    self.old_inputs)
 
@@ -142,11 +142,10 @@ class BooleanAlgebraCow(BaseAgent):
         #Planning
         ###############################################################################################
 
-        self.plan = make_plan(self.game_info,
+        self.plan, self.path, self.persistent = make_plan(self.game_info,
                               self.plan.old_plan,
                               self.persistent)
 
-        print(self.plan.layers, self.plan.old_plan)
         #Check if it's a kickoff.  If so, we'll run kickoff code later on.
         self.kickoff_position = update_kickoff_position(self.game_info,
                                                         self.kickoff_position)
@@ -272,6 +271,7 @@ class BooleanAlgebraCow(BaseAgent):
 
         else:
             output, self.persistent = Cowculate(self.plan,
+                                                self.path,
                                                 self.game_info,
                                                 self.old_game_info,
                                                 self.prediction,

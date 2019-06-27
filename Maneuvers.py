@@ -23,8 +23,10 @@
 
 '''
 
-from rlbot.agents.base_agent import SimpleControllerState
 from math import sin, cos, log, exp, sqrt
+
+from rlbot.agents.base_agent import SimpleControllerState
+
 from Mechanics import *
 from Miscellaneous import *
 
@@ -213,12 +215,14 @@ class NavigateTo:
         vel_2d = Vec3(self.current_state.vel.x, self.current_state.vel.y, 0)
 
 
-               
-        if (self.current_state.pos - self.goal_state.pos).magnitude() > 500:
+
+        if (self.current_state.pos - self.goal_state.pos).magnitude() > 400:
+
             #Turn towards target. Hold throttle until we're close enough to start stopping.
             controller_input = GroundTurn(self.current_state, self.goal_state).input()
 
-        elif vel_2d.magnitude() < 100 and current_angle_vec.dot(goal_angle_vec) < 0:
+        elif vel_2d.magnitude() < 50 and current_angle_vec.dot(goal_angle_vec) < 0:
+
             #If we're moving slowly, but not facing the right way, jump to turn in the air.
             #Decide which way to turn.  Make sure we don't have wraparound issues.
 
@@ -240,25 +244,29 @@ class NavigateTo:
             else:
                 controller_input.yaw = cap_magnitude(correction_angle, 1)
 
-        else:
-            #Proportional controller to stop in the right place, and turn while wiggling.
+        elif self.current_state.vel.magnitude() > 400:
+            #TODO: Proportional controller to stop in the right place
+            controller_input.throttle = -1
 
+
+        else:
+            #Wiggle to face ball
             #Check if the goal is ahead of or behind us, and throttle in that direction
             goal_angle = atan2((self.goal_state.pos - self.current_state.pos).y, (self.goal_state.pos - self.current_state.pos).x)
-            if abs(goal_angle - self.current_state.rot.yaw) > pi/2:
+            if angle_difference(goal_angle,self.current_state.rot.yaw) > pi/2:
                 correction_sign = -1
             else:
                 correction_sign = 1
             controller_input.throttle = correction_sign
 
             #Correct as we wiggle so that we face goal_yaw.
-            if self.goal_state.rot.yaw - self.current_state.rot.yaw > 0:
+            #print(self.goal_state.rot.yaw, self.current_state.rot.yaw, angle_difference(self.goal_state.rot.yaw, self.current_state.rot.yaw))
+            if angle_difference(self.goal_state.rot.yaw, self.current_state.rot.yaw) > 0:
                 angle_sign = 1
             else:
                 angle_sign = -1
 
             controller_input.steer = correction_sign*angle_sign
-
 
         return controller_input
 

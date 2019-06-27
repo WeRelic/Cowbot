@@ -123,7 +123,6 @@ class AirDodge:
         '''
 
         controller_input = SimpleControllerState()
-
         if (not self.jumped_last_frame):
             if (self.direction.x == self.direction.y == self.direction.z == 0):
                 controller_input.jump = 1
@@ -131,7 +130,7 @@ class AirDodge:
             else:
                 plane_direction = Vec3(self.direction.x, self.direction.y, 0)
                 plane_direction_normalized = plane_direction.normalize()
-                
+
                 controller_input.jump = 1
                 controller_input.yaw = plane_direction_normalized.y
                 controller_input.pitch = - plane_direction_normalized.x
@@ -234,8 +233,6 @@ class CancelledFastDodge:
         self.current_state = current_state
 
 
-
-
     def input(self):
         controller_input = SimpleControllerState()
 
@@ -254,3 +251,30 @@ class CancelledFastDodge:
             controller_input.boost = 1
             controller_input.pitch = 1
             return controller_input
+
+#############################################################################################
+
+#############################################################################################
+
+
+class FrontDodge:
+    '''
+    FrontDodge is the mechanic where one dodges forward to go faster
+    '''
+
+
+    def __init__(self, current_state):
+        #Dodge direction is 1 for right, -1 for left
+        self.double_jumped = current_state.double_jumped
+        self.current_state = current_state
+
+    def input(self):
+        controller_input = SimpleControllerState()
+        if self.current_state.pos.z < 40 and not self.current_state.double_jumped:
+            controller_input.jump = 1
+        elif self.double_jumped:
+            pass
+        elif self.current_state.pos.z > 40:
+            controller_input = AirDodge(Vec3(1,0,0), self.current_state.jumped_last_frame).input()
+
+        return controller_input

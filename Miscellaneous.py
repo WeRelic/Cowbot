@@ -126,7 +126,7 @@ def angles_are_close(angle1, angle2, epsilon):
     '''
     Checks if two angles are close, without worrying about branches.
     '''
-    return abs(sin(angle1 - angle2)) < asin(epsilon)
+    return abs(angle_difference(angle1, angle2)) < epsilon
 
 
 def left_or_right(current_state, target_pos):
@@ -295,5 +295,8 @@ def predict_for_time(time):
 
 
 
-
-
+def angle_difference(angle1, angle2):
+    '''
+    Returns the smaller angle between two given angles, taking into account branches
+    '''
+    return rotate_to_range(angle1 - angle2, [-pi,pi])

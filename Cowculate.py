@@ -19,7 +19,7 @@ from Miscellaneous import *
 
 
 
-def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
+def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent):
     '''
     The main control function for BAC, Cowculate() returns the final input.
     It takes a GameState object, a plan, and returns a controller_input object.
@@ -29,14 +29,14 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
     controller_input = SimpleControllerState()
     current_state = game_info.me
     old_state = old_game_info.me
-
     
 ############################################################################# 
 
     if plan.layers[0] == "Boost":
         wobble = Vec3(current_state.omega.x, current_state.omega.y, 0).magnitude()
         epsilon = 0.3
-
+        
+        target_boost = None
         if plan.layers[1] == "Back Boost-":
             target_boost = game_info.boosts[3]        
         elif plan.layers[1] == "Back Boost+":
@@ -45,33 +45,43 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
             target_boost = game_info.boosts[15]        
         elif plan.layers[1] == "Mid Boost+":
             target_boost = game_info.boosts[18]
-            
-            
-        angle_to_boost = atan2((target_boost.pos - current_state.pos).y , (target_boost.pos - current_state.pos).x)
+        elif plan.layers[1] == "Pads":
+            #This will skip the target boost loop and follow the path
+            pass
 
-        #Turn towards boost
-        controller_input = GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
+        if target_boost != None:
+            angle_to_boost = atan2((target_boost.pos - current_state.pos).y , (target_boost.pos - current_state.pos).x)
+            facing_boost = angles_are_close(angle_to_boost, current_state.rot.yaw, pi/12)
+            grounded_facing_boost = angles_are_close(angle_to_boost, current_state.rot.yaw, pi/12) and current_state.wheel_contact
+
+            #Turn towards boostI
+            controller_input = GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
+
+            if 1000 < current_state.vel.magnitude() < 2250 and facing_boost and wobble < epsilon and (current_state.pos - target_boost.pos).magnitude() > 1000 and abs(current_state.omega.z) < epsilon:
+                #If slow, not wobbling from a previous dodge, facing towards the boost,
+                #and not already at the boost, dodge for speed
+                controller_input = FrontDodge(current_state).input()
+
+            elif current_state.vel.magnitude() < 2300 and (grounded_facing_boost or current_state.rot.pitch < -pi/12):
+                controller_input.boost = 1
+
+        else:
+            controller_input = path.input()
         
-        if current_state.vel.magnitude() < 2250 and angles_are_close(angle_to_boost, current_state.rot.yaw, pi/6) and wobble < epsilon and (current_state.pos - target_boost.pos).magnitude() > 500:
-            #If slow, not wobbling from a previous dodge, facing towards the boost,
-            #and not already at the boost, dodge for speed
-            controller_input = FastDodge(current_state,
-                                         current_state.copy_state(pos=target_boost.pos),
-                                         old_state).input()
 
-#############################################################################
+    #############################################################################
 
     elif plan.layers[0] == "Goal":
         #Useful locations
         center_of_net = Vec3(0,-5120,0)
         if game_info.ball.pos.x > 0:
-            far_post = Vec3(-1150, -5120+80, 0)
+            far_post = Vec3(-1150, -5120+300, 0)
             far_boost = game_info.boosts[3].pos
         else:
-            far_post = Vec3(1150, -5120+80, 0)
+            far_post = Vec3(1150, -5120+300, 0)
             far_boost = game_info.boosts[4].pos
-            
-            
+
+
         if plan.layers[1] == "Go to net":
             #Turn towards the center of our net
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
@@ -82,6 +92,7 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
             elif current_state.rot.roll < - 0.15:
                 controller_input.steer = -1
 
+                
         elif plan.layers[1] == "Go to far post":
             #Turn towards the center of our net
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = far_post)).input()
@@ -91,6 +102,7 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
                 controller_input.steer = 1
             elif current_state.rot.roll < - 0.15:
                 controller_input.steer = -1
+
 
         elif plan.layers[1] == "Go to far boost":
             #Turn towards the center of our net
@@ -102,8 +114,8 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
             elif current_state.rot.roll < - 0.15:
                 controller_input.steer = -1
 
+                
         elif plan.layers[1] == "Wait in net":
-
             if plan.layers[2] == "Prep for Aerial":
                 target_time, target_loc = get_ball_arrival(game_info,
                                                            is_ball_in_scorable_box)
@@ -118,7 +130,8 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
                 if game_info.game_time > choose_stationary_takeoff_time(game_info,
                                                                         target_loc,
                                                                         target_time) - 1/40:
-                    if target_loc.z > 200:
+                    if target_loc.z > 200 and -50 < current_state.vel.y < 200:
+                        #TODO: Deal with aerials while moving 
                         persistent.aerial.check = True
                         persistent.aerial.initialize = True
                         persistent.aerial.action.target = Vec3_to_vec3(target_loc, game_info.team_sign)
@@ -159,8 +172,8 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
             controller_input = NavigateTo(current_state, current_state.copy_state(pos = far_boost, rot = rot)).input()
 
 
-#############################################################################
-
+            #############################################################################
+    
     elif plan.layers[0] == "Ball":
         if plan.layers[1] == "Challenge":
             if current_state.wheel_contact:
@@ -239,7 +252,7 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
                     controller_input.boost = 1
 
 
-#############################################################################
+        #############################################################################
 
     elif plan.layers[0] == "Recover":
         if plan.layers[1] == "Air":
@@ -258,3 +271,4 @@ def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
 
 
     return controller_input, persistent
+
