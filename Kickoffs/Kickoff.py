@@ -1,10 +1,8 @@
 from rlbot.agents.base_agent import SimpleControllerState
 
-from CowBotVector import *
+from CowBotVector import Vec3
 import Kickoffs.Default_Kickoffs
 import Kickoffs.Fast_Kickoffs
-from Maneuvers import *
-from Mechanics import *
 
 def update_kickoff_position(game_info, kickoff_position):
     '''

@@ -1,5 +1,7 @@
-from BallPrediction import *
-from CowBotVector import *
+from math import atan2
+
+from BallPrediction import get_ball_arrival, is_ball_in_front_of_net, is_ball_in_scorable_box
+from CowBotVector import Vec3
 
 def ball(plan, game_info, persistent):
     current_state = game_info.me

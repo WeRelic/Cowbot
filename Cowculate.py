@@ -1,21 +1,25 @@
 '''
 
-This was originally the main decision process, but it's looking like it'll be deprecated in favor of Planning and Pathing files.
+This was originally the main decision process.  Currently runs the execution of the decisions made in Planning.
 Parts are definitely worth keeping though, especially the functions at the end (at least worth looking at).
 
 '''
 
 
-from math import sin, cos
+from math import atan2, cos, pi, sin
 
 from rlbot.agents.base_agent import SimpleControllerState
+import rlutilities as utils
 
-from BallPrediction import *
-from CowBotVector import *
-import EvilGlobals
-from Maneuvers import *
-from Mechanics import *
-from Miscellaneous import *
+from BallPrediction import aerial_prediction, get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box
+from Conversions import vec3_to_Vec3, Vec3_to_vec3 #Definitely want to push this to a lower level.
+from CowBotVector import Vec3
+from GameState import Orientation
+from Maneuvers import GroundTurn, NavigateTo
+from Mechanics import aerial, aerial_rotation, AirDodge, FrontDodge
+from Miscellaneous import angles_are_close, cap_magnitude, car_coordinates_2d, linear_time_to_reach
+
+import EvilGlobals #Only needed for rendering and debugging
 
 
 
@@ -119,11 +123,7 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
             if plan.layers[2] == "Prep for Aerial":
                 target_time, target_loc = get_ball_arrival(game_info,
                                                            is_ball_in_scorable_box)
-                
-                EvilGlobals.renderer.begin_rendering()
-                EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(target_loc, game_info.team_sign), 10, 10, True, EvilGlobals.renderer.red())
-                EvilGlobals.renderer.end_rendering()
-                
+
 
                 if game_info.game_time > choose_stationary_takeoff_time(game_info,
                                                                         target_loc,
@@ -190,15 +190,6 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
 
         else:
             if plan.layers[2] == "Aerial":
-
-                if game_info.game_time < persistent.aerial.action.arrival_time:
-                    EvilGlobals.renderer.begin_rendering()
-                    EvilGlobals.renderer.draw_rect_3d(persistent.aerial.action.target, 10, 10, True, EvilGlobals.renderer.green())
-                    EvilGlobals.renderer.end_rendering()
-                else:
-                    EvilGlobals.renderer.begin_rendering()
-                    EvilGlobals.renderer.draw_rect_3d(persistent.aerial.action.target, 10, 10, True, EvilGlobals.renderer.blue())
-                    EvilGlobals.renderer.end_rendering()
 
                 controller_input, persistent = aerial(vec3_to_Vec3(persistent.aerial.action.target, game_info.team_sign),
                                                       Vec3(0,0,1),

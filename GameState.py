@@ -1,5 +1,5 @@
 from CowBotVector import *
-from Miscellaneous import *
+from Conversions import *
 
 class GameState:
 

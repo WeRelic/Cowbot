@@ -1,4 +1,4 @@
-import math
+from math import pi
 import random
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
@@ -6,16 +6,16 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 import rlutilities as utils
 from rlutilities.mechanics import AerialTurn, Aerial
 
-from BallPrediction import * #Not used yet.  Maybe will be used here, maybe only in Planning.py?
+from BallPrediction import PredictionPath #Maybe kick all this into Planning?
 import CowBotInit #only used for find_teammates_and_opponents - move more into this file?
-from Cowculate import * #deprecate and rename planning?
-import EvilGlobals
+from Cowculate import Cowculate #deprecate and rename planning?
 from GamePlan import GamePlan
-from GameState import GameState
-from Kickoffs.Kickoff import *
-from Mechanics import * #Only for the PersistentMechanics class? Try to remove this if I can.
-from Pathing.Path_Planning import *
-from Planning.Planning import *
+from GameState import BallState, CarState, GameState
+from Kickoffs.Kickoff import Kickoff, update_kickoff_position
+from Mechanics import PersistentMechanics
+from Miscellaneous import predict_for_time
+from Pathing.Path_Planning import follow_waypoints
+from Planning.Planning import make_plan
 
 
 #A useful flag for testing code.
@@ -24,8 +24,10 @@ from Planning.Planning import *
 #and no action will be taken outside of the "if TESTING:" blocks.
 TESTING = False
 if TESTING:
+    import EvilGlobals #Only needed for rendering.
     from StateSetting import *
-
+    from BallPrediction import *
+    
 class BooleanAlgebraCow(BaseAgent):
 
     '''
@@ -114,7 +116,8 @@ class BooleanAlgebraCow(BaseAgent):
             self.utils_game = utils.simulation.Game(self.index, self.team)
             utils.simulation.Game.set_mode("soccar")
 
-        EvilGlobals.renderer = self.renderer
+        if TESTING:
+            EvilGlobals.renderer = self.renderer
 
         #Game state info
         self.game_info = GameState(packet, self.get_rigid_body_tick(), self.utils_game,

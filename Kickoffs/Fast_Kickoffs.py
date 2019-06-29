@@ -1,8 +1,8 @@
-from CowBotVector import * #This wasn't here before, but I'm not sure how it's not needed
-from Mechanics import *
-from Maneuvers import *
-from GameState import * #Not needed?
-
+from CowBotVector import Vec3
+from Mechanics import AirDodge, CancelledFastDodge, JumpTurn, QuickTurn
+from Maneuvers import GroundTurn
+from Miscellaneous import car_coordinates_2d
+from GameState import Orientation
 
 def far_back(game_info, old_game_info, opponent_distance, persistent):
     controller_input = SimpleControllerState()
@@ -10,7 +10,6 @@ def far_back(game_info, old_game_info, opponent_distance, persistent):
     old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
-
 
 
     #Set which boost we want based on team.

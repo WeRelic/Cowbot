@@ -1,10 +1,10 @@
-from math import tan
+from math import atan2, pi, tan
 
 import rlutilities as utils
 from rlutilities.mechanics import AerialTurn, Aerial
 
-from CowBotVector import *
-from GameState import *
+from Conversions import vec3_to_Vec3, Vec3_to_vec3
+from CowBotVector import Vec3
 
 
 class BallPredictionSlice:
@@ -189,7 +189,7 @@ def aerial_prediction(game_info, persistent):
 
     return persistent
 
-
+############################################
 
 def ground_prediction(game_info, persistent):
     '''
@@ -212,7 +212,7 @@ def ground_prediction(game_info, persistent):
 
     return persistent
 
-
+############################################
 
 def get_ball_arrival(game_info,
                      condition):
@@ -232,7 +232,7 @@ def get_ball_arrival(game_info,
         if condition(vec3_to_Vec3(prediction.location, game_info.team_sign), vec3_to_Vec3(prediction.velocity, game_info.team_sign)):
             return prediction.time, vec3_to_Vec3(prediction.location, game_info.team_sign)
 
-
+############################################
 
 def choose_stationary_takeoff_time(game_info,
                                    target_loc,
@@ -252,16 +252,13 @@ def choose_stationary_takeoff_time(game_info,
         aerial.arrival_time = test_time
         simulation = aerial.simulate()
         if vec3_to_Vec3(simulation.location - aerial.target, game_info.team_sign).magnitude() < 100:
-            print('hi')
             test_interval = [test_interval[0], test_time]
         else:
-            print('bye')
             test_interval = [test_time, test_interval[1]]
-    print((test_interval[0] - current_time), target_time - current_time)
     return target_time - (test_interval[1] - current_time)
 
 
-
+############################################
 
 def is_ball_in_front_of_net(location):
     '''
@@ -272,7 +269,7 @@ def is_ball_in_front_of_net(location):
     #and if z is below (goal height + ball radius- (fudge factor to avoid the crossbar))
     return (abs(location.x) < 893+92.75) and location.z < 642.775+92.75-20
 
-
+############################################
 
 def is_ball_in_scorable_box(loc,
                             vel,
@@ -310,5 +307,5 @@ def is_ball_in_scorable_box(loc,
     else:
         return True
 
-
+############################################
 

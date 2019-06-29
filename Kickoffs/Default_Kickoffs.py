@@ -1,5 +1,10 @@
-from Maneuvers import *
-from Mechanics import *
+from math import atan2
+
+from rlbot.agents.base_agent import SimpleControllerState
+
+from CowBotVector import Vec3
+from Maneuvers import GroundTurn
+from Mechanics import FrontDodge
 
 
 def far_back(game_info, old_game_info, opponent_distance):

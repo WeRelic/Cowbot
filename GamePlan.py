@@ -1,9 +1,6 @@
-from BallPrediction import *
-from Pathing import *
-
 '''
 This file defines the GamePlan class.  The GamePlan object is 
-used to keep track of multiple levels of planning.
+used to keep track of multiple levels of planning, across frames.
 '''
 
 

@@ -8,8 +8,7 @@ from math import pi, asin, sqrt, acos
 
 from rlbot.agents.base_agent import SimpleControllerState
 
-from CowBotVector import *
-from Miscellaneous import *
+from CowBotVector import Vec3
 import EvilGlobals
 from Pathing.Pathing import GroundPath, PathPiece
 

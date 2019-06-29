@@ -5,15 +5,16 @@
    This layer will go between the calculations in Cowculate() and the 
    output into CowBot.py.
 
-
 '''
+
+
 from math import atan2, pi, sin, cos, sqrt
 
 from rlutilities.mechanics import AerialTurn, Aerial #I think this can work without these, but uses the objects that come from it.
 from rlbot.agents.base_agent import SimpleControllerState
 
-from CowBotVector import *
-from Miscellaneous import *
+from Conversions import rot_to_mat3, Vec3_to_vec3
+from CowBotVector import Vec3
 
 
 class PersistentMechanics:
@@ -185,7 +186,7 @@ class JumpTurn:
 #############################################################################################
 
 
-class QuickTurn():
+class QuickTurn:
     '''
     A powerslide turn to turn a small amount quickly.  Designed for flipping for speed.
     Might be useful for shooting as well.

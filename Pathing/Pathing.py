@@ -11,11 +11,11 @@ from math import pi, asin, sqrt, acos
 
 from rlbot.agents.base_agent import SimpleControllerState
 
-from CowBotVector import *
-import EvilGlobals
-from Maneuvers import *
-from Miscellaneous import *
+from CowBotVector import Vec3
+from Maneuvers import GroundTurn
+from Miscellaneous import cap_magnitude
 
+import EvilGlobals
 
 #############################################################################################
 

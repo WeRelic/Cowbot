@@ -23,12 +23,13 @@
 
 '''
 
-from math import sin, cos, log, exp, sqrt
+from math import atan2, cos, exp, log, pi, sin, sqrt
 
 from rlbot.agents.base_agent import SimpleControllerState
 
-from Mechanics import *
-from Miscellaneous import *
+from CowBotVector import Vec3
+from Mechanics import JumpTurn, QuickTurn, AirDodge
+from Miscellaneous import angles_are_close, angle_difference, cap_magnitude, left_or_right
 
 
 #############################################################################################
@@ -168,8 +169,8 @@ class GroundTurn:
         car_to_target = (self.target_state.pos - self.current_state.pos).normalize()
         #Rotated to the car's reference frame on the ground.
         rel_correction_vector = Vec3((correction_vector.x*cos(theta)) + (correction_vector.y * sin(theta)),
-                                         (-(correction_vector.x*sin(theta))) + (correction_vector.y * cos(theta)),
-                                         0)
+                                     (-(correction_vector.x*sin(theta))) + (correction_vector.y * cos(theta)),
+                                     0)
 
         if self.can_reverse and facing_vector.dot(car_to_target) < - pi/8:
             correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)

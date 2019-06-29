@@ -1,59 +1,11 @@
 from functools import partial
-from math import pi
-from math import log, cos, sin, asin, atan2
+from math import pi, log, cos, sin, asin, atan2
 
 
-from rlutilities.linear_algebra import mat3, vec3
+#from rlutilities.linear_algebra import mat3, vec3
 import rlbot.utils.game_state_util as framework
 
-from CowBotVector import *
-
-'''I don't think I'm using this anymore.
-def one_frame_derivative(f, old_f, fps):
-    return (f - old_f) / (1 / fps)
-'''
-
-
-############################
-#Types transformations for other frameworks
-############################
-
-def rot_to_mat3(rot):
-    return mat3( rot.front.x, rot.left.x, rot.up.x,
-                 rot.front.y, rot.left.y, rot.up.y,
-                 rot.front.z, rot.left.z, rot.up.z )
-
-def pyr_to_matrix(pyr):
-    pitch = pyr[0]
-    yaw = pyr[1]
-    roll = pyr[2]
-
-    front = Vec3(cos(yaw)*cos(pitch),
-                 sin(yaw)*cos(pitch),
-                 sin(pitch))
-    left = Vec3(-cos(yaw)*sin(pitch)*sin(roll) - sin(yaw)*cos(roll),
-                -sin(yaw)*sin(pitch)*sin(roll) + cos(yaw)*cos(roll),
-                cos(pitch)*sin(roll))
-    up = Vec3(-cos(yaw)*sin(pitch)*cos(roll) + sin(yaw)*sin(roll),
-              -sin(yaw)*sin(pitch)*cos(roll) - cos(yaw)*sin(roll),
-              cos(pitch)*cos(roll))
-    
-    return [front, left, up]
-
-
-def Vec3_to_Vector3(vector):
-    return framework.Vector3(x = vector.x, y = vector.y, z = vector.z)
-
-def Vec3_to_vec3(vector, team_sign):
-    return vec3(team_sign*vector.x, team_sign*vector.y, vector.z)
-
-def vec3_to_Vec3(vector, team_sign):
-    return Vec3(team_sign*vector[0], team_sign*vector[1], vector[2])
-
-############################
-#
-############################
-
+from CowBotVector import Vec3
 
 
 def cap_magnitude(x, magnitude = 1):
@@ -80,13 +32,13 @@ def rotate_to_range(theta, interval):
         theta -= (interval[1] - interval[0])
     return theta
         
-
+'''
 #TODO: This is very broken, fix later.  For now I'm patching by just manually entering boost thresholds.
 def find_final_vel(v_initial, boost_amount):
-    '''
+
     This assumes going in a straight line and already moving in the forward direction.
     It returns the maximum speed we can reach by just holding boost, and using boost_amount
-    '''
+
 
     v_max = 2275
     v_throttle = 1450
@@ -99,7 +51,7 @@ def find_final_vel(v_initial, boost_amount):
     else:
         boost_remaining = boost_amount - log(1-((v_throttle - v_initial)/(v_max)))
         return min(v_max, v_throttle + boost_accel*(boost_remaining / boost_per_second))
-
+'''
 
 def find_closest_big_boost(game_info):
     min_boost_dist = 20000
@@ -127,6 +79,15 @@ def angles_are_close(angle1, angle2, epsilon):
     Checks if two angles are close, without worrying about branches.
     '''
     return abs(angle_difference(angle1, angle2)) < epsilon
+
+
+
+def angle_difference(angle1, angle2):
+    '''
+    Returns the smaller angle between two given angles, taking into account branches
+    '''
+    return rotate_to_range(angle1 - angle2, [-pi,pi])
+
 
 
 def left_or_right(current_state, target_pos):
@@ -225,9 +186,6 @@ def max_speed(radius):
 
 
 
-
-
-
 def throttle_acceleration(speed, throttle = 1.0):
     '''
     Returns the acceleration from a given throttle in [0,1]
@@ -293,10 +251,3 @@ def condition(pred = None, max_time = None):
 def predict_for_time(time):
     return partial(condition, max_time = time)
 
-
-
-def angle_difference(angle1, angle2):
-    '''
-    Returns the smaller angle between two given angles, taking into account branches
-    '''
-    return rotate_to_range(angle1 - angle2, [-pi,pi])

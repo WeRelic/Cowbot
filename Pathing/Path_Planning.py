@@ -8,15 +8,15 @@ from math import pi, asin, sqrt, acos
 
 from rlbot.agents.base_agent import SimpleControllerState
 
-from CowBotVector import *
-import EvilGlobals
-from Miscellaneous import *
-from Pathing.ArcLineArc import *
-from Pathing.ArcPath import *
-from Pathing.LineArcLine import *
-from Pathing.LineArcPath import *
-from Pathing.WaypointPath import *
+from CowBotVector import Vec3
+from Miscellaneous import rotate_to_range, min_radius
+from Pathing.ArcLineArc import ArcLineArc
+from Pathing.ArcPath import ArcPath
+from Pathing.LineArcLine import LineArcLine
+from Pathing.LineArcPath import LineArcPath
+from Pathing.WaypointPath import WaypointPath
 
+import EvilGlobals #Only needed for rendering
 
 #############################################################################################
 

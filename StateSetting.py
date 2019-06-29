@@ -1,6 +1,6 @@
 import rlbot.utils.game_state_util as framework
 
-from Miscellaneous import *
+from Conversions import *
 
 def rot_to_Rotator(rot):
     return framework.Rotator(pitch = rot.pitch, yaw = rot.yaw, roll = rot.roll)
