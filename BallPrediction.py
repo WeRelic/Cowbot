@@ -309,3 +309,22 @@ def is_ball_in_scorable_box(loc,
 
 ############################################
 
+
+def check_on_goal(pred, time):
+    '''
+    Returns if the ball will be in the net within time (just looks at y-coordinates)
+    '''
+    on_net = False
+    i = 0
+    while pred.slices[i].time < time:
+        if pred.slices[i].pos.y < -(5120+92.75):
+            on_net = True
+            break
+
+        i +=1
+    return on_net
+
+
+
+#TODO: Add time estimates for getting to the ball, and predicting when it'll roll into the center of the field.  This will let us take shots more reliably, since we'll be getting there _before_ it rolls out of reach.
+

@@ -239,6 +239,35 @@ def linear_time_to_reach(game_info,
 
 
 
+###########################
+
+def check_in_net(pos):
+    '''
+    Checks if a car position counts as "in net" when looking for teammates.
+    '''
+    if abs(pos.x) > 880:
+        return False
+    if pos.y > -5120+150:
+        return False
+    if pos.z > 650:
+        return False
+    return True
+
+###########################
+
+
+def check_far_post(pos, ball_x_sign):
+    '''
+    Checks if a car position counts as "far post" when looking for teammates.
+    x_sign marks which side of the field the ball is on, so that we know what the far post is
+    '''
+    if (pos - Vec3(-ball_x_sign*1150)).magnitude() < 500:
+        return True
+    return False
+
+###########################
+
+
 #Functions to return a condition for ball prediction
 def condition(pred = None, max_time = None):
     if pred[-1].time - pred[0].time < max_time:

@@ -15,7 +15,8 @@ from Kickoffs.Kickoff import Kickoff, update_kickoff_position
 from Mechanics import PersistentMechanics
 from Miscellaneous import predict_for_time
 from Pathing.Path_Planning import follow_waypoints
-from Planning.Planning import make_plan
+import Planning.OnesPlanning.Planning as OnesPlanning
+import Planning.TeamPlanning.Planning as TeamPlanning
 
 
 #A useful flag for testing code.
@@ -145,9 +146,14 @@ class BooleanAlgebraCow(BaseAgent):
         #Planning
         ###############################################################################################
 
-        self.plan, self.path, self.persistent = make_plan(self.game_info,
-                              self.plan.old_plan,
-                              self.persistent)
+        if self.game_info.team_mode == "1v1":
+            self.plan, self.path, self.persistent = OnesPlanning.make_plan(self.game_info,
+                                                                           self.plan.old_plan,
+                                                                           self.persistent)
+        else:
+            self.plan, self.path, self.persistent = TeamPlanning.make_plan(self.game_info,
+                                                                           self.plan.old_plan,
+                                                                           self.persistent)
 
         #Check if it's a kickoff.  If so, we'll run kickoff code later on.
         self.kickoff_position = update_kickoff_position(self.game_info,
@@ -315,7 +321,18 @@ class BooleanAlgebraCow(BaseAgent):
         #Make sure we don't get stuck turtling. Not sure how effective this is.
         if output.throttle == 0:
             output.throttle = 0.01
-        return output
+
+
+        framework_output = SimpleControllerState()
+        framework_output.throttle = output.throttle
+        framework_output.steer = output.steer
+        framework_output.yaw = output.yaw
+        framework_output.pitch = output.pitch
+        framework_output.roll = output.roll
+        framework_output.boost = output.boost
+        framework_output.handbrake = output.handbrake
+        framework_output.jump = output.jump
+        return framework_output
 
 
 

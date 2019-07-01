@@ -33,7 +33,7 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
     controller_input = SimpleControllerState()
     current_state = game_info.me
     old_state = old_game_info.me
-    
+
 ############################################################################# 
 
     if plan.layers[0] == "Boost":
