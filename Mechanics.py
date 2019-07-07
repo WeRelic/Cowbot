@@ -47,6 +47,9 @@ class Mechanic:
         self.action = None
         self.data = None
         self.initialize = False
+        self.target_orientation = None
+        self.target_location = None
+        self.target_time = None
 
 
 #############################################################################################
@@ -83,9 +86,12 @@ def aerial_rotation(target_rot, dt, persistent):
     These are the steps to access RLUtilities' AerialTurn functions. All the math happens there.
     '''
     persistent.aerial_turn.check = True
-    persistent.aerial_turn.action.target = rot_to_mat3(target_rot)
-    persistent.aerial_turn.action.step(dt)
-    controller_input = persistent.aerial_turn.action.controls
+    if persistent.aerial_turn.action == None:
+        controller_input = SimpleControllerState()
+        persistent.aerial_turn.target = rot_to_mat3(target_rot)
+    else:
+        persistent.aerial_turn.action.step(dt)
+        controller_input = persistent.aerial_turn.action.controls
 
     return controller_input, persistent
 

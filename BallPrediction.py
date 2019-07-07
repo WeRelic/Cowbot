@@ -54,7 +54,7 @@ class BallPredictionSlice:
             old_pitch = prev_slice.rotation.pitch
             old_yaw = prev_slice.rotation.yaw
             old_roll = prev_slice.rotation.roll
-            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
+k            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
             '''
 
             self.old_vx = prev_slice.vel.x
@@ -169,22 +169,28 @@ class PredictionPath:
 
 
 
-def aerial_prediction(game_info, persistent):
+def aerial_prediction(game_info, min_time, persistent):
     '''
     Checks where in the future an aerial will put us hitting the ball, and updates our persistent
     aerial object to have that time and place as the target data.
     '''
     prediction = utils.simulation.Ball(game_info.utils_game.ball)
+    
 
     for i in range(100):
-        
+
+        aerial = AerialTurn(game_info.utils_game.my_car)
+
+        prediction.step(1/60)
         prediction.step(1/60)
 
-        if prediction.location[2] > 150:
-            persistent.aerial.action.target = prediction.location
-            persistent.aerial.action.arrival_time = prediction.time
-            simulation = persistent.aerial.action.simulate()
-            if (vec3_to_Vec3(simulation.location, game_info.team_sign) - vec3_to_Vec3(persistent.aerial.action.target, game_info.team_sign)).magnitude() < 30:
+        if prediction.location[2] > 150 and prediction.time > min_time:
+            aerial.target = prediction.location
+            aerial.arrival_time = prediction.time
+            simulation = aerial.simulate()
+            if (vec3_to_Vec3(simulation.location, game_info.team_sign) - vec3_to_Vec3(aerial.target, game_info.team_sign)).magnitude() < 30:
+                persistent.aerial.target_location = prediction.location
+                persistent.aerial.target_time = prediction.time
                 break
 
     return persistent

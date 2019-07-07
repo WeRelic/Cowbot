@@ -108,10 +108,6 @@ def make_plan(game_info, old_plan, persistent):
 
     #######################################################################
 
-    #Reset any flags that might've been called previously.
-    persistent.aerial.initialize = False
-    persistent.hit_ball.initialize = False
-
 
     #if plan.layers != plan.old_plan:
     #print(plan.layers, plan.old_plan, game_info.my_index)

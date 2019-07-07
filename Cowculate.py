@@ -118,7 +118,7 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
             elif current_state.rot.roll < - 0.15:
                 controller_input.steer = -1
 
-                
+
         elif plan.layers[1] == "Wait in net":
             if plan.layers[2] == "Prep for Aerial":
                 target_time, target_loc = get_ball_arrival(game_info,
@@ -127,15 +127,12 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
 
                 if game_info.game_time > choose_stationary_takeoff_time(game_info,
                                                                         target_loc,
-                                                                        target_time) - 1/40:
+                                                                        target_time) - 1/10:
                     if target_loc.z > 200 and -50 < current_state.vel.y < 200:
                         #TODO: Deal with aerials while moving
                         persistent.aerial.check = True
                         persistent.aerial.initialize = True
-                        persistent.aerial.action.target = Vec3_to_vec3(target_loc, game_info.team_sign)
-                        persistent.aerial.action.arrival_time = target_time
-                        if not persistent.aerial.action.is_viable:
-                            persistent = aerial_prediction(game_info, persistent)
+                        persistent = aerial_prediction(game_info, target_time, persistent)
 
             else:
                 #Know where the ball is so we can face it

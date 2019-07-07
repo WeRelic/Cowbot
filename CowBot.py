@@ -58,11 +58,11 @@ class BooleanAlgebraCow(BaseAgent):
         self.utils_game = None
         self.old_inputs = SimpleControllerState()
 
-        #This will be used to remember opponent actions.  Maybe load in bots preemptively one day?
+        #This will be used to remember opponent actions.  Maybe load in opponent bots preemptively one day?
         self.memory = None
 
         #These are used to specify or set states in the code.  State setting
-        #using state.copy_state() doesn't work as expected.
+        #using state.copy_state() didn't work as expected.
         self.zero_ball_state = BallState(pos = None,
                                          rot = None,
                                          vel = None,
@@ -102,16 +102,14 @@ class BooleanAlgebraCow(BaseAgent):
         ###############################################################################################
         #Startup and frame info
         ###############################################################################################
-        
-        #Initialization info - move all of this into CowBotInit?
+
+        #Initialization info
         if self.is_init:
             self.is_init = False
             self.field_info = self.get_field_info()
  
-            #Find self and teams
-            team_info = CowBotInit.find_self_and_teams(packet, self.index, self.team)
-            self.teammate_indices = team_info[0]
-            self.opponent_indices = team_info[1]
+            #Find teammates and opponents
+            self.teammate_indices, self.opponent_indices = CowBotInit.find_self_and_teams(packet, self.index, self.team)
 
             
             self.utils_game = utils.simulation.Game(self.index, self.team)
@@ -131,16 +129,25 @@ class BooleanAlgebraCow(BaseAgent):
             #The first frame shouldn't be calling previous frame information anyway
             self.old_game_info = self.game_info
 
-        #Update persistent mechanics if we're not doing them, otherwise let them do their thing.
-        #The checks will be set to true when the mechanic is called.
-        #Eventually this might get swallowed into a bigger state machine.
-        if not self.persistent.aerial_turn.check:
+        #If we're in the first frame of an RLU mechanic, start up the object.
+        if self.persistent.aerial_turn.initialize:
             self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
+            self.persistent.aerial_turn.action.target = self.persistent.aerial_turn.target_orientation
+            self.persistent.aerial_turn.initialize = False
+        elif not self.persistent.aerial_turn.check:
+            self.persistent.aerial_turn.action = None
         self.persistent.aerial_turn.check = False
-
-        if not self.persistent.aerial.check:
+        #
+        if self.persistent.aerial.initialize:
             self.persistent.aerial.action = Aerial(self.game_info.utils_game.my_car)
+            print(type(self.persistent.aerial.target_location))
+            self.persistent.aerial.action.target = self.persistent.aerial.target_location
+            self.persistent.aerial.action.arrival_time = self.persistent.aerial.target_time
+            self.persistent.aerial.initialize = False
+        elif not self.persistent.aerial.check:
+            self.persistent.aerial.action = None
         self.persistent.aerial.check = False
+
         
         ###############################################################################################
         #Planning
@@ -178,100 +185,10 @@ class BooleanAlgebraCow(BaseAgent):
 
 
         if TESTING:
-            #return SimpleControllerState()
-            if self.state != "Reset":
-                self.timer = self.game_info.game_time - self.start_time
 
-            if self.state == "Reset":
-                #Reset everything
-                self.timer = 0
-                self.start_time = self.game_info.game_time
-
-                #Set the game state
-                ball_pos = Vec3(2000, -10, 1000)
-                ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
-                                                             rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(-700, -1000, 800),
-                                                             omega = Vec3(0,0,0))
-
-                car_pos = Vec3(-600, -5300, 15)
-                car_state = self.zero_car_state.copy_state(pos = car_pos,
-                                                           vel = Vec3(0, 0, 0),
-                                                           rot = Orientation(pitch = 0,
-                                                                             yaw = pi/3,
-                                                                             roll = 0),
-                                                           boost = 100)
-
-                self.set_game_state(set_state(self.game_info,
-                                              current_state = car_state,
-                                              ball_state = ball_state))
-                self.state = "Wait"
-                return SimpleControllerState()
-
-            elif self.state == "Wait":
-                if self.timer > 0.2:
-                    self.state = "Plan"
-                return SimpleControllerState()
-
-
-            elif self.state == "Plan":
-                try:
-                    self.target_time, self.target_loc = get_ball_arrival(self.game_info,
-                                                                         is_ball_in_scorable_box)
-                except TypeError:
-                    return SimpleControllerState()
-                self.takeoff_time = choose_stationary_takeoff_time(self.game_info,
-                                                              self.target_loc,
-                                                              self.target_time)
-
-                if self.game_info.game_time < self.target_time:
-                    EvilGlobals.renderer.begin_rendering()
-                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(vec3_to_Vec3(self.persistent.aerial.action.target, 1), self.game_info.team_sign), 10, 10, True, EvilGlobals.renderer.red())
-                    EvilGlobals.renderer.end_rendering()
-                else:
-                    EvilGlobals.renderer.begin_rendering()
-                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(vec3_to_Vec3(self.persistent.aerial.action.target, 1), self.game_info.team_sign), 10, 10, True, EvilGlobals.renderer.blue())
-                    EvilGlobals.renderer.end_rendering()
-                self.state = "Patience"
-                return SimpleControllerState()
-
-
-            elif self.state == "Patience":
-                if self.game_info.game_time > self.takeoff_time:
-                    self.state = "Initialize"
-
-                return SimpleControllerState()
-
-
-            elif self.state == "Initialize":
-                self.persistent.aerial.check = True
-                self.persistent.aerial.action.target = Vec3_to_vec3(self.target_loc, self.game_info.team_sign)
-                self.persistent.aerial.action.arrival_time = self.target_time
-
-                self.state = "Go"
-                
-
-                return SimpleControllerState()
-
-            elif self.state == "Go":
-                if self.game_info.game_time < self.target_time:
-                    EvilGlobals.renderer.begin_rendering()
-                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(vec3_to_Vec3(self.persistent.aerial.action.target, 1), self.game_info.team_sign), 10, 10, True, EvilGlobals.renderer.red())
-                    EvilGlobals.renderer.end_rendering()
-                else:
-                    EvilGlobals.renderer.begin_rendering()
-                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(vec3_to_Vec3(self.persistent.aerial.action.target, 1), self.game_info.team_sign), 10, 10, True, EvilGlobals.renderer.blue())
-                    EvilGlobals.renderer.end_rendering()
-                print(self.target_time, self.game_info.game_time)
-                #Controller inputs and persistent mechanics
-                controller_input, self.persistent = aerial(vec3_to_Vec3(self.persistent.aerial.action.target, self.game_info.team_sign),
-                                                           Vec3(0,0,1),
-                                                           self.game_info.dt,
-                                                           self.game_info.team_sign,
-                                                           self.persistent)
-                if self.timer > 5:
-                    self.state = "Reset"
-                return controller_input
+            #Copy-paste from a testing file here
+            controller_input = SimpleControllerState()
+            return controller_input
 
 
 
@@ -313,16 +230,11 @@ class BooleanAlgebraCow(BaseAgent):
         self.old_kickoff_data = self.kickoff_data
         self.old_inputs = output
 
-
-        #I feel like this line breaks aerial turning, but I don't remember why it's here in the first place
-        #self.persistent.aerial_turn.check = False
-
-
         #Make sure we don't get stuck turtling. Not sure how effective this is.
         if output.throttle == 0:
             output.throttle = 0.01
 
-
+        #Making sure that RLU output is interpreted properly as an input for RLBot
         framework_output = SimpleControllerState()
         framework_output.throttle = output.throttle
         framework_output.steer = output.steer
