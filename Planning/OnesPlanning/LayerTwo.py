@@ -3,9 +3,7 @@ from BallPrediction import get_ball_arrival, is_ball_in_scorable_box
 
 
 def ball(plan, game_info, persistent):
-    if persistent.aerial.initialize:
-        plan.layers[2] = "Aerial"
-    elif plan.old_plan[2] == "Aerial":
+    if persistent.aerial.check:
         plan.layers[2] = "Aerial"
     elif plan.layers[1] == "Save":
         pass

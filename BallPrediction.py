@@ -54,7 +54,7 @@ class BallPredictionSlice:
             old_pitch = prev_slice.rotation.pitch
             old_yaw = prev_slice.rotation.yaw
             old_roll = prev_slice.rotation.roll
-k            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
+            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
             '''
 
             self.old_vx = prev_slice.vel.x
@@ -179,12 +179,11 @@ def aerial_prediction(game_info, min_time, persistent):
 
     for i in range(100):
 
-        aerial = AerialTurn(game_info.utils_game.my_car)
+        aerial = Aerial(game_info.utils_game.my_car)
 
         prediction.step(1/60)
         prediction.step(1/60)
-
-        if prediction.location[2] > 150 and prediction.time > min_time:
+        if prediction.location[2] > 150:# and prediction.time > min_time:
             aerial.target = prediction.location
             aerial.arrival_time = prediction.time
             simulation = aerial.simulate()

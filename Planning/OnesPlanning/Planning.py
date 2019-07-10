@@ -109,8 +109,8 @@ def make_plan(game_info, old_plan, persistent):
     #######################################################################
 
 
-    #if plan.layers != plan.old_plan:
-    #print(plan.layers, plan.old_plan, game_info.my_index)
+    if plan.layers != plan.old_plan:
+        print(plan.layers, plan.old_plan, game_info.my_index)
 
     #Get ready for next frame, and return
     plan.old_plan = plan.layers

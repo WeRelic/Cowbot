@@ -1,6 +1,6 @@
 '''
 
-This was originally the main decision process.  Currently runs the execution of the decisions made in Planning.
+This is currently the main decision process.  Currently runs the execution of the decisions made in Planning.
 Parts are definitely worth keeping though, especially the functions at the end (at least worth looking at).
 
 '''
@@ -124,7 +124,9 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
                 target_time, target_loc = get_ball_arrival(game_info,
                                                            is_ball_in_scorable_box)
 
-
+                if game_info.game_time <= choose_stationary_takeoff_time(game_info,
+                                                                        target_loc,
+                                                                        target_time) - 1/10:
                 if game_info.game_time > choose_stationary_takeoff_time(game_info,
                                                                         target_loc,
                                                                         target_time) - 1/10:
@@ -188,12 +190,15 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
         else:
             if plan.layers[2] == "Aerial":
 
-                controller_input, persistent = aerial(vec3_to_Vec3(persistent.aerial.action.target, game_info.team_sign),
-                                                      Vec3(0,0,1),
-                                                      game_info.dt,
+                controller_input, persistent = aerial(game_info.dt,
                                                       game_info.team_sign,
                                                       persistent)
+                if game_info.game_time > persistent.aerial.action.arrival_time:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(persistent.aerial.action.target, game_info.team_sign), 10, 10, True, EvilGlobals.renderer.blue())
+                    EvilGlobals.renderer.end_rendering()
 
+                
             else:
                 #Let's try to find where we can hit the ball if it's rolling.
                 #There has to be a more efficient way, but this should work.

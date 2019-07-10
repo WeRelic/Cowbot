@@ -47,17 +47,19 @@ class Mechanic:
         self.action = None
         self.data = None
         self.initialize = False
+
         self.target_orientation = None
+
         self.target_location = None
         self.target_time = None
-
-
-#############################################################################################
+        self.target_up = Vec3(0,0,1)
 
 #############################################################################################
 
+#############################################################################################
 
-def aerial(target, up, dt, team_sign, persistent):
+
+def aerial(dt, team_sign, persistent):
     '''
     Takes a target, an up-vector, a time delta (float), and a PersistentMechanics object.
     The front vector of the car is determined by the aerial controller, so up
@@ -66,8 +68,6 @@ def aerial(target, up, dt, team_sign, persistent):
     These are the steps to access RLUtilities' Aerial functions. All the math happens there.
     '''
     persistent.aerial.check = True
-    persistent.aerial.action.target = Vec3_to_vec3(target, team_sign)
-    persistent.aerial.action.up = Vec3_to_vec3(up, team_sign)
     persistent.aerial.action.step(dt)
     controller_input = persistent.aerial.action.controls
 
