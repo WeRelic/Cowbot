@@ -124,9 +124,6 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
                 target_time, target_loc = get_ball_arrival(game_info,
                                                            is_ball_in_scorable_box)
 
-                if game_info.game_time <= choose_stationary_takeoff_time(game_info,
-                                                                        target_loc,
-                                                                        target_time) - 1/10:
                 if game_info.game_time > choose_stationary_takeoff_time(game_info,
                                                                         target_loc,
                                                                         target_time) - 1/10:
@@ -193,11 +190,6 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
                 controller_input, persistent = aerial(game_info.dt,
                                                       game_info.team_sign,
                                                       persistent)
-                if game_info.game_time > persistent.aerial.action.arrival_time:
-                    EvilGlobals.renderer.begin_rendering()
-                    EvilGlobals.renderer.draw_rect_3d(Vec3_to_vec3(persistent.aerial.action.target, game_info.team_sign), 10, 10, True, EvilGlobals.renderer.blue())
-                    EvilGlobals.renderer.end_rendering()
-
                 
             else:
                 #Let's try to find where we can hit the ball if it's rolling.
@@ -253,10 +245,8 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
         if plan.layers[1] == "Air":
             #If we're in the air, and not trying to hit the ball, recover.
             #TODO: Adjust target orientation to be lined up with our landing, even on walls, etc.
-            target_rot = Orientation(pyr = [0, atan2(current_state.vel.y, current_state.vel.x), 0])
             
-            controller_input, persistent = aerial_rotation(target_rot,
-                                                           game_info.dt,
+            controller_input, persistent = aerial_rotation(game_info.dt,
                                                            persistent)
         if plan.layers[1] == "Ground":
             controller_input = GroundTurn(current_state,

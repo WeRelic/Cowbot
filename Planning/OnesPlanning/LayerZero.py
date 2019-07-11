@@ -71,15 +71,9 @@ def goal(plan, game_info, persistent):
     current_state = game_info.me
 
     ball_arrival = get_ball_arrival(game_info, is_ball_in_scorable_box)
-    teammate_is_back = False
     #TODO: Update what counts as "corner"
     ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
     ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
-
-    for mate in game_info.teammates:
-        if mate.pos.y < -2500:
-            teammate_is_back = True
-
 
     if persistent.aerial.initialize:
         plan.layers[0] = "Ball"

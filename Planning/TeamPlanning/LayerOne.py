@@ -172,6 +172,7 @@ def recover(plan, game_info, persistent):
         plan.layers[1] = "Ground"
     else:
         plan.layers[1] = "Air"
+        persistent.aerial_turn.initialize = True
 
     return plan, persistent
 

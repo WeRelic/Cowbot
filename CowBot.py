@@ -146,14 +146,6 @@ class BooleanAlgebraCow(BaseAgent):
         #Check if it's a kickoff.  If so, we'll run kickoff code later on.
         self.kickoff_position = update_kickoff_position(self.game_info,
                                                         self.kickoff_position)
-        if TESTING:
-              boost_list = [10,5,21,10,6]
-              waypoint_list = [ self.game_info.boosts[boost_list[i]].pos for i in range(len(boost_list)) ]
-              self.path, self.path_state, self.waypoint_index = follow_waypoints(self.game_info,
-                                                                                 self.path,
-                                                                                 waypoint_list,
-                                                                                 self.waypoint_index,
-                                                                                 self.path_state)
 
 
         self.prediction = PredictionPath(self.game_info.utils_game, predict_for_time(3))
@@ -162,7 +154,6 @@ class BooleanAlgebraCow(BaseAgent):
         #If we're in the first frame of an RLU mechanic, start up the object.
         if self.persistent.aerial_turn.initialize:
             self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
-            self.persistent.aerial_turn.action.target = self.persistent.aerial_turn.target_orientation
             self.persistent.aerial_turn.initialize = False
         elif not self.persistent.aerial_turn.check:
             self.persistent.aerial_turn.action = None

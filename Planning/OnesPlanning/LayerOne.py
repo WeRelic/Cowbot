@@ -1,5 +1,8 @@
+from math import atan2
+
 from BallPrediction import PredictionPath, check_on_goal, get_ball_arrival, is_ball_in_front_of_net, is_ball_in_scorable_box
 from CowBotVector import Vec3
+from GameState import Orientation
 from Miscellaneous import check_in_net, check_far_post, predict_for_time
 from Pathing.WaypointPath import WaypointPath
 
@@ -81,10 +84,8 @@ def ball(plan, game_info, persistent):
     if ball_distance < 450 - 100*ball_car_dot and game_info.ball.pos.z < 250 and plan.old_plan[2] != "Aerial":
         #If we were going for the ball, and we're close to it, flip into it.
         plan.layers[1] = "Challenge"
-    #elif shot_on_goal: #We'll make this do things later.
-    #plan.layers[1] = "Save"
     elif game_info.ball.pos.y > 0 and is_ball_in_front_of_net(game_info.ball.pos):
-        #Predict when it'll get there
+        #TODO: Predict when it'll get there
         plan.layers[1] = "Shot"
     else:
         plan.layers[1] = "Clear"
@@ -158,7 +159,9 @@ def recover(plan, game_info, persistent):
         plan.layers[1] = "Ground"
     else:
         plan.layers[1] = "Air"
-
+        persistent.aerial_turn.initialize = True
+        #This is a default value, but is the best I can do for the time being.  Recoveries will be updated in the future.
+        persistent.aerial_turn.target_orientation = Orientation(pyr = [0, atan2(current_state.vel.y, current_state.vel.x), 0])
     return plan, persistent
 
 

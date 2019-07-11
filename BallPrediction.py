@@ -1,7 +1,7 @@
 from math import atan2, pi, tan
 
 import rlutilities as utils
-from rlutilities.mechanics import AerialTurn, Aerial
+from rlutilities.mechanics import Aerial
 
 from Conversions import vec3_to_Vec3, Vec3_to_vec3
 from CowBotVector import Vec3
@@ -183,6 +183,7 @@ def aerial_prediction(game_info, min_time, persistent):
 
         prediction.step(1/60)
         prediction.step(1/60)
+
         if prediction.location[2] > 150:# and prediction.time > min_time:
             aerial.target = prediction.location
             aerial.arrival_time = prediction.time

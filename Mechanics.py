@@ -10,7 +10,6 @@
 
 from math import atan2, pi, sin, cos, sqrt
 
-from rlutilities.mechanics import AerialTurn, Aerial #I think this can work without these, but uses the objects that come from it.
 from rlbot.agents.base_agent import SimpleControllerState
 
 from Conversions import rot_to_mat3, Vec3_to_vec3
@@ -79,19 +78,16 @@ def aerial(dt, team_sign, persistent):
 #############################################################################################
 
 
-def aerial_rotation(target_rot, dt, persistent):
+def aerial_rotation(dt, persistent):
     '''
     Takes a target Orientation object, a time delta (float), and a PersistentMechanics object.
     Returns contoller input and an updated PersistentMechanics object for the next frame.
     These are the steps to access RLUtilities' AerialTurn functions. All the math happens there.
     '''
     persistent.aerial_turn.check = True
-    if persistent.aerial_turn.action == None:
-        controller_input = SimpleControllerState()
-        persistent.aerial_turn.target = rot_to_mat3(target_rot)
-    else:
-        persistent.aerial_turn.action.step(dt)
-        controller_input = persistent.aerial_turn.action.controls
+    persistent.aerial_turn.action.target = rot_to_mat3(persistent.aerial_turn.target_orientation)
+    persistent.aerial_turn.action.step(dt)
+    controller_input = persistent.aerial_turn.action.controls
 
     return controller_input, persistent
 
