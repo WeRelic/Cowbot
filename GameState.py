@@ -6,7 +6,17 @@ from Miscellaneous import rotate_to_range
 
 class GameState:
 
-    def __init__(self, packet, rigid_body_tick, utils_game, field_info, my_index, my_team, teammate_indices, opponent_indices, my_old_inputs):
+    def __init__(self,
+                 packet = None,
+                 rigid_body_tick = None,
+                 utils_game = None,
+                 field_info = None,
+                 my_index = None,
+                 my_team = None,
+                 ball_prediction = None,
+                 teammate_indices = None,
+                 opponent_indices = None,
+                 my_old_inputs = None):
         
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
         self.kickoff_position = "Other"
@@ -30,6 +40,7 @@ class GameState:
 
         #Ball info
         self.ball = Ball(packet, self.team_sign)
+        self.ball_prediction = ball_prediction
 
         #My car info
         self.me = Car(packet,

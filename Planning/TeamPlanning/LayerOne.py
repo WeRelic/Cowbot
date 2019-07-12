@@ -1,4 +1,4 @@
-from BallPrediction import PredictionPath, check_on_goal, get_ball_arrival, is_ball_in_front_of_net, is_ball_in_scorable_box
+from BallPrediction import check_on_goal, get_ball_arrival, is_ball_in_front_of_net, is_ball_in_scorable_box
 from CowBotVector import Vec3
 from Miscellaneous import check_in_net, check_far_post, predict_for_time
 from Pathing.WaypointPath import WaypointPath
@@ -67,8 +67,7 @@ def ball(plan, game_info, persistent):
 
     ball_distance = (game_info.ball.pos - current_state.pos).magnitude()
     #2 is just the time I picked, it can (and should) be picked more intelligently.
-    ball_prediction = PredictionPath(game_info.utils_game, predict_for_time(2))
-    shot_on_goal = check_on_goal(ball_prediction, game_info.game_time + 2)
+    shot_on_goal = check_on_goal(game_info.ball_prediction, game_info.game_time + 2)
     
     #TODO: Make this better
     if game_info.ball.vel.magnitude() != 0 and current_state.vel.magnitude() != 0:        

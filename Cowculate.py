@@ -12,7 +12,7 @@ from rlbot.agents.base_agent import SimpleControllerState
 import rlutilities as utils
 
 from BallPrediction import aerial_prediction, get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box
-from Conversions import vec3_to_Vec3, Vec3_to_vec3 #Definitely want to push this to a lower level.
+from Conversions import Vec3_to_vec3
 from CowBotVector import Vec3
 from GameState import Orientation
 from Maneuvers import GroundTurn, NavigateTo
@@ -190,27 +190,36 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
                 controller_input, persistent = aerial(game_info.dt,
                                                       game_info.team_sign,
                                                       persistent)
+                if game_info.game_time > persistent.aerial.action.arrival_time:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(persistent.aerial.action.target, 10, 10, True, EvilGlobals.renderer.green())
+                    EvilGlobals.renderer.end_rendering()
+                else:
+                    EvilGlobals.renderer.begin_rendering()
+                    EvilGlobals.renderer.draw_rect_3d(persistent.aerial.action.target, 10, 10, True, EvilGlobals.renderer.red())
+                    EvilGlobals.renderer.end_rendering()
                 
             else:
                 #Let's try to find where we can hit the ball if it's rolling.
                 #There has to be a more efficient way, but this should work.
-                prediction = utils.simulation.Ball(game_info.utils_game.ball)
-
+                #prediction = utils.simulation.Ball(game_info.utils_game.ball)
+                
                 for i in range(100):
 
-                    prediction.step(1/60)
-
                     #Adjust for Ball/Car radii
-                    try:
-                        target_pos = vec3_to_Vec3(prediction.location, game_info.team_sign) + vec3_to_Vec3(prediction.velocity, game_info.team_sign).normalize().scalar_multiply(150)
-                    except ZeroDivisionError:
-                        target_pos = vec3_to_Vec3(prediction.location, game_info.team_sign)
+                    ball_vel = ball_prediction.slices[i].vel
 
-                    ball_vel = vec3_to_Vec3(prediction.velocity, game_info.team_sign)
+                    try:
+                        #Evil magic numbers.  TODO: Actual timing and arrival prediction.
+                        target_pos = ball_prediction.slices[i].pos + ball_vel.normalize().scalar_multiply(150)
+                    except ZeroDivisionError:
+                        target_pos = ball_prediction.slices[i].pos
+
+
                     car_target_vector =  target_pos - current_state.pos
                     turn_angle = abs(current_state.rot.yaw - atan2(car_target_vector.y , car_target_vector.x))
                     time_estimate = linear_time_to_reach(game_info, target_pos) - (ball_vel.magnitude()/50)*(turn_angle)
-                    if prediction.time < time_estimate + 1/30:
+                    if ball_prediction.slices[i].time < time_estimate + 1/30:
                         break
 
                 if plan.layers[1] == "Shot":

@@ -119,11 +119,21 @@ class BooleanAlgebraCow(BaseAgent):
         if TESTING or DEBUGGING:
             EvilGlobals.renderer = self.renderer
 
+        self.prediction = PredictionPath(ball_prediction = self.get_ball_prediction_struct(),
+                                         source = "Framework",
+                                         team = self.team)
+
         #Game state info
-        self.game_info = GameState(packet, self.get_rigid_body_tick(), self.utils_game,
-                                   self.field_info, self.index,
-                                   self.team, self.teammate_indices, self.opponent_indices,
-                                   self.old_inputs)
+        self.game_info = GameState(packet = packet,
+                                   rigid_body_tick = self.get_rigid_body_tick(),
+                                   utils_game = self.utils_game,
+                                   field_info = self.field_info,
+                                   my_index = self.index,
+                                   my_team = self.team,
+                                   ball_prediction = self.prediction,
+                                   teammate_indices = self.teammate_indices,
+                                   opponent_indices = self.opponent_indices,
+                                   my_old_inputs = self.old_inputs)
 
         if self.old_game_info == None:
             #This avoids AttributeErrors on calls to old_game_info on the first frame of a kickoff.
@@ -147,24 +157,20 @@ class BooleanAlgebraCow(BaseAgent):
         self.kickoff_position = update_kickoff_position(self.game_info,
                                                         self.kickoff_position)
 
-
-        self.prediction = PredictionPath(self.game_info.utils_game, predict_for_time(3))
-        #EvilGlobals.draw_ball_path(self.prediction)
-
         #If we're in the first frame of an RLU mechanic, start up the object.
         if self.persistent.aerial_turn.initialize:
-            self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
             self.persistent.aerial_turn.initialize = False
+            self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
         elif not self.persistent.aerial_turn.check:
             self.persistent.aerial_turn.action = None
         self.persistent.aerial_turn.check = False
         #
         if self.persistent.aerial.initialize:
+            self.persistent.aerial.initialize = False
             self.persistent.aerial.action = Aerial(self.game_info.utils_game.my_car)
-            self.persistent.aerial.action.target = self.persistent.aerial.target_location
+            self.persistent.aerial.action.target = Vec3_to_vec3(self.persistent.aerial.target_location, self.game_info.team_sign)
             self.persistent.aerial.action.arrival_time = self.persistent.aerial.target_time
             self.persistent.aerial.action.up = Vec3_to_vec3(self.persistent.aerial.target_up, self.game_info.team_sign)
-            self.persistent.aerial.initialize = False
         elif not self.persistent.aerial.check:
             self.persistent.aerial.action = None
         self.persistent.aerial.check = False

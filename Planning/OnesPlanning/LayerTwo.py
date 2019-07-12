@@ -17,7 +17,7 @@ def ball(plan, game_info, persistent):
 def goal(plan, game_info, persistent):
     if plan.layers[1] != None and "Wait" in plan.layers[1]:
         ball_arrival = get_ball_arrival(game_info, is_ball_in_scorable_box)
-        
+        print(ball_arrival)
         if ball_arrival != None:
             if ball_arrival[1].z > 200:
                 plan.layers[2] = "Prep for Aerial"

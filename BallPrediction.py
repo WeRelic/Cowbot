@@ -6,116 +6,50 @@ from rlutilities.mechanics import Aerial
 from Conversions import vec3_to_Vec3, Vec3_to_vec3
 from CowBotVector import Vec3
 
-
-class BallPredictionSlice:
-
-    def __init__(self, current_slice, prev_slice):
-
-
-        #Position, rotation, velocity, omega for the current slice
-        self.x = current_slice.location[0]
-        self.y = current_slice.location[1]
-        self.z = current_slice.location[2]
-        self.pos = Vec3(self.x, self.y, self.z)
-
-        '''
-        Irrelevant for a ball.  No idea if a puck will ever be supported.
-        pitch = current_slice.pitch
-        yaw = current_slice.yaw
-        roll = current_slice.roll
-        self.rot = Orientation(pyr = [ pitch, yaw, roll] )
-        '''
-
-        self.vx = current_slice.velocity[0]
-        self.vy = current_slice.velocity[1]
-        self.vz = current_slice.velocity[2]
-        self.vel = Vec3(self.vx, self.vy, self.vz)
-
-        self.omegax = current_slice.angular_velocity[0]
-        self.omegay = current_slice.angular_velocity[1]
-        self.omegaz = current_slice.angular_velocity[2]
-        self.omega = Vec3(self.omegax, self.omegay, self.omegaz)
-
-        self.time = current_slice.time
-
-        ########################################################
-
-        if prev_slice != None:
-
-            #Position, rotation, velocity, omega for the previous slice,
-            #assuming we have a previous slice
-            self.old_x = prev_slice.pos.x
-            self.old_y = prev_slice.pos.y
-            self.old_z = prev_slice.pos.z
-            self.old_pos = Vec3(self.x, self.y, self.z)
-
-            '''
-            Irrelevant for a ball.  No idea if a puck will ever be supported.
-            old_pitch = prev_slice.rotation.pitch
-            old_yaw = prev_slice.rotation.yaw
-            old_roll = prev_slice.rotation.roll
-            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
-            '''
-
-            self.old_vx = prev_slice.vel.x
-            self.old_vy = prev_slice.vel.y
-            self.old_vz = prev_slice.vel.z
-            self.old_vel = Vec3(self.vx, self.vy, self.vz)
-
-            self.old_omegax = prev_slice.omega.x
-            self.old_omegay = prev_slice.omega.y
-            self.old_omegaz = prev_slice.omega.z
-            self.old_omega = Vec3(self.old_omegax, self.old_omegay, self.old_omegaz)
-
-            self.old_time = prev_slice.time
-
-        ########################################################
-
-
-    def check_rolling(self):
-        #Add in a check if contact surface speed is zero.  This needs RLU to find the contact point.
-        return False
-
-
-    def check_bounce(self):
-
-        #Three states: Rolling, Bouncing, Neither.  If we're rolling, we're not bouncing.
-        if self.check_rolling():
-            return False
-        else:
-            #Check if acceleration is close to that of just gravity.
-            #If it is, then we're at a bounce.
-            epsilon = 25
-            gravity_accel = -650
-            ball_accel = self.vel - self.prev_vel
-            if abs(gravity_accel - ball_acel) / (self.current_time - self.old_time) > epsilon:
-                return True
-            else:
-                return False
-
-
-
 #############################################################################################
-
+#
 #############################################################################################
-
-
 
 class PredictionPath:
 
-    def __init__(self, utils_game, condition):
-        prediction = utils.simulation.Ball(utils_game.ball)
+    '''
+    The ball prediction that CowBot's code will rely on.
+    It is designed to be independent of the source of the prediction (for now, framework or RLU).
+    All values going directly in or out should be in terms of CowBot types (e.g., Vec3), 
+    and team-independent.
+    '''
 
-        #Assemble a list of the slices in our predicted path.
-        self.slices = []
-        #For the first slice, there is no previous slice.
-        self.slices.append(BallPredictionSlice(prediction, None))
-        i = 1
-        while condition(self.slices):
-            #For all other slices, we have a previous slice.
-            prediction.step(1/60)
-            self.slices.append(BallPredictionSlice(prediction, self.slices[i - 1]))
-            i +=1 
+    def __init__(self,
+                 ball_prediction = None,
+                 utils_game = None,
+                 condition = None,
+                 source = None,
+                 team = None):
+
+        '''
+        source is either "RLU" or "Framework" depending on where we pull our prediction from.
+        '''
+
+        team_sign = (team - (1/2)) * (-2)
+
+        if source == "RLU":
+            prediction = utils.simulation.Ball(utils_game.ball)
+
+            #Assemble a list of the slices in our predicted path.
+            self.slices = []
+            #For the first slice, there is no previous slice.
+            self.slices.append(RLUPredictionSlice(prediction, None, team_sign))
+            i = 1
+            while condition(self.slices):
+                #For all other slices, we have a previous slice.
+                prediction.step(1/60)
+                self.slices.append(RLUPredictionSlice(prediction, self.slices[i - 1], team_sign))
+                i +=1
+
+        elif source == "Framework":
+
+            self.slices = [ FrameworkPredictionSlice(frame, team_sign) for frame in ball_prediction.slices ]
+
 
 
     ######################
@@ -126,8 +60,6 @@ class PredictionPath:
             #60 slices per second.  FPS check?
             if abs(step.time - time) <= 1/60:
                 return step
-        #If time is too far in the future, it won't be in the prediction
-        #print("Time called is beyond prediction time")
         return None
 
     ######################
@@ -141,30 +73,127 @@ class PredictionPath:
                 return "Blue"
         return False
 
-    ######################
-
-    def check_corner(self):
-        #Eventually this will tell me if the ball is going into a corner (and staying there?),
-        #and if so, which one
-        return False
-
-    ######################
-
-    def bounces(self):
-        #Returns a list of slices in which the ball bounces
-        bounces = []
-        for step in self.slices:
-            if step.check_bouncing():
-                bounces.append(step)
-        return bounces
 
 
+#############################################################################################
+#
+#############################################################################################
+
+
+    
+class RLUPredictionSlice:
+
+    '''
+    This class unpacks a frame of the RLU ball prediction and puts it in terms of CowBot variables.
+    It also handles team checking so that we can always think of ourselves as on the blue team.
+    '''
+
+
+    
+    def __init__(self,
+                 current_slice,
+                 prev_slice,
+                 team_sign):
+
+
+        #Position, rotation, velocity, omega for the current slice
+        self.x = current_slice.location[0] * team_sign
+        self.y = current_slice.location[1] * team_sign
+        self.z = current_slice.location[2]
+        self.pos = Vec3(self.x, self.y, self.z)
+
+        '''
+        Irrelevant for a ball.  No idea if a puck will ever be supported.
+        pitch = current_slice.pitch
+        yaw = current_slice.yaw
+        roll = current_slice.roll
+        self.rot = Orientation(pyr = [ pitch, yaw, roll] )
+        '''
+
+        self.vx = current_slice.velocity[0] * team_sign
+        self.vy = current_slice.velocity[1] * team_sign
+        self.vz = current_slice.velocity[2]
+        self.vel = Vec3(self.vx, self.vy, self.vz)
+
+        self.omegax = current_slice.angular_velocity[0] * team_sign
+        self.omegay = current_slice.angular_velocity[1] * team_sign
+        self.omegaz = current_slice.angular_velocity[2]
+        self.omega = Vec3(self.omegax, self.omegay, self.omegaz)
+
+        self.time = current_slice.time
+
+        ########################################################
+
+        if prev_slice != None:
+            #We can use the previous slice to check if the ball is bouncing or not.
+
+            #Position, rotation, velocity, omega for the previous slice,
+            #assuming we have a previous slice
+            self.old_x = prev_slice.pos.x * team_sign
+            self.old_y = prev_slice.pos.y * team_sign
+            self.old_z = prev_slice.pos.z
+            self.old_pos = Vec3(self.x, self.y, self.z)
+
+            '''
+            Irrelevant for a ball.  No idea if a puck will ever be supported.
+            old_pitch = prev_slice.rotation.pitch
+            old_yaw = prev_slice.rotation.yaw
+            old_roll = prev_slice.rotation.roll
+            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
+            '''
+
+            self.old_vx = prev_slice.vel.x * team_sign
+            self.old_vy = prev_slice.vel.y * team_sign
+            self.old_vz = prev_slice.vel.z
+            self.old_vel = Vec3(self.vx, self.vy, self.vz)
+
+            self.old_omegax = prev_slice.omega.x * team_sign
+            self.old_omegay = prev_slice.omega.y * team_sign
+            self.old_omegaz = prev_slice.omega.z
+            self.old_omega = Vec3(self.old_omegax, self.old_omegay, self.old_omegaz)
+
+            self.old_time = prev_slice.time
+
+
+######################################################################################
+#
+######################################################################################
+
+class FrameworkPredictionSlice:
+
+    '''
+    This class takes a slice of the framework ball prediction and puts it in terms of CowBot variables.
+    It also handles team checking so that we can always think of ourselves as on the blue team.
+    '''
+
+    def __init__(self, current_slice,
+                 team_sign):
+
+
+        #Position, rotation, velocity, omega for the current slice
+        self.x = current_slice.physics.location.x * team_sign
+        self.y = current_slice.physics.location.y * team_sign
+        self.z = current_slice.physics.location.z
+        self.pos = Vec3(self.x, self.y, self.z)
+
+        self.vx = current_slice.physics.velocity.x * team_sign
+        self.vy = current_slice.physics.velocity.y * team_sign
+        self.vz = current_slice.physics.velocity.z
+        self.vel = Vec3(self.vx, self.vy, self.vz)
+
+        self.omegax = current_slice.physics.angular_velocity.x * team_sign
+        self.omegay = current_slice.physics.angular_velocity.y * team_sign
+        self.omegaz = current_slice.physics.angular_velocity.z
+        self.omega = Vec3(self.omegax, self.omegay, self.omegaz)
+
+        self.time = current_slice.game_seconds
 
 
 
 
 ###############################################################################################
-#Useful prediction functions
+#Useful prediction functions - unrelated to the above classes.
+#TODO: Use our prediction classes from above instead of regenerating it.
 ###############################################################################################
 
 
@@ -174,23 +203,20 @@ def aerial_prediction(game_info, min_time, persistent):
     Checks where in the future an aerial will put us hitting the ball, and updates our persistent
     aerial object to have that time and place as the target data.
     '''
-    prediction = utils.simulation.Ball(game_info.utils_game.ball)
-    
 
-    for i in range(100):
+    prediction = game_info.ball_prediction
 
+    for i in range(0, len(prediction.slices), 2):
+        
         aerial = Aerial(game_info.utils_game.my_car)
 
-        prediction.step(1/60)
-        prediction.step(1/60)
-
-        if prediction.location[2] > 150:# and prediction.time > min_time:
-            aerial.target = prediction.location
-            aerial.arrival_time = prediction.time
+        if prediction.slices[i].pos.z > 150:# and prediction.slices[i].time > min_time:
+            aerial.target = Vec3_to_vec3(prediction.slices[i].pos, game_info.team_sign)
+            aerial.arrival_time = prediction.slices[i].time
             simulation = aerial.simulate()
             if (vec3_to_Vec3(simulation.location, game_info.team_sign) - vec3_to_Vec3(aerial.target, game_info.team_sign)).magnitude() < 30:
-                persistent.aerial.target_location = prediction.location
-                persistent.aerial.target_time = prediction.time
+                persistent.aerial.target_location = prediction.slices[i].pos
+                persistent.aerial.target_time = prediction.slices[i].time
                 break
 
     return persistent
@@ -228,15 +254,11 @@ def get_ball_arrival(game_info,
     '''
 
     aerial = Aerial(game_info.utils_game.my_car)
-    prediction = utils.simulation.Ball(game_info.utils_game.ball)
-    
+    prediction = game_info.ball_prediction
     for i in range(200):
 
-        prediction.step(1/60)
-        prediction.step(1/60)
-
-        if condition(vec3_to_Vec3(prediction.location, game_info.team_sign), vec3_to_Vec3(prediction.velocity, game_info.team_sign)):
-            return prediction.time, vec3_to_Vec3(prediction.location, game_info.team_sign)
+        if condition(prediction.slices[i].pos, prediction.slices[i].vel, game_info.team_sign):
+            return prediction.slices[i].time, prediction.slices[i].pos
 
 ############################################
 
