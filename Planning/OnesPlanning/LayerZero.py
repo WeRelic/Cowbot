@@ -47,6 +47,7 @@ def ball(plan, game_info, persistent):
     elif plan.old_plan[2] == "Aerial" and game_info.game_time > 0.3 + persistent.aerial.action.arrival_time:
         plan.layers[0] = "Recover"
     else:
+        plan.path_lock = True
         plan.layers[0] = "Ball"
 
     return plan, persistent
@@ -59,7 +60,10 @@ def boost(plan, game_info, persistent):
     if current_state.boost > 60:
         #If we were going for boost, but have enough boost, go to net.
         plan.layers[0] = "Goal"
+    elif plan.path.finished:
+        plan.layers[0] = "Goal"
     else:
+        plan.path_lock = True
         plan.layers[0] = "Boost"
 
     return plan, persistent
@@ -87,6 +91,7 @@ def goal(plan, game_info, persistent):
     elif ball_in_defensive_corner or ball_in_offensive_corner:
         plan.layers[0] = "Goal"
     else:
+        plan.path_lock = True
         plan.layers[0] = "Goal"
 
     return plan, persistent
@@ -106,6 +111,7 @@ def recover(plan, game_info, persistent):
         else:
             plan.layers[0] = "Goal"
     else:
+        plan.path_lock = True
         plan.layers[0] = "Recover"
     return plan, persistent
 
@@ -140,6 +146,7 @@ def kickoff_pause(plan, game_info, persistent):
         #TODO: Check if teammate is taking a boost, if they are, go for the other one
         plan.layers[0] = "Boost"
     else:
+        plan.path_lock = True
         plan.layers[0] = "Kickoff"
 
     return plan, persistent
@@ -150,7 +157,7 @@ def kickoff_pause(plan, game_info, persistent):
 def kickoff(plan, game_info, persistent):
     current_state = game_info.me
 
-    #TODO: Add "score open net" functionality here, since we'll probably win
+    #TODO: Add "score open net" functionality here, since we'll prjobably win
     #some kickoffs from time to time
     plan.layers[0] = "Boost"
     if current_state.vel.x > 0:
@@ -159,14 +166,6 @@ def kickoff(plan, game_info, persistent):
         plan.layers[1] = "Mid Boost-"
 
     return plan, persistent
-
-
-
-
-
-
-
-
 
 
 

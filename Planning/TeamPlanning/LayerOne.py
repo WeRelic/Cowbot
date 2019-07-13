@@ -18,6 +18,26 @@ def boost(plan, game_info, persistent):
             near_mid_boost = 18
             far_back_boost = 3
             near_back_boost = 4
+
+            if plan.path_lock:
+                plan.layers[1] = "Pads"
+                if (current_state.pos - plan.path.waypoints[0]).magnitude() > 40:
+                    plan.path = WaypointPath(plan.path.waypoints, current_state)
+                else:
+                    if len(plan.path.waypoints) == 1:
+                        plan.path.finished = True
+                    else:
+                        plan.path = WaypointPath(plan.path.waypoints[1:], current_state)
+                        plan.path.waypoints = plan.path.waypoints[1:]
+
+            else:
+                plan.layers[1] = "Pads"
+                plan.path_lock = True
+                plan.path = WaypointPath(check_pads(game_info), current_state)
+
+
+
+            '''
             if game_info.boosts[far_mid_boost].is_active:
                 plan.layers[1] = "Mid Boost-"
             elif game_info.boosts[far_back_boost].is_active:
@@ -28,7 +48,9 @@ def boost(plan, game_info, persistent):
                 #Break and go to goal, since we're not smart enough to get pads yet
                 plan.layers[1] = "Pads"
                 path = WaypointPath(check_pads(game_info), current_state)
+            '''
 
+            
         else:
             far_opp_boost = 30
             near_opp_boost = 29
@@ -37,6 +59,24 @@ def boost(plan, game_info, persistent):
             far_back_boost = 4
             near_back_boost = 3
 
+            if plan.path_lock:
+                plan.layers[1] = "Pads"
+                if (current_state.pos - plan.path.waypoints[0]).magnitude() > 40:
+                    plan.path = WaypointPath(plan.path.waypoints, current_state)
+                else:
+                    if len(plan.path.waypoints) == 1:
+                        plan.path.finished = True
+                    else:
+                        plan.path = WaypointPath(plan.path.waypoints[1:], current_state)
+                        plan.path.waypoints = plan.path.waypoints[1:]
+
+            else:
+                plan.layers[1] = "Pads"
+                plan.path_lock = True
+                plan.path = WaypointPath(check_pads(game_info), current_state)
+
+
+            '''
             if current_state.pos.y > -2000 and game_info.boosts[far_mid_boost].is_active:
                 plan.layers[1] = "Mid Boost+"
             elif game_info.boosts[far_back_boost].is_active:
@@ -47,6 +87,7 @@ def boost(plan, game_info, persistent):
                 #Break and go to goal, since we're not smart enough to get pads yet
                 plan.layers[1] = "Pads"
                 path = WaypointPath(check_pads(game_info), current_state)
+            '''
 
     else:
         if current_state.pos.x < 0:

@@ -23,7 +23,7 @@ import EvilGlobals #Only needed for rendering and debugging
 
 
 
-def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent):
+def Cowculate(plan, game_info, old_game_info, ball_prediction, persistent):
     '''
     The main control function for BAC, Cowculate() returns the final input.
     It takes a GameState object, a plan, and returns a controller_input object.
@@ -70,8 +70,7 @@ def Cowculate(plan, path, game_info, old_game_info, ball_prediction, persistent)
                 controller_input.boost = 1
 
         else:
-            controller_input = path.input()
-        
+            controller_input = plan.path.input()
 
     #############################################################################
 

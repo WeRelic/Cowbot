@@ -20,6 +20,9 @@ import Planning.OnesPlanning.Planning as OnesPlanning
 import Planning.TeamPlanning.Planning as TeamPlanning
 
 
+from Pathing.WaypointPath import WaypointPath
+
+
 #A flag for testing code.
 #When True, all match logic will be ignored.
 #Planning will still take place, but can be overridden,
@@ -145,19 +148,24 @@ class BooleanAlgebraCow(BaseAgent):
         ###############################################################################################
 
         if self.game_info.team_mode == "1v1":
-            self.plan, self.path, self.persistent = OnesPlanning.make_plan(self.game_info,
-                                                                           self.plan.old_plan,
-                                                                           self.persistent)
+            self.plan, self.persistent = OnesPlanning.make_plan(self.game_info,
+                                                                self.plan.old_plan,
+                                                                self.plan.path,
+                                                                self.persistent)
         else:
-            self.plan, self.path, self.persistent = TeamPlanning.make_plan(self.game_info,
-                                                                           self.plan.old_plan,
-                                                                           self.persistent)
+            self.plan, self.persistent = TeamPlanning.make_plan(self.game_info,
+                                                                self.plan.old_plan,
+                                                                self.plan.path,
+                                                                self.persistent)
+
+
 
         #Check if it's a kickoff.  If so, we'll run kickoff code later on.
         self.kickoff_position = update_kickoff_position(self.game_info,
                                                         self.kickoff_position)
 
         #If we're in the first frame of an RLU mechanic, start up the object.
+        #If we're finished with it, reset it to None
         if self.persistent.aerial_turn.initialize:
             self.persistent.aerial_turn.initialize = False
             self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
@@ -212,7 +220,6 @@ class BooleanAlgebraCow(BaseAgent):
 
         else:
             output, self.persistent = Cowculate(self.plan,
-                                                self.path,
                                                 self.game_info,
                                                 self.old_game_info,
                                                 self.prediction,

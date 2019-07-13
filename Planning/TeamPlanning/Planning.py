@@ -6,7 +6,7 @@ import Planning.TeamPlanning.LayerTwo as LayerTwo
 
 
 
-def make_plan(game_info, old_plan, persistent):
+def make_plan(game_info, old_plan, old_path, persistent):
     '''
     The function that is currently handling decision making.  This will need to 
     split as it grows and becomes more complicated.  Takes in the plan from the previous 
@@ -35,7 +35,7 @@ def make_plan(game_info, old_plan, persistent):
     '''
 
     plan = GamePlan()
-    path = None
+    plan.path = old_path
     plan.old_plan = old_plan
     current_state = game_info.me
 
@@ -119,7 +119,7 @@ def make_plan(game_info, old_plan, persistent):
     #Get ready for next frame, and return
     plan.old_plan = plan.layers
     #Return our final decision
-    return plan, path, persistent
+    return plan, persistent
 
 
 ##############################################################

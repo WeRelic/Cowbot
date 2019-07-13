@@ -10,6 +10,8 @@ class GamePlan():
         self.old_plan = ["Ball", None, None]
         self.layers = ["Ball", None, None]
 
+        self.path = None
+        self.path_lock = False
 
 
 

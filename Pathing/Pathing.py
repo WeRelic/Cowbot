@@ -28,6 +28,7 @@ class GroundPath:
         self.time_to_traverse = None
         self.waypoints = []
         self.current_state = current_state
+        self.finished = False
 
     def input(self):
         '''
@@ -89,7 +90,6 @@ class GroundPath:
         controller_input = SimpleControllerState()
         controller_input = GroundTurn(current_state,
                                       current_state.copy_state(pos = self.piece.waypoint)).input()
-
 
         return controller_input
 

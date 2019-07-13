@@ -59,7 +59,10 @@ def boost(plan, game_info, persistent):
     if current_state.boost > 60:
         #If we were going for boost, but have enough boost, go to net.
         plan.layers[0] = "Goal"
+    elif plan.path.finished:
+        plan.layers[0] = "Goal"
     else:
+        plan.path_lock = True
         plan.layers[0] = "Boost"
 
     return plan, persistent

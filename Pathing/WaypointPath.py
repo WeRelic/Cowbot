@@ -24,3 +24,4 @@ class WaypointPath(GroundPath):
         self.current_state = current_state
         self.piece = PathPiece(shape = "Waypoint",
                                waypoint = waypoints[0])
+        self.finished = False 
