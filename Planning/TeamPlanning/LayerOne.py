@@ -20,18 +20,9 @@ def boost(plan, game_info, persistent):
             near_back_boost = 4
 
             if plan.path_lock:
-                plan.layers[1] = "Pads"
-                if (current_state.pos - plan.path.waypoints[0]).magnitude() > 40:
-                    plan.path = WaypointPath(plan.path.waypoints, current_state)
-                else:
-                    if len(plan.path.waypoints) == 1:
-                        plan.path.finished = True
-                    else:
-                        plan.path = WaypointPath(plan.path.waypoints[1:], current_state)
-                        plan.path.waypoints = plan.path.waypoints[1:]
+                plan.path = WaypointPath(plan.path.waypoints, current_state)
 
             else:
-                plan.layers[1] = "Pads"
                 plan.path_lock = True
                 plan.path = WaypointPath(check_pads(game_info), current_state)
 
@@ -60,18 +51,9 @@ def boost(plan, game_info, persistent):
             near_back_boost = 3
 
             if plan.path_lock:
-                plan.layers[1] = "Pads"
-                if (current_state.pos - plan.path.waypoints[0]).magnitude() > 40:
-                    plan.path = WaypointPath(plan.path.waypoints, current_state)
-                else:
-                    if len(plan.path.waypoints) == 1:
-                        plan.path.finished = True
-                    else:
-                        plan.path = WaypointPath(plan.path.waypoints[1:], current_state)
-                        plan.path.waypoints = plan.path.waypoints[1:]
+                plan.path = WaypointPath(plan.path.waypoints, current_state)
 
             else:
-                plan.layers[1] = "Pads"
                 plan.path_lock = True
                 plan.path = WaypointPath(check_pads(game_info), current_state)
 

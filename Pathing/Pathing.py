@@ -90,6 +90,10 @@ class GroundPath:
         controller_input = SimpleControllerState()
         controller_input = GroundTurn(current_state,
                                       current_state.copy_state(pos = self.piece.waypoint)).input()
+        if (current_state.pos - self.waypoints[0]).magnitude() < 40:
+            self.waypoints = self.waypoints[1:]
+            if len(self.waypoints) == 0:
+                self.finished = True
 
         return controller_input
 

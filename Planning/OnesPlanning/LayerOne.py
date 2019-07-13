@@ -22,19 +22,12 @@ def boost(plan, game_info, persistent):
             far_back_boost = 3
             near_back_boost = 4
 
+            plan.layers[1] = "Pads"
+
             if plan.path_lock:
-                plan.layers[1] = "Pads"
-                if (current_state.pos - plan.path.waypoints[0]).magnitude() > 40:
-                    plan.path = WaypointPath(plan.path.waypoints, current_state)
-                else:
-                    if len(plan.path.waypoints) == 1:
-                        plan.path.finished = True
-                    else:
-                        plan.path = WaypointPath(plan.path.waypoints[1:], current_state)
-                        plan.path.waypoints = plan.path.waypoints[1:]
+                plan.path = WaypointPath(plan.path.waypoints, current_state)
 
             else:
-                plan.layers[1] = "Pads"
                 plan.path_lock = True
                 plan.path = WaypointPath(check_pads(game_info), current_state)
 
@@ -58,19 +51,12 @@ def boost(plan, game_info, persistent):
             far_back_boost = 4
             near_back_boost = 3
 
+            plan.layers[1] = "Pads"
+
             if plan.path_lock:
-                plan.layers[1] = "Pads"
-                if (current_state.pos - plan.path.waypoints[0]).magnitude() > 40:
-                    plan.path = WaypointPath(plan.path.waypoints, current_state)
-                else:
-                    if len(plan.path.waypoints) == 1:
-                        plan.path.finished = True
-                    else:
-                        plan.path = WaypointPath(plan.path.waypoints[1:], current_state)
-                        plan.path.waypoints = plan.path.waypoints[1:]
+                plan.path = WaypointPath(plan.path.waypoints, current_state)
 
             else:
-                plan.layers[1] = "Pads"
                 plan.path_lock = True
                 plan.path = WaypointPath(check_pads(game_info), current_state)
 
@@ -212,51 +198,51 @@ def check_pads(game_info):
     if game_info.ball.pos.x > 0:
         if current_state.pos.y > 2816:
             if current_state.pos.x > 2048:
-                index_list = [23, 20, 16, 12, 10, 1]
+                index_list = [23, 20, 16, 12, 10, 5, 0]
             elif current_state.pos.x > 100:
-                index_list = [20, 16, 12, 10, 1]
+                index_list = [20, 16, 12, 10, 5, 0]
             else:
-                index_list = [22, 19, 12, 10, 1]
+                index_list = [22, 19, 12, 10, 5, 0]
                 
             #######
 
         elif current_state.pos.y > 1024 + 100:
             if current_state.pos.x > 2048 + 100:
-                index_list = [21, 17, 13, 10, 1]
+                index_list = [21, 17, 13, 10, 5, 0]
             elif current_state.pos.x > 100:
-                index_list = [20, 16, 12, 10, 1]
+                index_list = [20, 16, 12, 10, 5, 0]
             else:
-                index_list = [19, 12, 10, 1]
+                index_list = [19, 12, 10, 5, 0]
 
             #######
             
         elif current_state.pos.y > 100:
             if current_state.pos.x > 1024 + 100:
-                index_list = [17, 13, 10, 1]
+                index_list = [17, 13, 10, 5, 0]
             elif current_state.pos.x > -1024 + 100:
-                index_list = [16, 12, 10, 1]
+                index_list = [16, 12, 10, 5, 0]
             else:
-                index_list = [12, 10, 1]
+                index_list = [12, 10, 5, 0]
 
             #######
 
         elif current_state.pos.y > -2300 + 100:
             if current_state.pos.x > 2048 + 100:
-                index_list = [14, 13, 12, 10, 1]
+                index_list = [14, 13, 12, 10, 5, 0]
             elif current_state.pos.x > 100:
-                index_list = [13, 12, 10, 1]
+                index_list = [13, 12, 10, 5, 0]
             else:
-                index_list = [12, 10, 1]
+                index_list = [12, 10, 5, 0]
 
             #######
 
         else:
             if current_state.pos.x > 1788 + 100:
-                index_list = [11, 13, 12, 10, 1]
+                index_list = [11, 7, 10, 5, 0]
             elif current_state.pos.x > -1788 + 100:
-                index_list = [7, 13, 12, 10, 1]
+                index_list = [7, 10, 5, 0]
             else:
-                index_list = [8, 12, 10, 1]
+                index_list = [8, 10, 5, 0]
 
 
         ##############################################################
@@ -266,51 +252,51 @@ def check_pads(game_info):
     elif game_info.ball.pos.x <= 0:
         if current_state.pos.y > 2816:
             if current_state.pos.x < -2048:
-                index_list = [22, 20, 17, 14, 11, 2]
+                index_list = [22, 20, 17, 14, 11, 6, 0]
             elif current_state.pos.x < -100:
-                index_list = [20, 17, 14, 11, 2]
+                index_list = [20, 17, 14, 11, 6, 0]
             else:
-                index_list = [23, 21, 14, 11, 2]
+                index_list = [23, 21, 14, 11, 6, 0]
                 
             #######
 
         elif current_state.pos.y > 1024 + 100:
             if current_state.pos.x < -2048 - 100:
-                index_list = [19, 16, 13, 11, 2]
+                index_list = [19, 16, 13, 11, 6, 0]
             elif current_state.pos.x < -100:
-                index_list = [20, 17, 14, 11, 2]
+                index_list = [20, 17, 14, 11, 6, 0]
             else:
-                index_list = [21, 14, 11, 2]
+                index_list = [21, 14, 11, 6, 0]
 
             #######
             
         elif current_state.pos.y > 100:
             if current_state.pos.x < -1024 - 100:
-                index_list = [16, 13, 11, 2]
+                index_list = [16, 13, 11, 6, 0]
             elif current_state.pos.x < 1024 - 100:
-                index_list = [17, 14, 11, 2]
+                index_list = [17, 14, 11, 6, 0]
             else:
-                index_list = [14, 11, 2]
+                index_list = [14, 11, 6, 0]
 
             #######
 
         elif current_state.pos.y > -2300 + 100:
             if current_state.pos.x < -2048 - 100:
-                index_list = [12, 13, 14, 11, 2]
+                index_list = [12, 13, 14, 11, 6, 0]
             elif current_state.pos.x < -100:
-                index_list = [13, 14, 11, 2]
+                index_list = [13, 14, 11, 6, 0]
             else:
-                index_list = [14, 11, 2]
+                index_list = [14, 11, 6, 0]
 
             #######
 
         else:
             if current_state.pos.x < -1788 - 100:
-                index_list = [10, 13, 14, 11, 2]
+                index_list = [10, 7, 6, 0]
             elif current_state.pos.x < 1788 - 100:
-                index_list = [7, 13, 14, 11, 2]
+                index_list = [7, 6, 0]
             else:
-                index_list = [9, 14, 11, 2]
+                index_list = [9, 11, 6, 0]
 
 
     return [ game_info.boosts[boost_index].pos for boost_index in index_list ]
