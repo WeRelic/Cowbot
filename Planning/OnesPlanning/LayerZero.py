@@ -4,6 +4,10 @@ from BallPrediction import get_ball_arrival, is_ball_in_front_of_net, is_ball_in
 from CowBotVector import Vec3
 
 def ball(plan, game_info, persistent):
+    '''
+    Decides when to break from "Ball" state.
+    '''
+
     current_state = game_info.me
 
     relative_ball_position = (game_info.ball.pos - game_info.me.pos)
@@ -42,6 +46,7 @@ def ball(plan, game_info, persistent):
         #Maybe try to center?
         plan.layers[0] = "Boost"
     elif (ball_in_defensive_corner or ball_in_offensive_corner) and plan.old_plan[2] != "Aerial" and plan.old_plan[2] != "Hit ball":
+        #TODO: Wrap up all the checks into one 'mechanic lock'?
         #Check for teammates
         plan.layers[0] = "Goal"
     elif plan.old_plan[2] == "Aerial" and game_info.game_time > 0.3 + persistent.aerial.action.arrival_time:
@@ -55,12 +60,17 @@ def ball(plan, game_info, persistent):
 #######################################################################################################
 
 def boost(plan, game_info, persistent):
+    '''
+    Decides when to break from "Boost" state.
+    '''
+
     current_state = game_info.me
     #Path for small pads.  Don't loop for ten seconds on the big boost.
     if current_state.boost > 60:
         #If we were going for boost, but have enough boost, go to net.
         plan.layers[0] = "Goal"
     elif plan.path.finished:
+        #TODO: Will need to be updated once it starts doing things other than sitting in net.
         plan.layers[0] = "Goal"
     else:
         plan.path_lock = True
@@ -72,6 +82,10 @@ def boost(plan, game_info, persistent):
 
 
 def goal(plan, game_info, persistent):
+    '''
+    Decides when to break from "Goal" state.
+    '''
+
     current_state = game_info.me
 
     ball_arrival = get_ball_arrival(game_info, is_ball_in_scorable_box)
@@ -81,12 +95,12 @@ def goal(plan, game_info, persistent):
 
     if persistent.aerial.initialize:
         plan.layers[0] = "Ball"
-    elif ball_arrival != None and ball_arrival[1].z < 200:
+    elif ball_arrival != None and ball_arrival[1].z < 150:
         plan.layers[0] = "Ball"
         plan.layers[1] = "Clear"
         plan.layers[2] = "Hit ball"
     elif is_ball_in_front_of_net(game_info.ball.pos):
-        #Predict when the ball will be in front of the net.
+        #TODO: Predict when the ball will be in front of the net.
         plan.layers[0] = "Ball"
     elif ball_in_defensive_corner or ball_in_offensive_corner:
         plan.layers[0] = "Goal"
@@ -100,12 +114,16 @@ def goal(plan, game_info, persistent):
 
 
 def recover(plan, game_info, persistent):
+    '''
+    Decides when to break from "Recover" state.
+    '''
+
     current_state = game_info.me
-    have_steering_control = check_steering_control(game_info, current_state)
+    #have_steering_control = check_steering_control(game_info, current_state)
     enough_boost = current_state.boost > 60
 
 
-    if plan.old_plan[1] == "Ground":# and have_steering_control: This doesn't work as hoped yet.
+    if plan.old_plan[1] == "Ground":# and have_steering_control: TODO: Get a better "have control" estimate.
         if not enough_boost:
             plan.layers[0] = "Boost"
         else:
@@ -115,49 +133,19 @@ def recover(plan, game_info, persistent):
         plan.layers[0] = "Recover"
     return plan, persistent
 
-#######################################################################################################
-
-
-def kickoff_pause(plan, game_info, persistent):
-    current_state = game_info.me
-
-    ball_distance = (game_info.ball.pos - current_state.pos).magnitude()
-    if game_info.ball.pos.x > 0:
-        ball_x_sign = 1
-    else:
-        ball_x_sign = -1
-
-    teammate_ball_distance = 100000
-    teammate_distance_to_far_post = 100000
-    for mate in game_info.teammates:
-        if (mate.pos - game_info.ball.pos).magnitude() < teammate_ball_distance:
-            teammate_ball_distance = (mate.pos - game_info.ball.pos).magnitude()
-        if (mate.pos - Vec3(-ball_x_sign*1150,-5120+80,0)).magnitude() < teammate_distance_to_far_post:
-            teammate_distance_to_far_post = (mate.pos - Vec3(-ball_x_sign*1150,-5120+80,0)).magnitude()
-
-
-    #If it's a kickoff, and we're strictly the closest on our team, run Kickoff code.
-    #If someone is at least as close as us, go get boost.
-    #Wait a split second (if same distance), and if they leave, go for ball
-    if len(game_info.teammates) > 0 and teammate_ball_distance > ball_distance - 50 and current_state.pos.x > 0:
-        #left goes :(
-        plan.layers[0] = "Kickoff"
-    elif len(game_info.teammates) > 0 and teammate_ball_distance < ball_distance + 50:
-        #TODO: Check if teammate is taking a boost, if they are, go for the other one
-        plan.layers[0] = "Boost"
-    else:
-        plan.path_lock = True
-        plan.layers[0] = "Kickoff"
-
-    return plan, persistent
 
 #######################################################################################################
 
 
 def kickoff(plan, game_info, persistent):
+    '''
+    Decides what to do after hitting the ball on a kickoff.
+    '''
+    #TODO: This will need a lot of work in the near future.
+
     current_state = game_info.me
 
-    #TODO: Add "score open net" functionality here, since we'll prjobably win
+    #TODO: Add "score open net" functionality here, since we'll probably win
     #some kickoffs from time to time
     plan.layers[0] = "Boost"
     if current_state.vel.x > 0:
@@ -166,8 +154,6 @@ def kickoff(plan, game_info, persistent):
         plan.layers[1] = "Mid Boost-"
 
     return plan, persistent
-
-
 
 
 ###########################
@@ -179,14 +165,15 @@ def check_ball_contact(game_info, car_state):
     '''
     Returns a boolean for if the given car has hit the ball in the last frame.
     '''
+    #TODO: Possibly update to compare indices instead
 
-    if game_info.ball.latest_touch.player_name == game_info.my_name and game_info.game_time < game_info.ball.latest_touch.time_seconds + 1/20:
+    if game_info.ball.latest_touch.player_index == game_info.my_index and game_info.game_time < game_info.ball.latest_touch.time_seconds + 1/20:
         return True
     else:
         return False
 
 
-
+#Doesn't work, will need to be mostly or completely redone later.
 def check_steering_control(game_info, car_state):
     '''
     A fairly naive check for if we have control of our steering after a recovery.

@@ -7,10 +7,9 @@ from Maneuvers import GroundTurn
 from Mechanics import FrontDodge
 
 
-def far_back(game_info, old_game_info, opponent_distance):
+def far_back(game_info, opponent_distance):
     controller_input = SimpleControllerState()
     current_state = game_info.me
-    old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
 
@@ -43,10 +42,9 @@ def far_back(game_info, old_game_info, opponent_distance):
 #########################################################################################################
 
 
-def offcenter(game_info, old_game_info, opponent_distance, x_sign):
+def offcenter(game_info, opponent_distance, x_sign):
     controller_input = SimpleControllerState()
     current_state = game_info.me
-    old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
     offset = Vec3(0, 0, 0)
@@ -80,10 +78,9 @@ def offcenter(game_info, old_game_info, opponent_distance, x_sign):
 #########################################################################################################
 
 
-def diagonal(game_info, old_game_info, opponent_distance, x_sign):
+def diagonal(game_info, opponent_distance, x_sign):
     controller_input = SimpleControllerState()
     current_state = game_info.me
-    old_state = old_game_info.me
     ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                        (game_info.ball.pos - current_state.pos).x)
     offset = Vec3(0, 0, 0)

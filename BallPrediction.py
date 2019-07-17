@@ -38,12 +38,12 @@ class PredictionPath:
             #Assemble a list of the slices in our predicted path.
             self.slices = []
             #For the first slice, there is no previous slice.
-            self.slices.append(RLUPredictionSlice(prediction, None, team_sign))
+            self.slices.append(RLUPredictionSlice(prediction, team_sign))
             i = 1
             while condition(self.slices):
                 #For all other slices, we have a previous slice.
                 prediction.step(1/60)
-                self.slices.append(RLUPredictionSlice(prediction, self.slices[i - 1], team_sign))
+                self.slices.append(RLUPredictionSlice(prediction, team_sign))
                 i +=1
 
         elif source == "Framework":
@@ -53,6 +53,8 @@ class PredictionPath:
 
 
     ######################
+    #TODO: Check bouncing?
+ 
 
     def state_at_time(self, time):
         #Return the slice closest to the given time.
@@ -66,11 +68,11 @@ class PredictionPath:
 
     def check_on_net(self):
         #Check if at some point the ball is between the posts and behind the goal line.
-        for step in self.slices.keys():
-            if abs(step.x) < 800 and step.y > 5120 -92.75:
-                return "Orange"
-            elif abs(step.x) < 800 and step.y < -5120 -92.75:
-                return "Blue"
+        for step in self.slices:
+            if abs(step.x) < 800 and step.y > 5120 - 92.75:
+                return "Attacking"
+            elif abs(step.x) < 800 and step.y < -5120 - 92.75:
+                return "Defending"
         return False
 
 
@@ -78,7 +80,6 @@ class PredictionPath:
 #############################################################################################
 #
 #############################################################################################
-
 
     
 class RLUPredictionSlice:
@@ -92,7 +93,6 @@ class RLUPredictionSlice:
     
     def __init__(self,
                  current_slice,
-                 prev_slice,
                  team_sign):
 
 
@@ -121,38 +121,6 @@ class RLUPredictionSlice:
         self.omega = Vec3(self.omegax, self.omegay, self.omegaz)
 
         self.time = current_slice.time
-
-        ########################################################
-
-        if prev_slice != None:
-            #We can use the previous slice to check if the ball is bouncing or not.
-
-            #Position, rotation, velocity, omega for the previous slice,
-            #assuming we have a previous slice
-            self.old_x = prev_slice.pos.x * team_sign
-            self.old_y = prev_slice.pos.y * team_sign
-            self.old_z = prev_slice.pos.z
-            self.old_pos = Vec3(self.x, self.y, self.z)
-
-            '''
-            Irrelevant for a ball.  No idea if a puck will ever be supported.
-            old_pitch = prev_slice.rotation.pitch
-            old_yaw = prev_slice.rotation.yaw
-            old_roll = prev_slice.rotation.roll
-            self.old_rot = Orientation(pyr = [ old_pitch, old_yaw, old_roll] )
-            '''
-
-            self.old_vx = prev_slice.vel.x * team_sign
-            self.old_vy = prev_slice.vel.y * team_sign
-            self.old_vz = prev_slice.vel.z
-            self.old_vel = Vec3(self.vx, self.vy, self.vz)
-
-            self.old_omegax = prev_slice.omega.x * team_sign
-            self.old_omegay = prev_slice.omega.y * team_sign
-            self.old_omegaz = prev_slice.omega.z
-            self.old_omega = Vec3(self.old_omegax, self.old_omegay, self.old_omegaz)
-
-            self.old_time = prev_slice.time
 
 
 ######################################################################################
@@ -193,10 +161,7 @@ class FrameworkPredictionSlice:
 
 ###############################################################################################
 #Useful prediction functions - unrelated to the above classes.
-#TODO: Use our prediction classes from above instead of regenerating it.
 ###############################################################################################
-
-
 
 def aerial_prediction(game_info, min_time, persistent):
     '''
@@ -228,13 +193,12 @@ def ground_prediction(game_info, persistent):
     Checks where in the future an aerial will put us hitting the ball, and updates our persistent
     aerial object to have that time and place as the target data.
     '''
-    prediction = utils.simulation.Ball(game_info.utils_game.ball)
 
-    for i in range(100):
+    prediction = game_info.ball_prediction
+
+    for i in range(0, len(prediction.slices), 2):
         
-        prediction.step(1/60)
-
-        if prediction.location[2] > 150:
+        if prediction.location.z < 150:
             persistent.hit_ball.action.target = prediction.location
             persistent.hit_ball.action.arrival_time = prediction.time
             if prediction.time - game_info.game_time > drive_time(game_info,
@@ -255,7 +219,7 @@ def get_ball_arrival(game_info,
 
     aerial = Aerial(game_info.utils_game.my_car)
     prediction = game_info.ball_prediction
-    for i in range(200):
+    for i in range(0, len(prediction.slices), 2):
 
         if condition(prediction.slices[i].pos, prediction.slices[i].vel, game_info.team_sign):
             return prediction.slices[i].time, prediction.slices[i].pos
@@ -334,24 +298,6 @@ def is_ball_in_scorable_box(loc,
         return False
     else:
         return True
-
-############################################
-
-
-def check_on_goal(pred, time):
-    '''
-    Returns if the ball will be in the net within time (just looks at y-coordinates)
-    '''
-    on_net = False
-    i = 0
-    while pred.slices[i].time < time:
-        if pred.slices[i].pos.y < -(5120+92.75):
-            on_net = True
-            break
-
-        i +=1
-    return on_net
-
 
 
 #TODO: Add time estimates for getting to the ball, and predicting when it'll roll into the center of the field.  This will let us take shots more reliably, since we'll be getting there _before_ it rolls out of reach.

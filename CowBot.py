@@ -8,7 +8,6 @@ from rlutilities.mechanics import AerialTurn, Aerial
 
 from BallPrediction import PredictionPath #Maybe kick all this into Planning?
 from Conversions import Vec3_to_vec3
-import CowBotInit #only used for find_teammates_and_opponents - move more into this file?
 from Cowculate import Cowculate #deprecate and rename planning?
 from GamePlan import GamePlan
 from GameState import BallState, CarState, GameState
@@ -28,7 +27,7 @@ from Pathing.WaypointPath import WaypointPath
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
 TESTING = False
-DEBUGGING = True
+DEBUGGING = False
 if TESTING or DEBUGGING:
     import EvilGlobals #Only needed for rendering.
     from StateSetting import *
@@ -48,7 +47,6 @@ class BooleanAlgebraCow(BaseAgent):
         self.teammate_indices = []
         self.opponent_indices = []
 
-        self.old_game_info = None
         self.game_info = None
         self.kickoff_position = "Other"
         self.kickoff_data = None
@@ -113,8 +111,16 @@ class BooleanAlgebraCow(BaseAgent):
             self.field_info = self.get_field_info()
  
             #Find teammates and opponents
-            self.teammate_indices, self.opponent_indices = CowBotInit.find_self_and_teams(packet, self.index, self.team)
-
+            self.teammate_indices = []
+            self.opponent_indices = []
+    
+            for i in range(packet.num_cars):
+                if i == self.index:
+                    pass
+                elif packet.game_cars[i].team == self.team:
+                    self.teammate_indices.append(i)
+                else:
+                    self.opponent_indices.append(i)
             
             self.utils_game = utils.simulation.Game(self.index, self.team)
             utils.simulation.Game.set_mode("soccar")
@@ -137,11 +143,6 @@ class BooleanAlgebraCow(BaseAgent):
                                    teammate_indices = self.teammate_indices,
                                    opponent_indices = self.opponent_indices,
                                    my_old_inputs = self.old_inputs)
-
-        if self.old_game_info == None:
-            #This avoids AttributeErrors on calls to old_game_info on the first frame of a kickoff.
-            #The first frame shouldn't be calling previous frame information anyway
-            self.old_game_info = self.game_info
         
         ###############################################################################################
         #Planning
@@ -205,13 +206,11 @@ class BooleanAlgebraCow(BaseAgent):
         if self.plan.layers[0] == "Kickoff":
             if self.old_kickoff_data != None:
                 self.kickoff_data = Kickoff(self.game_info,
-                                            self.old_game_info,
                                             self.kickoff_position,
                                             self.old_kickoff_data.memory,
                                             self.persistent)
             else:
                 self.kickoff_data = Kickoff(self.game_info,
-                                            self.old_game_info,
                                             self.kickoff_position,
                                             None,
                                             self.persistent)
@@ -221,7 +220,6 @@ class BooleanAlgebraCow(BaseAgent):
         else:
             output, self.persistent = Cowculate(self.plan,
                                                 self.game_info,
-                                                self.old_game_info,
                                                 self.prediction,
                                                 self.persistent)
 
@@ -230,7 +228,6 @@ class BooleanAlgebraCow(BaseAgent):
         ###############################################################################################
         #Update previous frame variables.
         ###############################################################################################
-        self.old_game_info = self.game_info
         self.old_kickoff_data = self.kickoff_data
         self.old_inputs = output
 

@@ -51,16 +51,11 @@ def check_kickoff_position(current_state):
 
 class Kickoff():
 
-    def __init__(self, game_info, old_game_info, kickoff_position, memory, persistent):
+    def __init__(self, game_info, kickoff_position, memory, persistent):
         self.position = kickoff_position
         self.memory = memory
         self.current_state = game_info.me
         self.game_info = game_info
-        self.old_game_info = old_game_info
-        if old_game_info != None:
-            self.old_state = old_game_info.me
-        else:
-            self.old_state = game_info.me
 
         self.persistent = persistent
 
@@ -78,13 +73,11 @@ class Kickoff():
         if self.position == "Far Back":
             #Run the straight kickoff
             controller_input = Kickoffs.Default_Kickoffs.far_back(self.game_info,
-                                                               self.old_game_info,
                                                                self.game_info.opponent_distance)
 
         elif self.position == "Back Left" or self.position == "Back Right":
             #Run the offcenter kickoff
             controller_input = Kickoffs.Default_Kickoffs.offcenter(self.game_info,
-                                                                   self.old_game_info,
                                                                    self.game_info.opponent_distance,
                                                                    x_sign)
 
@@ -92,7 +85,6 @@ class Kickoff():
         elif self.position == "Right" or self.position == "Left":
             #Run the diagonal kickoff
             controller_input = Kickoffs.Default_Kickoffs.diagonal(self.game_info,
-                                                               self.old_game_info,
                                                                self.game_info.opponent_distance,
                                                                x_sign)
 

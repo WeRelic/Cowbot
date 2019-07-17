@@ -1,4 +1,4 @@
-from BallPrediction import check_on_goal, get_ball_arrival, is_ball_in_front_of_net, is_ball_in_scorable_box
+from BallPrediction import  get_ball_arrival, is_ball_in_front_of_net, is_ball_in_scorable_box
 from CowBotVector import Vec3
 from Miscellaneous import check_in_net, check_far_post, predict_for_time
 from Pathing.WaypointPath import WaypointPath
@@ -89,8 +89,6 @@ def ball(plan, game_info, persistent):
     current_state = game_info.me
 
     ball_distance = (game_info.ball.pos - current_state.pos).magnitude()
-    #2 is just the time I picked, it can (and should) be picked more intelligently.
-    shot_on_goal = check_on_goal(game_info.ball_prediction, game_info.game_time + 2)
     
     #TODO: Make this better
     if game_info.ball.vel.magnitude() != 0 and current_state.vel.magnitude() != 0:        
@@ -103,7 +101,6 @@ def ball(plan, game_info, persistent):
     if ball_distance < 450 - 100*ball_car_dot and game_info.ball.pos.z < 250 and plan.old_plan[2] != "Aerial":
         #If we were going for the ball, and we're close to it, flip into it.
         plan.layers[1] = "Challenge"
-    #elif shot_on_goal: #We'll make this do things later.
     #plan.layers[1] = "Save"
     else:
         plan.layers[1] = "Clear"

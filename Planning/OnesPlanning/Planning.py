@@ -48,7 +48,7 @@ def make_plan(game_info,
     #######################################################################
 
     if game_info.is_kickoff_pause:
-        plan, persistent = LayerZero.kickoff_pause(plan, game_info, persistent)
+        plan.layers[0] = "Kickoff"
 
     elif old_plan[0] == "Kickoff":
         plan, persistent = LayerZero.kickoff(plan, game_info, persistent)
@@ -113,7 +113,7 @@ def make_plan(game_info,
 
 
     if plan.layers != plan.old_plan:
-        print(plan.layers, plan.old_plan, game_info.my_index)
+        print(plan.layers, plan.old_plan)
 
     #Get ready for next frame, and return
     plan.old_plan = plan.layers
