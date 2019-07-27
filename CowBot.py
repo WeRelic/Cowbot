@@ -7,7 +7,7 @@ import rlutilities as utils
 from rlutilities.mechanics import AerialTurn, Aerial
 
 from BallPrediction import PredictionPath #Maybe kick all this into Planning?
-from Conversions import Vec3_to_vec3
+from Conversions import Vec3_to_vec3, rot_to_mat3
 from Cowculate import Cowculate #deprecate and rename planning?
 from GamePlan import GamePlan
 from GameState import BallState, CarState, GameState
@@ -16,7 +16,7 @@ from Mechanics import PersistentMechanics
 from Miscellaneous import predict_for_time
 from Pathing.Path_Planning import follow_waypoints
 import Planning.OnesPlanning.Planning as OnesPlanning
-import Planning.TeamPlanning.Planning as TeamPlanning
+#import Planning.TeamPlanning.Planning as TeamPlanning  #Team planning is no longer in this version due to bugs.  Copy from Ones planning and update team strategy at some point before the next team event.
 
 
 from Pathing.WaypointPath import WaypointPath
@@ -98,7 +98,7 @@ class BooleanAlgebraCow(BaseAgent):
             #self.path_plan = "ArcLineArc"
             #self.path_switch = True
             pass
-            
+
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
 
         ###############################################################################################
@@ -148,17 +148,18 @@ class BooleanAlgebraCow(BaseAgent):
         #Planning
         ###############################################################################################
 
-        if self.game_info.team_mode == "1v1":
-            self.plan, self.persistent = OnesPlanning.make_plan(self.game_info,
-                                                                self.plan.old_plan,
-                                                                self.plan.path,
-                                                                self.persistent)
-        else:
+        #For now everything is a 1v1.  I'll fix team code again in the future.
+        #if self.game_info.team_mode == "1v1":
+        self.plan, self.persistent = OnesPlanning.make_plan(self.game_info,
+                                                            self.plan.old_plan,
+                                                            self.plan.path,
+                                                            self.persistent)
+        '''        else:
             self.plan, self.persistent = TeamPlanning.make_plan(self.game_info,
                                                                 self.plan.old_plan,
                                                                 self.plan.path,
                                                                 self.persistent)
-
+        '''
 
 
         #Check if it's a kickoff.  If so, we'll run kickoff code later on.
@@ -167,13 +168,15 @@ class BooleanAlgebraCow(BaseAgent):
 
         #If we're in the first frame of an RLU mechanic, start up the object.
         #If we're finished with it, reset it to None
+        ###
         if self.persistent.aerial_turn.initialize:
             self.persistent.aerial_turn.initialize = False
             self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
+            self.persistent.aerial_turn.action.target = rot_to_mat3(self.persistent.aerial_turn.target_orientation)
         elif not self.persistent.aerial_turn.check:
             self.persistent.aerial_turn.action = None
         self.persistent.aerial_turn.check = False
-        #
+        ###
         if self.persistent.aerial.initialize:
             self.persistent.aerial.initialize = False
             self.persistent.aerial.action = Aerial(self.game_info.utils_game.my_car)
@@ -183,7 +186,7 @@ class BooleanAlgebraCow(BaseAgent):
         elif not self.persistent.aerial.check:
             self.persistent.aerial.action = None
         self.persistent.aerial.check = False
-
+        ###
 
         ###############################################################################################
         #Testing 

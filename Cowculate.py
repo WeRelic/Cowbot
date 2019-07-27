@@ -10,7 +10,7 @@ from math import atan2, pi
 
 from rlbot.agents.base_agent import SimpleControllerState
 
-from BallPrediction import aerial_prediction, get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box
+from BallPrediction import get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box
 from CowBotVector import Vec3
 from GameState import Orientation
 from Maneuvers import GroundTurn, NavigateTo
@@ -43,14 +43,8 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
         epsilon = 0.3
         
         target_boost = None
-        if plan.layers[1] == "Back Boost-":
-            target_boost = game_info.boosts[3]
-        elif plan.layers[1] == "Back Boost+":
-            target_boost = game_info.boosts[4]
-        elif plan.layers[1] == "Mid Boost-":
-            target_boost = game_info.boosts[15]        
-        elif plan.layers[1] == "Mid Boost+":
-            target_boost = game_info.boosts[18]
+        if type(plan.layers[1]) == int:
+            target_boost = game_info.boosts[plan.layers[1]]
         elif plan.layers[1] == "Pads":
             #This will skip the target boost loop and follow the path
             pass
@@ -70,6 +64,34 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
 
             elif current_state.vel.magnitude() < 2300 and (grounded_facing_boost or current_state.rot.pitch < -pi/12):
                 controller_input.boost = 1
+
+        elif plan.path == None:
+            #Copied the "go to net" code because I don't plan on really improving this for now.
+            #This section will be greatly improved once I have ground recovery code in place.
+            #TODO: Reocvery code into picking a path more intelligently.
+            center_of_net = Vec3(0,-5120,0)
+            
+            #Turn towards the center of our net
+            controller_input = GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
+
+            #Variables to check if we want to flip for speed.
+            displacement_from_net = center_of_net - current_state.pos
+            distance_to_net = displacement_from_net.magnitude()
+            angle_to_net = atan2(displacement_from_net.y, displacement_from_net.x)
+            facing_net = angles_are_close(angle_to_net, current_state.rot.yaw, pi/12)
+            speed = current_state.vel.magnitude()
+
+            if distance_to_net > 1500 * ((speed+500) / 1410) and 1000 < speed < 2000 and facing_net:
+                controller_input = FrontDodge(current_state).input()                
+            elif current_state.boost > 60 and facing_net and current_state.wheel_contact and speed < 2300:
+                controller_input.boost = 1
+
+            #If we start to go up the wall on the way, turn back down.
+            if current_state.wheel_contact:
+                if current_state.rot.roll > 0.15:
+                    controller_input.steer = 1
+                elif current_state.rot.roll < - 0.15:
+                    controller_input.steer = -1
 
         else:
             controller_input = plan.path.input()
@@ -95,35 +117,38 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
             #Turn towards the center of our net
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
 
+            #Variables to check if we want to flip for speed.
+            displacement_from_net = center_of_net - current_state.pos
+            distance_to_net = displacement_from_net.magnitude()
+            angle_to_net = atan2(displacement_from_net.y, displacement_from_net.x)
+            facing_net = angles_are_close(angle_to_net, current_state.rot.yaw, pi/12)
+            speed = current_state.vel.magnitude()
+            
+            if distance_to_net > 1500 and 1000 < speed < 2000 and facing_net:
+                controller_input = FrontDodge(current_state).input()
+            elif current_state.boost > 60 and facing_net and current_state.wheel_contact and speed < 2300:
+                controller_input.boost = 1
+
             #If we start to go up the wall on the way, turn back down.
-            if current_state.rot.roll > 0.15:
-                controller_input.steer = 1
-            elif current_state.rot.roll < - 0.15:
-                controller_input.steer = -1
+            if current_state.wheel_contact:
+                if current_state.rot.roll > 0.15:
+                    controller_input.steer = 1
+                elif current_state.rot.roll < - 0.15:
+                    controller_input.steer = -1
 
         elif plan.layers[1] == "Wait in net":
             if plan.layers[2] == "Prep for Aerial":
-                target_time, target_loc = get_ball_arrival(game_info,
-                                                           is_ball_in_scorable_box)
-
-                if game_info.game_time > choose_stationary_takeoff_time(game_info,
-                                                                        target_loc,
-                                                                        target_time) - 1/10:
-                    if target_loc.z > 200 and -50 < current_state.vel.y < 200:
-                        #TODO: Deal with aerials while moving
-                        persistent.aerial.check = True
-                        persistent.aerial.initialize = True
-                        persistent = aerial_prediction(game_info, target_time, persistent)
+                controller_input = SimpleControllerState()
 
             else:
-                #Know where the ball is so we can face it
                 ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
                                    (game_info.ball.pos - current_state.pos).x)
 
                 #Go to net, stop in the middle, then turn in place to face the ball.
                 #TODO: Improve NavigateTo or replace completely
                 rot = Orientation(pyr = [current_state.rot.pitch, ball_angle, current_state.rot.roll] )
-                controller_input = NavigateTo(current_state, current_state.copy_state(pos = center_of_net, rot = rot)).input()
+                target_state = current_state.copy_state(pos = center_of_net, rot = rot)
+                controller_input = NavigateTo(current_state, target_state).input()
 
             #############################################################################
 

@@ -163,10 +163,9 @@ class FrameworkPredictionSlice:
 #Useful prediction functions - unrelated to the above classes.
 ###############################################################################################
 
-def aerial_prediction(game_info, min_time, persistent):
+def rendezvous_prediction(game_info, min_time, persistent):
     '''
-    Checks where in the future an aerial will put us hitting the ball, and updates our persistent
-    aerial object to have that time and place as the target data.
+    Updates the place and time we will be contacting the ball
     '''
 
     prediction = game_info.ball_prediction
@@ -174,37 +173,25 @@ def aerial_prediction(game_info, min_time, persistent):
     for i in range(0, len(prediction.slices), 2):
         
         aerial = Aerial(game_info.utils_game.my_car)
-
-        if prediction.slices[i].pos.z > 150:# and prediction.slices[i].time > min_time:
-            aerial.target = Vec3_to_vec3(prediction.slices[i].pos, game_info.team_sign)
-            aerial.arrival_time = prediction.slices[i].time
-            simulation = aerial.simulate()
-            if (vec3_to_Vec3(simulation.location, game_info.team_sign) - vec3_to_Vec3(aerial.target, game_info.team_sign)).magnitude() < 30:
-                persistent.aerial.target_location = prediction.slices[i].pos
-                persistent.aerial.target_time = prediction.slices[i].time
-                break
-
-    return persistent
-
-############################################
-
-def ground_prediction(game_info, persistent):
-    '''
-    Checks where in the future an aerial will put us hitting the ball, and updates our persistent
-    aerial object to have that time and place as the target data.
-    '''
-
-    prediction = game_info.ball_prediction
-
-    for i in range(0, len(prediction.slices), 2):
         
-        if prediction.location.z < 150:
-            persistent.hit_ball.action.target = prediction.location
-            persistent.hit_ball.action.arrival_time = prediction.time
-            if prediction.time - game_info.game_time > drive_time(game_info,
-                                                                  prediction.location,
-                                                                  game_info.me.boost):
-                break
+        #if prediction.slices[i].pos.z > 150:# and prediction.slices[i].time > min_time:
+        aerial.target = Vec3_to_vec3(prediction.slices[i].pos, game_info.team_sign)
+        aerial.arrival_time = prediction.slices[i].time
+        simulation = aerial.simulate()
+        if (vec3_to_Vec3(simulation.location, game_info.team_sign) - vec3_to_Vec3(aerial.target, game_info.team_sign)).magnitude() < 30:
+            persistent.aerial.target_location = prediction.slices[i].pos
+            persistent.aerial.target_time = prediction.slices[i].time
+            break
+
+        #else:
+        ''' This currently isn't defined, so we're going to skip it for now.
+        if prediction.time - game_info.game_time > drive_time(game_info,
+        prediction.location,
+        game_info.me.boost):
+        persistent.hit_ball.action.target = prediction.location
+        persistent.hit_ball.action.arrival_time = prediction.time
+        break
+        '''
 
     return persistent
 

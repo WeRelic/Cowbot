@@ -1,6 +1,6 @@
 '''
 
-   In this file we define classes for the lowest level mechancis,
+   In this file we define classes for the lowest level mechanics,
    so that we don't have to interface directly via controller inputs.
    This layer will go between the calculations in Cowculate() and the 
    output into CowBot.py.
@@ -47,8 +47,10 @@ class Mechanic:
         self.data = None
         self.initialize = False
 
+        #Aerial Turn
         self.target_orientation = None
 
+        #Aerial
         self.target_location = None
         self.target_time = None
         self.target_up = Vec3(0,0,1)
@@ -60,9 +62,7 @@ class Mechanic:
 
 def aerial(dt, team_sign, persistent):
     '''
-    Takes a target, an up-vector, a time delta (float), and a PersistentMechanics object.
-    The front vector of the car is determined by the aerial controller, so up
-    controls the roll about that axis
+    Takes a time delta (float), a team sign (+1 for blue, or -1 or orange) and a PersistentMechanics object.
     Returns contoller input and an updated PersistentMechanics object for the next frame.
     These are the steps to access RLUtilities' Aerial functions. All the math happens there.
     '''
@@ -85,7 +85,6 @@ def aerial_rotation(dt, persistent):
     These are the steps to access RLUtilities' AerialTurn functions. All the math happens there.
     '''
     persistent.aerial_turn.check = True
-    persistent.aerial_turn.action.target = rot_to_mat3(persistent.aerial_turn.target_orientation)
     persistent.aerial_turn.action.step(dt)
     controller_input = persistent.aerial_turn.action.controls
 

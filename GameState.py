@@ -103,6 +103,10 @@ class GameState:
                                                 pad_pos,
                                                 packet.game_boosts[i].is_active,
                                                 packet.game_boosts[i].timer))
+        #Mirror the boost list left/right
+        self.mirror_boost_list = [0, 2, 1, 4, 3, 6, 5, 7, 9, 8, 11, 10, 14, 13, 12, 18, 17, 16,
+                                  15, 21, 20, 19, 23, 22, 25, 24, 26, 28, 27, 30, 29, 32, 31, 33]
+
 
         #Other Game info
         self.game_time = packet.game_info.seconds_elapsed

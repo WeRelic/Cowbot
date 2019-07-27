@@ -24,28 +24,6 @@ def boost(plan, game_info, persistent):
         near_mid_boost = 18
         far_back_boost = 3
         near_back_boost = 4
-
-        plan.layers[1] = "Pads"
-  
-        if plan.path_lock:
-            plan.path = WaypointPath(plan.path.waypoints, current_state)
-  
-        else:
-            plan.path_lock = True
-            plan.path = WaypointPath(check_pads(game_info), current_state)
-  
-        '''
-        if game_info.boosts[far_mid_boost].is_active:
-            plan.layers[1] = "Mid Boost-"
-        elif game_info.boosts[far_back_boost].is_active:
-            plan.layers[1] = "Back Boost-"
-        elif game_info.ball.pos.y > 0 and game_info.boosts[near_back_boost].is_active:
-            plan.layers[1] = "Back Boost+"
-        else:
-            plan.layers[1] = "Pads"
-            plan.path = WaypointPath(check_pads(game_info), current_state)
-        '''
-  
     else:
         far_opp_boost = 30
         near_opp_boost = 29
@@ -54,28 +32,37 @@ def boost(plan, game_info, persistent):
         far_back_boost = 4
         near_back_boost = 3
   
+    '''
+    if current_state.pos.y > -2000 and game_info.boosts[far_mid_boost].is_active:
+        plan.layers[1] = far_mid_boost
+    elif game_info.boosts[far_back_boost].is_active:
+        plan.layers[1] = far_back_boost
+    elif game_info.ball.pos.y > 0 and game_info.boosts[near_back_boost].is_active:
+        plan.layers[1] = near_back_boost
+    else:
+        #Break and go to goal, since we're not smart enough to get pads yet
         plan.layers[1] = "Pads"
-  
-        if plan.path_lock:
-            plan.path = WaypointPath(plan.path.waypoints, current_state)
-  
-        else:
+        plan.path = WaypointPath(check_pads(game_info), current_state)
+    '''
+
+    plan.layers[1] = "Pads"
+    if plan.path_lock:
+        plan.path = WaypointPath(plan.path.waypoints, current_state)
+    else:
+        candidate_path = check_pads(game_info)
+        if len(candidate_path) > 0:
+            #This conditional is only needed if we might not pick a candidate path
+            #Currently we pick the 'best' out of the options, even if it's not good
+            #Eventually that is likely to change, although I suspect this code will
+            #be significantly improved by time that happens
+            plan.path = WaypointPath(candidate_path, current_state)
             plan.path_lock = True
-            plan.path = WaypointPath(check_pads(game_info), current_state)
-  
-  
-        '''
-        if current_state.pos.y > -2000 and game_info.boosts[far_mid_boost].is_active:
-            plan.layers[1] = "Mid Boost+"
-        elif game_info.boosts[far_back_boost].is_active:
-            plan.layers[1] = "Back Boost+"
-        elif game_info.ball.pos.y > 0 and game_info.boosts[near_back_boost].is_active:
-            plan.layers[1] = "Back Boost-"
+        elif current_state.pos.y < -3000:
+            plan.layers[0] = "Goal"
+            plan.layers[1] = "Go to net"
         else:
-            #Break and go to goal, since we're not smart enough to get pads yet
-            plan.layers[1] = "Pads"
-            plan.path = WaypointPath(check_pads(game_info), current_state)
-        '''
+            print("confusion?")
+            #plan.path = WaypointPath([Vec3(0,-5120,0)], current_state)
 
     return plan, persistent
 
@@ -173,112 +160,135 @@ def recover(plan, game_info, persistent):
 def check_pads(game_info):
     '''
     Decide which path of boost pads to go through, once we've decided to pick up pads.
+    This is going to get very complicated, and will probably warrant its own file eventually.
     '''
 
     current_state = game_info.me
 
-    if game_info.ball.pos.x > 0:
-        if current_state.pos.y > 2816:
-            if current_state.pos.x > 2048:
-                index_list = [23, 20, 16, 12, 10, 5, 0]
-            elif current_state.pos.x > 100:
-                index_list = [20, 16, 12, 10, 5, 0]
-            else:
-                index_list = [22, 19, 12, 10, 5, 0]
-                
-            #######
-
-        elif current_state.pos.y > 1024 + 100:
-            if current_state.pos.x > 2048 + 100:
-                index_list = [21, 17, 13, 10, 5, 0]
-            elif current_state.pos.x > 100:
-                index_list = [20, 16, 12, 10, 5, 0]
-            else:
-                index_list = [19, 12, 10, 5, 0]
-
-            #######
-            
-        elif current_state.pos.y > 100:
-            if current_state.pos.x > 1024 + 100:
-                index_list = [17, 13, 10, 5, 0]
-            elif current_state.pos.x > -1024 + 100:
-                index_list = [16, 12, 10, 5, 0]
-            else:
-                index_list = [12, 10, 5, 0]
-
-            #######
-
-        elif current_state.pos.y > -2300 + 100:
-            if current_state.pos.x > 2048 + 100:
-                index_list = [14, 13, 12, 10, 5, 0]
-            elif current_state.pos.x > 100:
-                index_list = [13, 12, 10, 5, 0]
-            else:
-                index_list = [12, 10, 5, 0]
-
-            #######
-
-        else:
-            if current_state.pos.x > 1788 + 100:
-                index_list = [11, 7, 10, 5, 0]
-            elif current_state.pos.x > -1788 + 100:
-                index_list = [7, 10, 5, 0]
-            else:
-                index_list = [8, 10, 5, 0]
+    #A list of reasonable paths we might want to take
+    #Doesn't take big pads into account for now
+    boost_pads_path_list = [ [32, 28, 26, 20, 13, 7, 0], #top left to right mid to net
+                             [32, 23, 21, 14, 11, 6, 0],     #top left to left mid to net
+                             [33, 26, 20, 13, 7, 0],         #their net to center mid to net
+                             [28, 23, 21, 14, 11, 6, 0],     #top left to left mid to net
+                             [28, 26, 19, 12, 10, 5, 0],     #top left to right mid to net
+                             [28, 20, 16, 10, 5, 0],         #top left to left-center mid to net
+                             [28, 20, 13, 7, 0],
+                             [26, 20, 13, 7, 0],             #top mid to center mid to net
+                             [26, 21, 14, 11, 6, 0],         #top mid to left mid to net
+                             [25, 21, 17, 13, 7, 0],         #top left to center mid to net
+                             [25, 21, 14, 11, 6, 0],         #top left to left mid to net
+                             [23, 21, 14, 11, 6, 0],         #top left to left mid to net
+                             [23, 20, 16, 12, 10, 5, 0],     #top left to mid right to net041
+                             [23, 20, 13, 7, 0],             #top left to center mid to net
+                             [23, 17, 13, 7, 0],             #top left to left-center mid to net
+                             [21, 14, 11, 6, 0],
+                             [21, 17, 13, 7, 0],
+                             [21, 17, 13, 5, 0],
+                             [20, 13, 7, 0],
+                             [20, 17, 14, 11, 6, 0],
+                             [17, 14, 11, 6, 0],
+                             [17, 13, 7, 0],
+                             [14, 11, 6, 0],
+                             [14, 7, 0],
+                             [13, 7, 0],
+                             [11, 6, 0],
+                             [7, 0],
+                             [6, 0] ]
 
 
-        ##############################################################
+    #Mirror all the paths above
+    n = len(boost_pads_path_list)
+    for index in range(n):
+        boost_pads_path_list.append([ game_info.mirror_boost_list.index(boost_index) for boost_index in boost_pads_path_list[index] ])
+    #TODO: Put this in initialization so it doesn't have to redo it every time we choose a path?
+    product = 0
+    best_path = []
+    for path in boost_pads_path_list:
+        first_segment = (game_info.boosts[path[1]].pos - game_info.boosts[path[0]].pos).normalize()
+        first_boost = (game_info.boosts[path[0]].pos - current_state.pos).normalize()
+        dot = first_segment.dot(first_boost)
 
-        ##############################################################
-
-    elif game_info.ball.pos.x <= 0:
-        if current_state.pos.y > 2816:
-            if current_state.pos.x < -2048:
-                index_list = [22, 20, 17, 14, 11, 6, 0]
-            elif current_state.pos.x < -100:
-                index_list = [20, 17, 14, 11, 6, 0]
-            else:
-                index_list = [23, 21, 14, 11, 6, 0]
-                
-            #######
-
-        elif current_state.pos.y > 1024 + 100:
-            if current_state.pos.x < -2048 - 100:
-                index_list = [19, 16, 13, 11, 6, 0]
-            elif current_state.pos.x < -100:
-                index_list = [20, 17, 14, 11, 6, 0]
-            else:
-                index_list = [21, 14, 11, 6, 0]
-
-            #######
-            
-        elif current_state.pos.y > 100:
-            if current_state.pos.x < -1024 - 100:
-                index_list = [16, 13, 11, 6, 0]
-            elif current_state.pos.x < 1024 - 100:
-                index_list = [17, 14, 11, 6, 0]
-            else:
-                index_list = [14, 11, 6, 0]
-
-            #######
-
-        elif current_state.pos.y > -2300 + 100:
-            if current_state.pos.x < -2048 - 100:
-                index_list = [12, 13, 14, 11, 6, 0]
-            elif current_state.pos.x < -100:
-                index_list = [13, 14, 11, 6, 0]
-            else:
-                index_list = [14, 11, 6, 0]
-
-            #######
-
-        else:
-            if current_state.pos.x < -1788 - 100:
-                index_list = [10, 7, 6, 0]
-            elif current_state.pos.x < 1788 - 100:
-                index_list = [7, 6, 0]
-            else:
-                index_list = [9, 11, 6, 0]
+        if dot < 0:
+            continue
+        elif dot > product:
+            best_path = path
+            product = dot
 
 
-    return [ game_info.boosts[boost_index].pos for boost_index in index_list ]
+    #This is only useful if I'm picking paths based on ball position.
+    #Since I'm only going by my position, this will ruin everything
+    #if game_info.ball.pos.x <= 0:
+    #index_list = [ game_info.mirror_boost_list.index(boost_index) for boost_index in index_list ]
+        
+    return [ game_info.boosts[boost_index].pos for boost_index in best_path ]
+
+
+
+
+''' Here's a decent starting framework for team boost paths.  It's not great,
+    and needs to take velocity and orientation into account, but is good enough for 
+    until after the next 1v1 tournament. 
+
+
+    boost_pads_path_list = [ [32, 28, 26, 19, 12, 10, 5, 0], #top left to right mid to net
+                             [32, 28, 26, 19, 12, 10, 1],    #top left to right mid to right post
+                             [32, 23, 21, 14, 11, 2],        #top left top left to left mid to left post
+                             [32, 23, 21, 14, 11, 6, 0],     #top left to left mid to net
+                             [33, 28, 23, 21, 14, 11, 6, 0], #their net to left mid to net
+                             [33, 28, 23, 21, 14, 11, 2],    #their net to left mid to left post
+                             [33, 26, 20, 13, 7, 0],         #their net to center mid to net
+                             [33, 28, 23, 21, 17, 13, 10, 1], 
+                             [33, 28, 23, 21, 17, 13, 10, 5, 0], 
+                             [28, 23, 21, 14, 11, 2],        #top left to left mid to left post
+                             [28, 23, 21, 14, 11, 6, 0],     #top left to left mid to net
+                             [28, 26, 19, 12, 10, 5, 0],     #top left to right mid to net
+                             [28, 26, 19, 12, 10, 1],        #top left to right mid to right post
+                             [28, 20, 16, 12, 10, 1],        #top left to left-center mid to right post
+                             [28, 20, 16, 12, 10, 5, 0],     #top left to left-center mid to net
+                             [28, 20, 13, 7, 0],
+                             [26, 20, 13, 7, 0],             #top mid to center mid to net
+                             [26, 21, 14, 11, 6, 0],         #top mid to left mid to net
+                             [26, 21, 14, 11, 2],            #top mid to left mid to left post
+                             [25, 21, 17, 13, 10, 1],        #top left to center mid to right post
+                             [25, 24, 17, 13, 7, 0],         #top left to center mid to net
+                             [25, 24, 17, 13, 5, 0],         #top left to center mid to net
+                             [25, 21, 14, 11, 6, 0],         #top left to left mid to net
+                             [25, 21, 14, 11, 2],            #top left to left mid to left post
+                             [23, 21, 14, 11, 2],            #top left to left mid to left post
+                             [23, 21, 14, 11, 6, 0],         #top left to left mid to net
+                             [23, 20, 16, 12, 10, 5, 0],     #top left to mid right to net041
+                             [23, 20, 16, 12, 10, 1],        #top left to mid right to right post
+                             [23, 20, 13, 7, 0],             #top left to center mid to net
+                             [23, 17, 13, 7, 0],             #top left to left-center mid to net
+                             [21, 14, 11, 2],                #etc.
+                             [21, 14, 11, 6, 0],
+                             [21, 17, 13, 7, 0],
+                             [21, 17, 13, 10, 1],
+                             [21, 17, 13, 5, 0],
+                             [20, 13, 7, 0],
+                             [20, 17, 14, 11, 6, 0],
+                             [20, 17, 14, 11, 2],
+                             [17, 14, 11, 6, 0],
+                             [17, 14, 11, 2],
+                             [17, 13, 7, 0],
+                             [17, 13, 10, 1],
+                             [17, 13, 5, 0],
+                             [14, 11, 2],
+                             [14, 11, 6, 0],
+                             [14, 7, 5, 1],
+                             [14, 7, 5, 0],
+                             [13, 11, 6, 0],
+                             [13, 11, 2],
+                             [13, 6, 0],
+                             [13, 7, 0],
+                             [11, 7, 5, 1],
+                             [11, 2],
+                             [11, 6, 0],
+                             [7, 0],
+                             [7, 6, 0],
+                             [7, 5, 0],
+                             [6, 0 ],
+                             [6, 2] ]
+
+'''

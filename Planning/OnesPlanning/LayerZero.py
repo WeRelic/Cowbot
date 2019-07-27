@@ -13,26 +13,13 @@ def ball(plan, game_info, persistent):
     relative_ball_position = (game_info.ball.pos - game_info.me.pos)
     ball_distance = relative_ball_position.magnitude()
     we_hit_ball = check_ball_contact(game_info, current_state)
-    teammate_is_back = False
     #TODO: Update what counts as "corner"
     ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
     ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
-    teammate_ball_distance = 100000
-    teammate_distance_to_far_post = 100000
     if game_info.ball.pos.x > 0:
         ball_x_sign = 1
     else:
         ball_x_sign = -1
-
-    for mate in game_info.teammates:
-        if (mate.pos - game_info.ball.pos).magnitude() < teammate_ball_distance:
-            teammate_ball_distance = (mate.pos - game_info.ball.pos).magnitude()
-        if (mate.pos - Vec3(-ball_x_sign*1150,-5120+80,0)).magnitude() < teammate_distance_to_far_post:
-            teammate_distance_to_far_post = (mate.pos - Vec3(-ball_x_sign*1150,-5120+80,0)).magnitude()
-
-    for mate in game_info.teammates:
-        if mate.pos.y < -2500:
-            teammate_is_back = True
 
         ############
 
@@ -47,12 +34,16 @@ def ball(plan, game_info, persistent):
         plan.layers[0] = "Boost"
     elif (ball_in_defensive_corner or ball_in_offensive_corner) and plan.old_plan[2] != "Aerial" and plan.old_plan[2] != "Hit ball":
         #TODO: Wrap up all the checks into one 'mechanic lock'?
-        #Check for teammates
         plan.layers[0] = "Goal"
-    elif plan.old_plan[2] == "Aerial" and game_info.game_time > 0.3 + persistent.aerial.action.arrival_time:
+    elif plan.old_plan[2] == "Aerial" and game_info.game_time > 0.3 + persistent.aerial.target_time:
+        #TODO: Add a check to see if another car touches the ball
         plan.layers[0] = "Recover"
-    else:
+
+
+    elif plan.path != None:
         plan.path_lock = True
+        plan.layers[0] = "Ball"
+    else:
         plan.layers[0] = "Ball"
 
     return plan, persistent
@@ -65,15 +56,22 @@ def boost(plan, game_info, persistent):
     '''
 
     current_state = game_info.me
-    #Path for small pads.  Don't loop for ten seconds on the big boost.
     if current_state.boost > 60:
         #If we were going for boost, but have enough boost, go to net.
         plan.layers[0] = "Goal"
-    elif plan.path.finished:
+    elif plan.path != None and plan.path.finished:
         #TODO: Will need to be updated once it starts doing things other than sitting in net.
         plan.layers[0] = "Goal"
-    else:
+    elif current_state.pos.y < -1000 and plan.path != None and plan.path.waypoints == [Vec3(0,-5120,0)]:
+        #TODO: Check field info instead of hardcoding the goals everywhere?
+        plan.layers[0] = "Goal"
+
+
+
+    elif plan.path != None:
         plan.path_lock = True
+        plan.layers[0] = "Boost"
+    else:
         plan.layers[0] = "Boost"
 
     return plan, persistent
@@ -89,6 +87,7 @@ def goal(plan, game_info, persistent):
     current_state = game_info.me
 
     ball_arrival = get_ball_arrival(game_info, is_ball_in_scorable_box)
+    relative_ball_position = (game_info.ball.pos - game_info.me.pos)
     #TODO: Update what counts as "corner"
     ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
     ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
@@ -99,13 +98,17 @@ def goal(plan, game_info, persistent):
         plan.layers[0] = "Ball"
         plan.layers[1] = "Clear"
         plan.layers[2] = "Hit ball"
-    elif is_ball_in_front_of_net(game_info.ball.pos):
-        #TODO: Predict when the ball will be in front of the net.
+    elif is_ball_in_front_of_net(game_info.ball.pos) and relative_ball_position.y > 0:
+        #TODO: Predict when the ball will be in front of the net, path-to-ball code
         plan.layers[0] = "Ball"
     elif ball_in_defensive_corner or ball_in_offensive_corner:
         plan.layers[0] = "Goal"
-    else:
+
+
+    elif plan.path != None:
         plan.path_lock = True
+        plan.layers[0] = "Goal"
+    else:
         plan.layers[0] = "Goal"
 
     return plan, persistent
@@ -128,8 +131,12 @@ def recover(plan, game_info, persistent):
             plan.layers[0] = "Boost"
         else:
             plan.layers[0] = "Goal"
-    else:
+
+
+    elif plan.path != None:
         plan.path_lock = True
+        plan.layers[0] = "Recover"
+    else:
         plan.layers[0] = "Recover"
     return plan, persistent
 
