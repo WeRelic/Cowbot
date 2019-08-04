@@ -6,21 +6,25 @@ from Miscellaneous import rotate_to_range
 
 class GameState:
 
-    def __init__(self,
-                 packet = None,
-                 rigid_body_tick = None,
-                 utils_game = None,
-                 field_info = None,
-                 my_index = None,
-                 my_team = None,
-                 ball_prediction = None,
-                 teammate_indices = None,
-                 opponent_indices = None,
-                 my_old_inputs = None):
+    def __init__( self,
+                  packet = None,
+                  rigid_body_tick = None,
+                  utils_game = None,
+                  field_info = None,
+                  match_settings = None,
+                  hitboxes = None,
+                  my_index = None,
+                  my_team = None,
+                  ball_prediction = None,
+                  teammate_indices = None,
+                  opponent_indices = None,
+                  my_old_inputs = None ):
+
+        self.my_name = packet.game_cars[my_index].name
+
         
         self.is_kickoff_pause = packet.game_info.is_kickoff_pause
         self.kickoff_position = "Other"
-        self.my_name = packet.game_cars[my_index].name
 
         #Team info
         self.my_team = my_team
@@ -28,7 +32,6 @@ class GameState:
             self.team_sign = 1
         else:
             self.team_sign = -1
-
 
         if my_old_inputs.jump == 1:
             me_jumped_last_frame = True
@@ -45,8 +48,8 @@ class GameState:
         #My car info
         self.me = Car(packet,
                       rigid_body_tick,
+                      hitboxes,
                       me_jumped_last_frame,
-                      my_index,
                       my_index,
                       self.team_sign)
         self.my_index = my_index
@@ -60,16 +63,16 @@ class GameState:
                 if i in teammate_indices:
                     self.teammates.append(Car(packet,
                                               rigid_body_tick,
+                                              hitboxes,
                                               None,
                                               i,
-                                              my_index,
                                               self.team_sign))
                 else:
                     self.opponents.append(Car(packet,
                                               rigid_body_tick,
+                                              hitboxes,
                                               None,
                                               i,
-                                              my_index,
                                               self.team_sign))
         self.team_mode = None
         if len(self.teammates) == 0:
@@ -345,9 +348,9 @@ class BallState:
 
 def Car(packet,
         rigid_body_tick,
+        hitboxes,
         jumped_last_frame,
         index,
-        my_index,
         team_sign):
 
     '''
@@ -381,7 +384,8 @@ def Car(packet,
     jumped = this_car.jumped
     double_jumped = this_car.double_jumped
     boost = this_car.boost
-        
+
+    hitbox_class = hitboxes[index]
     return CarState( pos = pos,
                      rot = rot,
                      vel = vel,
@@ -393,7 +397,8 @@ def Car(packet,
                      double_jumped = double_jumped,
                      boost = boost,
                      jumped_last_frame = jumped_last_frame,
-                     index = index )
+                     index = index,
+                     hitbox_class = hitbox_class )
 
 
 class CarState:
@@ -410,7 +415,8 @@ class CarState:
                   double_jumped = None,
                   boost = None,
                   jumped_last_frame = None,
-                  index = None ):
+                  index = None,
+                  hitbox_class = None ):
 
         self.pos = pos
         self.rot = rot
@@ -424,6 +430,7 @@ class CarState:
         self.double_jumped = double_jumped
         self.boost = boost
         self.index = index
+        self.hitbox_class = hitbox_class
 
         self.jumped_last_frame = jumped_last_frame
 
@@ -493,3 +500,34 @@ class Boostpad:
 
 ##################################################################################
 
+class Hitbox:
+
+    def __init__( self,
+                  body_id = None ):
+
+        octane = [21, 23, 25, 26, 27, 30, 402, 404, 523, 607, 625, 723, 1295, 1300, 1475, 1478, 1533, 1568, 1623, 2313, 2665, 2853, 2919, 2949, 4284]
+        dominus = [29, 403, 597, 600, 1018, 1171, 1172, 1286, 1675, 1883, 2268, 2666, 2950, 2951, 3155, 3156, 3157, 3265, 3875, 3879, 3880, 4014, 4155]
+        plank = [24, 803, 1603, 1691, 1919, 3594, 3614, 3622]
+        breakout = [22, 1416, 1932, 2070, 2298, 3031]
+        hybrid = [28, 31, 1159, 1317, 1624, 1856, 2269, 3451]
+
+
+        if body_id in octane:
+            self.widths = [118.01, 84.20, 36.16]
+            self.offset = Vec3(13.88, 0, 20.75)
+        elif body_id in dominus:
+            self.widths = [127.93, 83.28, 31.30]
+            self.offset = Vec3(9.00, 0, 15.75)
+        elif body_id in plank:
+            self.widths = [128.82, 84.67, 29.39]
+            self.offset = Vec3(9.01, 0, 12.09,)
+        elif body_id in breakout:
+            self.widths = [131.49, 80.52, 30.30]
+            self.offset = Vec3(12.50, 0, 11.75)
+        elif body_id in hybrid:
+            self.widths = [127.02, 82.19, 34.16]
+            self.offset = Vec3(13.88, 0, 20.75)
+        else:
+            raise AttributeError('Car body ID not recognized')
+
+        self.half_widths = [ width / 2 for width in self.widths ]

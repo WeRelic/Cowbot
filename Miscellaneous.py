@@ -63,13 +63,13 @@ def find_closest_big_boost(game_info):
 
 
 
-def car_coordinates_2d(current_state, direction):
+def car_coordinates_2d(current_state, vector):
     '''
-    Takes a Vec3 for a direction on the field and returns the same direction relative to the car
+    Takes a Vec3 for a vector on the field and returns the same vector relative to the car
     '''
 
-    x = direction.x * cos(-current_state.rot.yaw) - direction.y * sin(-current_state.rot.yaw)
-    y = direction.x * sin(-current_state.rot.yaw) + direction.y * cos(-current_state.rot.yaw)
+    x = vector.x * cos(-current_state.rot.yaw) - vector.y * sin(-current_state.rot.yaw)
+    y = vector.x * sin(-current_state.rot.yaw) + vector.y * cos(-current_state.rot.yaw)
         
     return Vec3(x,y,0)
 
