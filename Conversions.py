@@ -9,9 +9,9 @@ from CowBotVector import Vec3
 #Types transformations for other frameworks
 ############################
 
-def rot_to_mat3(rot):
-    return mat3( rot.front.x, rot.left.x, rot.up.x,
-                 rot.front.y, rot.left.y, rot.up.y,
+def rot_to_mat3(rot, team_sign):
+    return mat3( team_sign*rot.front.x, team_sign*rot.left.x, team_sign*rot.up.x,
+                 team_sign*rot.front.y, team_sign*rot.left.y, team_sign*rot.up.y,
                  rot.front.z, rot.left.z, rot.up.z )
 
 def pyr_to_matrix(pyr):
