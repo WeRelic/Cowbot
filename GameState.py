@@ -505,28 +505,33 @@ class Hitbox:
     def __init__( self,
                   body_id = None ):
 
-        octane = [21, 23, 25, 26, 27, 30, 402, 404, 523, 607, 625, 723, 1295, 1300, 1475, 1478, 1533, 1568, 1623, 2313, 2665, 2853, 2919, 2949, 4284]
-        dominus = [29, 403, 597, 600, 1018, 1171, 1172, 1286, 1675, 1883, 2268, 2666, 2950, 2951, 3155, 3156, 3157, 3265, 3875, 3879, 3880, 4014, 4155]
-        plank = [24, 803, 1603, 1691, 1919, 3594, 3614, 3622]
-        breakout = [22, 1416, 1932, 2070, 2298, 3031]
-        hybrid = [28, 31, 1159, 1317, 1624, 1856, 2269, 3451]
+        octane_ids = [21, 23, 25, 26, 27, 30, 402, 404, 523, 607, 625, 723, 1295, 1300, 1475, 1478, 1533, 1568, 1623, 2313, 2665, 2853, 2919, 2949, 4284]
+        dominus_ids = [29, 403, 597, 600, 1018, 1171, 1172, 1286, 1675, 1883, 2268, 2666, 2950, 2951, 3155, 3156, 3157, 3265, 3875, 3879, 3880, 4014, 4155]
+        plank_ids = [24, 803, 1603, 1691, 1919, 3594, 3614, 3622]
+        breakout_ids = [22, 1416, 1932, 2070, 2298, 3031]
+        hybrid_ids = [28, 31, 1159, 1317, 1624, 1856, 2269, 3451]
 
 
-        if body_id in octane:
+        if body_id in octane_ids:
             self.widths = [118.01, 84.20, 36.16]
             self.offset = Vec3(13.88, 0, 20.75)
-        elif body_id in dominus:
+            self.resting_height = 17.00
+        elif body_id in dominus_ids:
             self.widths = [127.93, 83.28, 31.30]
             self.offset = Vec3(9.00, 0, 15.75)
-        elif body_id in plank:
+            self.resting_height = 17.05
+        elif body_id in plank_ids:
             self.widths = [128.82, 84.67, 29.39]
             self.offset = Vec3(9.01, 0, 12.09,)
-        elif body_id in breakout:
+            self.resting_height = 18.65
+        elif body_id in breakout_ids:
             self.widths = [131.49, 80.52, 30.30]
             self.offset = Vec3(12.50, 0, 11.75)
-        elif body_id in hybrid:
+            self.resting_height = 18.33
+        elif body_id in hybrid_ids:
             self.widths = [127.02, 82.19, 34.16]
             self.offset = Vec3(13.88, 0, 20.75)
+            self.resting_height = 17.01
         else:
             raise AttributeError('Car body ID not recognized')
 

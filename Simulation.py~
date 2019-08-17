@@ -1,0 +1,290 @@
+###########################################################################
+#Simulation functions
+###########################################################################
+###########################################################################
+#These should not stay here
+###########################################################################
+###########################################################################
+#Maybe need a new file
+###########################################################################
+
+def dodge_simulation(end_condition = None,
+                     car = None,
+                     hitbox_class = None,
+                     dodge = None,
+                     ball = None,
+                     game_info = None):
+
+    '''
+    Simulates an RLU dodge until the dodge ends, or one of pass_condition or fail_condtion are met.
+    pass_condition means that the dodge does what we wanted.  Returns True and the RLU car state at the end
+    fail_condition returns (False, None), meaning the dodge doesn't achieve the desired result.
+    '''
+
+    #Copy everything we need and set constants
+    time = 0
+    dt = 1/120
+    car_copy = Car(car)
+    copy = Dodge(car_copy)
+    if dodge.target != None:
+        copy.target = dodge.target        
+    if dodge.direction != None:
+        copy.direction = dodge.direction
+    if dodge.preorientation != None:
+        copy.preorientation = dodge.preorientation
+    if dodge.duration != None:
+        copy.duration = dodge.duration
+    else:
+        copy.duration = 0
+        
+    #Make sure there's time between the jump and the dodge so that we don't just keep holding jump   
+    if dodge.delay != None:
+        copy.delay = dodge.delay
+    else:
+        copy.delay = max(copy.duration + 2*dt, 0.05)
+
+    #Adjust for non-octane hitboxes
+    box = update_hitbox(car_copy, hitbox_class)
+
+    #Loop until we hit end_condition or the dodge is over.
+    while not end_condition(time, box, ball, game_info.team_sign):
+
+        #Update simulations and adjust hitbox again
+        time += dt
+        copy.step(dt)
+        car_copy.step(copy.controls, dt)
+        box = update_hitbox(car_copy, hitbox_class)
+
+        if copy.finished:
+            #If the dodge never triggers condition, give up and move on
+            return False, None, None, None
+
+    #I don't like this, but I don't know if it's worth a full class just for a car simulation.
+    #It's likely to keep coming up, at which point it will be worth it.
+    return True, car_copy, box, time
+
+
+def nearest_point(box, point, local = False):
+    '''
+    Takes in an RLU oriented bounding box (obb) object and an RLU vec3.
+    Returns an RLU vec3 for the closest point on box to point.
+    '''
+    
+    point_local = dot(point - box.center, box.orientation)
+
+    closest_point_local = vec3( min(max(point_local[0], -box.half_width[0]), box.half_width[0]),
+                                    min(max(point_local[1], -box.half_width[1]), box.half_width[1]),
+                                    min(max(point_local[2], -box.half_width[2]), box.half_width[2]) )
+
+    if local:
+        return closest_point_local
+
+    else:
+        return dot(box.orientation, closest_point_local) + box.center
+    
+
+def has_ball_contact(time, box, ball, team_sign):
+    '''
+    Returns whether or not box (RLU obb) intersects ball.
+    '''
+
+    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
+    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
+
+
+    return ball_contact
+
+
+def ball_contact_point(box, ball, team_sign):
+    '''
+    Returns whether or not box (RLU obb) intersects ball.
+    '''
+
+    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
+    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
+
+    if ball_contact:
+        return vec3_to_Vec3(contact_point, team_sign)
+    else:
+        raise AttributeError("No contact point")
+
+
+def update_hitbox(car, hitbox_class):
+    '''
+    Calculates the hitbox of an RLU car object, and adjusts it for non-octane hitbox types
+    Returns the correct RLU obb object for the car's hitbox
+    '''
+
+    #Update hitbox center
+    box = car.hitbox()
+    box.half_width = vec3(hitbox_class.half_widths[0],
+                          hitbox_class.half_widths[1],
+                          hitbox_class.half_widths[2])
+    offset = Vec3_to_vec3(hitbox_class.offset, 1) #We don't want this to rotate for orange: used coordinates
+    box.center = dot(box.orientation, offset) + car.location
+    
+    return box
+
+def roll_away_from_target(target, theta, game_info):
+    '''
+    Returns a mat3 for an air roll shot.  Turns directly away from the dodge direction (target) by angle theta
+    Target can either be RLU vec3, or CowBot Vec3.
+    '''
+
+    starting_forward = game_info.utils_game.my_car.forward()
+    starting_left = game_info.utils_game.my_car.left()
+    starting_up = game_info.utils_game.my_car.up()
+    starting_orientation = mat3(starting_forward[0], starting_left[0], starting_up[0],
+                                starting_forward[1], starting_left[1], starting_up[1],
+                                starting_forward[2], starting_left[2], starting_up[2])
+
+    if type(target) == vec3:
+        target = vec3_to_Vec3(target, game_info.team_sign)
+
+    car_to_target = Vec3_to_vec3((target - game_info.me.pos).normalize(), game_info.team_sign)
+    axis = theta * cross(car_to_target, starting_up)
+
+
+    return dot(axis_to_rotation(axis), starting_orientation)
+
+
+
+
+def timing_for_jump_height(height, hitbox_class):
+
+    '''
+    Takes in a desired z-coordinate for the car position, and a Hitbox object (resting heights vary)
+    Returns duration, delay values so that the car dodges while at height.
+    Vertical jumps only - even air roll for a shot will cause slight error here.
+    '''
+
+    
+    jump_height = height - hitbox_class.resting_height
+
+    if jump_height < 75:
+        #If a full jump is too high, hold jump the whole way, then dodge once we get high enough
+        duration = (0.013333)*((3.3870*sqrt(jump_height + 60)) - 30)
+        delay = duration
+    else:
+        duration = 0.2
+        delay = 0.2 + (1/65)*(45 - sqrt(2389 - (13*jump_height)))
+
+    return duration, delay
+
+
+def delay_for_contact_height(game_info, contact_height):
+    '''
+    Returns dodge duration and delay so the car can reach contact_height
+    '''
+
+    ball = game_info.ball
+    hitbox_class = game_info.me.hitbox_class
+    car_copy = Car(game_info.utils_game.my_car)
+    turn = AerialTurn(car_copy)
+    theta = pi/2
+    turn.target = roll_away_from_target(ball.pos,
+                                        theta,
+                                        game_info)
+    box = update_hitbox(car_copy, hitbox_class)
+    intended_contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, game_info.team_sign))
+    time = 0
+    dt = 1/120
+
+    
+    while intended_contact_point[2] < contact_height:
+        time += dt
+        turn.step(dt)
+
+        ball = game_info.ball_prediction.state_at_time(game_info.game_time + time)
+        controls = turn.controls
+        if time <= 0.20:
+            controls.jump = 1
+        car_copy.step(controls, dt)
+        box = update_hitbox(car_copy, hitbox_class)
+        intended_contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, game_info.team_sign))
+        if time > 1.45: #Max dodge time
+            break
+
+
+    if time < 0.2:
+        duration = time
+        delay = duration + 2*dt
+    else:
+        duration = 0.2
+        delay = time
+    return duration, delay
+
+
+
+
+
+
+
+
+######
+#Face contact functions: front, back, top, bottom.
+######
+
+
+def front_face_contact(time, box, ball, team_sign):
+    '''
+    Checks if box is intersecting ball, and if the nearest point is on the front face of the box.
+    '''
+
+    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
+    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
+
+    contact_point_local = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign), local = True)
+    front_face_contact = (contact_point_local[0] > box.half_width[0] -0.001)
+
+    nose_contact = ball_contact and front_face_contact
+
+    return nose_contact and ball_contact
+
+def back_face_contact(time, box, ball, team_sign):
+    '''
+    Checks if box is intersecting ball, and if the nearest point is on the back face of the box.
+    '''
+
+    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
+    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
+
+    contact_point_local = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign), local = True)
+    back_face_contact = (contact_point_local[0] < - box.half_width[0] + 0.001)
+
+    nose_contact = ball_contact and back_face_contact
+
+    return nose_contact and ball_contact
+
+def top_face_contact(time, box, ball, team_sign):
+    '''
+    Checks if box is intersecting ball, and if the nearest point is on the top face of the box.
+    '''
+
+    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
+    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
+
+    contact_point_local = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign), local = True)
+    top_face_contact = (contact_point_local[2] > box.half_width[2] - 0.001)
+
+    nose_contact = ball_contact and top_face_contact
+
+    return nose_contact and ball_contact
+
+
+def bottom_face_contact(time, box, ball, team_sign):
+    '''
+    Checks if box is intersecting ball, and if the nearest point is on the bottom face of the box.
+    '''
+
+    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
+    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
+
+    contact_point_local = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign), local = True)
+    bottom_face_contact = (contact_point_local[2] < - box.half_width[2] + 0.001)
+
+    nose_contact = ball_contact and bottom_face_contact
+
+    return nose_contact and ball_contact
+
+

@@ -16,6 +16,7 @@ from Mechanics import PersistentMechanics
 from Miscellaneous import predict_for_time
 from Pathing.Path_Planning import follow_waypoints
 import Planning.OnesPlanning.Planning as OnesPlanning
+from Simulation import * #Temporary for testing and porting to new files
 #import Planning.TeamPlanning.Planning as TeamPlanning  #Team planning is no longer in this version due to bugs.  Copy from Ones planning and update team strategy at some point before the next team event.
 
 
@@ -27,15 +28,15 @@ TESTING = True
 DEBUGGING = False
 if TESTING or DEBUGGING:
     import random
+    from math import sqrt
     
-    from rlutilities.simulation import Car
-    from rlutilities.linear_algebra import axis_to_rotation, cross, dot, norm
 
     import EvilGlobals #Only needed for rendering.
     from StateSetting import *
     from BallPrediction import *
     from Maneuvers import GroundTurn
-    
+
+
 class BooleanAlgebraCow(BaseAgent):
 
     '''
@@ -88,7 +89,7 @@ class BooleanAlgebraCow(BaseAgent):
 
 
         self.persistent = PersistentMechanics()
-        self.timer = 0
+        self.my_timer = 0
         
         #Put testing-only variables here
         if TESTING:
@@ -103,12 +104,12 @@ class BooleanAlgebraCow(BaseAgent):
             #self.state = "Reset"
             #self.path_plan = "ArcLineArc"
             #self.path_switch = True
-            pass
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
 
+
         ###############################################################################################
-        #Startup and frame info
+        #Startup info - run once at start
         ###############################################################################################
 
         #Initialization info
@@ -139,10 +140,8 @@ class BooleanAlgebraCow(BaseAgent):
                 EvilGlobals.renderer = self.renderer
 
 
-            
-
         ###############################################################################################
-        #Game state info
+        #Prediction and Game state info
         ###############################################################################################
 
         self.prediction = PredictionPath(ball_prediction = self.get_ball_prediction_struct(),
@@ -223,27 +222,33 @@ class BooleanAlgebraCow(BaseAgent):
             #Copy-paste from a testing file here
             controller_input = SimpleControllerState()
             current_state = self.game_info.me
+            self.my_timer += self.game_info.dt
+
 
             ###
 
             #Using simulation to make solid contact
-            if self.RESET:
+            if self.RESET == 'waiting' or self.RESET:
+
+                self.my_timer = 0
+                if self.RESET == 'waiting':
+                    self.RESET = False
+                else:
+                    self.RESET = 'waiting'
                 #Reset to a stationary setup when the bot is reloaded
-                self.RESET = False
-                ball_pos = Vec3(0, 2600, 250)
+                ball_pos = Vec3(0, 600, 500)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
                                                              vel = Vec3(0, 0, 0),
                                                              omega = Vec3(0,0,0))
-                car_pos = Vec3(2500, 0, 18.65)
+                car_pos = Vec3(0, -4000, 18.65)
                 car_vel = Vec3(0, 0, 0)
 
                 #Random starting yaw
-                phi = random.uniform(0,2*pi)
                 car_state = self.zero_car_state.copy_state(pos = car_pos,
                                                            vel = car_vel,
                                                            rot = Orientation(pitch = 0,
-                                                                             yaw = phi,
+                                                                             yaw = pi/2,
                                                                              roll = 0),
                                                            boost = 100)
 
@@ -257,39 +262,36 @@ class BooleanAlgebraCow(BaseAgent):
                 #If we've already decided on a dodge, execute the dodge.
                 self.dodge.step(self.game_info.dt)
                 controller_input = self.dodge.controls
-
-            elif (self.game_info.me.pos - self.game_info.ball.pos).magnitude() < 1000:
-                #As we approach the ball, calculate when dodging results in a good touch
-                test_dodge = Dodge(self.game_info.utils_game.my_car)
-                test_dodge.duration = 1/5 #TODO: Intelligently choose this based on desired height
-                test_dodge.delay = 0.3 #TODO: Figure out how to use this effectively
-                test_dodge.target = Vec3_to_vec3(self.game_info.ball.pos, 1) #TODO: Intelligently choose this?
-
-                #Air roll shots :D
-                test_dodge.preorientation = roll_away_from_target(test_dodge.target, pi/4, self.game_info)
-
-                #Check if the dodge can hit the ball with the front of the car
-                simulation = dodge_simulation(pass_condition = has_nose_contact,
-                                              fail_condition = has_ball_contact,
-                                              car = self.game_info.utils_game.my_car,
-                                              hitbox_class = self.game_info.me.hitbox_class,
-                                              dodge = test_dodge,
-                                              ball = self.game_info.ball,
-                                              game_info = self.game_info)
-
-                if simulation[0]:
-                    self.dodge = test_dodge
-                    controller_input = self.dodge.controls
-                else:
-                    controller_input = GroundTurn(self.game_info.me,
-                                                  self.game_info.me.copy_state(pos = self.game_info.ball.pos)).input()
-                    controller_input.boost = 1
+                controller_input.boost = 1
 
             else:
                 #Approach the ball, for now just by boosting.  Eventually this will be a path to follow.
-                controller_input = GroundTurn(self.game_info.me,
-                                              self.game_info.me.copy_state(pos = self.game_info.ball.pos)).input()
                 controller_input.boost = 1
+                
+                #As we approach the ball, calculate when dodging results in a good touch
+                test_dodge = Dodge(self.game_info.utils_game.my_car)
+                
+                test_dodge.duration, test_dodge.delay, simulation = stationary_ball_dodge_contact(self.game_info,
+                                                                                                  self.game_info.ball.pos.z - 0)
+                test_dodge.target = Vec3_to_vec3(self.game_info.ball.pos, 1) #TODO: Intelligently choose this?
+
+                #Air roll shots.  TODO: intelligently choose angle
+                test_dodge.preorientation = roll_away_from_target(test_dodge.target, pi/4, self.game_info)
+
+                #If the dodge hits the ball, check if it's a good touch
+                if simulation.ball_contact:
+                    flip_before_contact = simulation.time - test_dodge.delay > 0
+                    not_too_early = simulation.time - test_dodge.delay < 0.05
+                    dodge_timing = flip_before_contact and not_too_early
+
+                    nose_contact = front_face_contact(simulation.time,
+                                                      simulation.box,
+                                                      self.game_info.ball,
+                                                      self.game_info.team_sign)
+                    if nose_contact and dodge_timing:
+                        self.dodge = test_dodge
+                        
+                        controller_input = self.dodge.controls                
 
             return controller_input
 
@@ -319,10 +321,10 @@ class BooleanAlgebraCow(BaseAgent):
                                                 self.persistent)
 
 
-
         ###############################################################################################
         #Update previous frame variables and return
         ###############################################################################################
+
         self.old_kickoff_data = self.kickoff_data
         self.old_inputs = output
 
@@ -344,164 +346,3 @@ class BooleanAlgebraCow(BaseAgent):
 
 
 
-
-
-
-
-###########################################################################
-#Simulation functions
-###########################################################################
-###########################################################################
-#These should not stay here
-###########################################################################
-###########################################################################
-#Maybe need a new file
-###########################################################################
-
-def dodge_simulation(pass_condition = None,
-                     fail_condition = None,
-                     car = None,
-                     hitbox_class = None,
-                     dodge = None,
-                     ball = None,
-                     game_info = None):
-
-    '''
-    Simulates an RLU dodge until the dodge ends, or one of pass_condition or fail_condtion are met.
-    pass_condition means that the dodge does what we wanted.  Returns True and the RLU car state at the end
-    fail_condition returns (False, None), meaning the dodge doesn't achieve the desired result.
-    '''
-
-    #Copy everything we need and set constants
-    time = 0
-    dt = 1/120
-    car_copy = Car(car)
-    copy = Dodge(car_copy)
-    if dodge.target != None:
-        copy.target = dodge.target        
-    if dodge.direction != None:
-        copy.direction = dodge.direction
-    if dodge.preorientation != None:
-        copy.preorientation = dodge.preorientation
-
-    #Some magic number trickery based on how RLU does stuff.
-    if dodge.duration != None:
-        copy.duration = dodge.duration
-    else:
-        copy.duration = 0
-    if dodge.delay != None:
-        copy.delay = dodge.delay
-    else:
-        copy.delay = max(copy.duration + 2*dt, 0.05)
-
-
-
-
-    #Adjust for non-octane hitboxes
-    box = update_hitbox(car_copy, hitbox_class)
-
-    #Loop until we hit fail_condition or pass_condition, or the dodge is over without hitting either.
-
-    while not pass_condition(time, box, ball, game_info.team_sign):
-
-        #Update simulations and adjust hitbox again
-        time += dt
-        copy.step(dt)
-        car_copy.step(copy.controls, dt)
-        box = update_hitbox(car_copy, hitbox_class)
-        
-        if copy.finished:
-            #If the dodge never triggers condition, give up and move on
-            return False, None
-
-        if fail_condition(time, box, ball, game_info.team_sign) and not pass_condition(time, box, ball, game_info.team_sign):
-            #If we get the failure condition without the pass condition, give up and move on
-            return False, None
-
-        if time - (game_info.game_time + copy.delay) > 0.05:
-            return False, None
-            
-
-
-    return True, car_copy
-
-
-def nearest_point(box, point):
-    '''
-    Takes in an RLU oriented bounding box (obb) object and an RLU vec3.
-    Returns an RLU vec3 for the closest point on box to point.
-    '''
-    
-    point_local = dot(point - box.center, box.orientation)
-    closest_point_local = vec3( min(max(point_local[0], -box.half_width[0]), box.half_width[0]),
-                                min(max(point_local[1], -box.half_width[1]), box.half_width[1]),
-                                min(max(point_local[2], -box.half_width[2]), box.half_width[2]) )
-
-    return dot(box.orientation, closest_point_local) + box.center
-
-
-def has_ball_contact(time, box, ball, team_sign):
-    '''
-    Returns whether or not box (RLU obb) intersects ball.
-    '''
-
-    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
-    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
-
-
-    return ball_contact
-
-
-
-def update_hitbox(car, hitbox_class):
-    '''
-    Calculates the hitbox of an RLU car object, and adjusts it for non-octane hitbox types
-    '''
-
-    #Update hitbox center
-    box = car.hitbox()
-    box.half_width = vec3(hitbox_class.half_widths[0],
-                          hitbox_class.half_widths[1],
-                          hitbox_class.half_widths[2])
-    offset = Vec3_to_vec3(hitbox_class.offset, 1)
-    box.center = dot(box.orientation, offset) + car.location
-    
-    return box
-
-
-def has_nose_contact(time, box, ball, team_sign):
-    '''
-    Checks if box is intersecting ball, and if the nearest point is on the front half of the box.
-    '''
-
-    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
-    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
-    forward = Vec3(box.orientation[0,0], box.orientation[1,0], box.orientation[2,0])
-    contact_dot = vec3_to_Vec3(contact_point - box.center, team_sign).normalize().dot(forward)
-    nose_contact = (contact_dot > 0)
-
-    return nose_contact and ball_contact
-
-
-def roll_away_from_target(target, theta, game_info):
-    '''
-    Returns a mat3 for an air roll shot.  Turns directly away from the dodge direction (target) by angle theta
-    Target can either be RLU vec3, or CowBot Vec3.
-    '''
-
-
-    starting_forward = game_info.utils_game.my_car.forward()
-    starting_left = game_info.utils_game.my_car.left()
-    starting_up = game_info.utils_game.my_car.up()
-    starting_orientation = mat3(starting_forward[0], starting_left[0], starting_up[0],
-                                starting_forward[1], starting_left[1], starting_up[1],
-                                starting_forward[2], starting_left[2], starting_up[2])
-
-    if type(target) == vec3:
-        target = vec3_to_Vec3(target, game_info.team_sign)
-
-    car_to_target = Vec3_to_vec3((target - game_info.me.pos).normalize(), game_info.team_sign)
-    axis = theta * cross(car_to_target, starting_up)
-
-
-    return dot(axis_to_rotation(axis), starting_orientation)

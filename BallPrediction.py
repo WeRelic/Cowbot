@@ -59,8 +59,8 @@ class PredictionPath:
     def state_at_time(self, time):
         #Return the slice closest to the given time.
         for step in self.slices:
-            #60 slices per second.  FPS check?
-            if abs(step.time - time) <= 1/60:
+            #60 slices per second.
+            if abs(step.time - time) <= 1/35:
                 return step
         return None
 
