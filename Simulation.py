@@ -86,6 +86,7 @@ def dodge_simulation(end_condition = None,
     #It's likely to keep coming up, at which point it will be worth it.
     return Simulation(ball_contact = True, car = car_copy, box = box, time = time)
 
+##############################################################
 
 def stationary_ball_dodge_contact(game_info, contact_height):
     '''
@@ -122,8 +123,7 @@ def stationary_ball_dodge_contact(game_info, contact_height):
         if time >= 1.45: #Max dodge time
             return None, None, Simulation()
 
-
-    if not ball_contact:
+    if not ball_contact[0]:
         return None, None, Simulation()
     if time < 0.2:
         duration = time
@@ -132,45 +132,41 @@ def stationary_ball_dodge_contact(game_info, contact_height):
         duration = 0.2
         delay = time
 
-    if ball_contact:
+    if ball_contact[0]:
         delay -= 0.05 #How long before we hit the ball is acceptable to dogge
 
-    #I don't like this, but I don't know if it's worth a full class just for a car simulation.
-    #It's likely to keep coming up, at which point it will be worth it.
     return duration, delay, Simulation(ball_contact = True, car = car_copy, box = box, time = time)
 
 
+##############################################################
+#Helper functions
+##############################################################
+
+def has_ball_contact(time, box, ball, team_sign):
+    '''
+    Returns whether or not box (RLU obb) intersects ball, and box's nearest point to the ball.
+    '''
+
+    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
+    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
+    return ball_contact, contact_point
 
 
 def nearest_point(box, point, local = False):
     '''
     Takes in an RLU oriented bounding box (obb) object and an RLU vec3.
     Returns an RLU vec3 for the closest point on box to point.
+    local = True returns the vec3 in box's local coordinates
     '''
     
     point_local = dot(point - box.center, box.orientation)
-
     closest_point_local = vec3( min(max(point_local[0], -box.half_width[0]), box.half_width[0]),
                                     min(max(point_local[1], -box.half_width[1]), box.half_width[1]),
                                     min(max(point_local[2], -box.half_width[2]), box.half_width[2]) )
 
     if local:
         return closest_point_local
-
-    else:
-        return dot(box.orientation, closest_point_local) + box.center
-    
-
-def has_ball_contact(time, box, ball, team_sign):
-    '''
-    Returns whether or not box (RLU obb) intersects ball.
-    '''
-
-    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
-    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
-
-
-    return ball_contact, contact_point
+    return dot(box.orientation, closest_point_local) + box.center
 
 
 def update_hitbox(car, hitbox_class):
@@ -186,12 +182,11 @@ def update_hitbox(car, hitbox_class):
                           hitbox_class.half_widths[2])
     offset = Vec3_to_vec3(hitbox_class.offset, 1) #We don't want this to rotate for orange: used coordinates
     box.center = dot(box.orientation, offset) + car.location
-    
     return box
 
 def roll_away_from_target(target, theta, game_info):
     '''
-    Returns a mat3 for an air roll shot.  Turns directly away from the dodge direction (target) by angle theta
+    Returns an orientation mat3 for an air roll shot.  Turns directly away from the dodge direction (target) by angle theta
     Target can either be RLU vec3, or CowBot Vec3.
     '''
 
@@ -201,14 +196,10 @@ def roll_away_from_target(target, theta, game_info):
     starting_orientation = mat3(starting_forward[0], starting_left[0], starting_up[0],
                                 starting_forward[1], starting_left[1], starting_up[1],
                                 starting_forward[2], starting_left[2], starting_up[2])
-
     if type(target) == vec3:
         target = vec3_to_Vec3(target, game_info.team_sign)
-
     car_to_target = Vec3_to_vec3((target - game_info.me.pos).normalize(), game_info.team_sign)
     axis = theta * cross(car_to_target, starting_up)
-
-
     return dot(axis_to_rotation(axis), starting_orientation)
 
 ###########################################################################
@@ -216,65 +207,49 @@ def roll_away_from_target(target, theta, game_info):
 ###########################################################################
 
 
-def front_face_contact(time, box, ball, team_sign):
+def front_face_contact(box, ball, team_sign):
     '''
-    Checks if box is intersecting ball, and if the nearest point is on the front face of the box.
+    Checks if the nearest point is on the front face of the box.
+    Should be used in conjunction with a ball_contact check
     '''
-
-    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
-    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
 
     contact_point_local = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign), local = True)
-    front_face_contact = (contact_point_local[0] > box.half_width[0] -0.001)
+    front_face_contact = (contact_point_local[0] > box.half_width[0] - 0.001)
 
-    nose_contact = ball_contact and front_face_contact
+    return front_face_contact
 
-    return nose_contact and ball_contact
-
-def back_face_contact(time, box, ball, team_sign):
+def back_face_contact(box, ball, team_sign):
     '''
-    Checks if box is intersecting ball, and if the nearest point is on the back face of the box.
+    Checks if the nearest point is on the back face of the box.
+    Should be used in conjunction with a ball_contact check
     '''
-
-    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
-    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
 
     contact_point_local = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign), local = True)
     back_face_contact = (contact_point_local[0] < - box.half_width[0] + 0.001)
 
-    nose_contact = ball_contact and back_face_contact
+    return back_face_contact
 
-    return nose_contact and ball_contact
-
-def top_face_contact(time, box, ball, team_sign):
+def top_face_contact(box, ball, team_sign):
     '''
-    Checks if box is intersecting ball, and if the nearest point is on the top face of the box.
+    Checks if the nearest point is on the top face of the box.
+    Should be used in conjunction with a ball_contact check
     '''
-
-    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
-    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
 
     contact_point_local = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign), local = True)
     top_face_contact = (contact_point_local[2] > box.half_width[2] - 0.001)
 
-    nose_contact = ball_contact and top_face_contact
-
-    return nose_contact and ball_contact
+    return top_face_contact
 
 
-def bottom_face_contact(time, box, ball, team_sign):
+def bottom_face_contact(box, ball, team_sign):
     '''
-    Checks if box is intersecting ball, and if the nearest point is on the bottom face of the box.
+    Checks if the nearest point is on the bottom face of the box.
+    Should be used in conjunction with a ball_contact check
     '''
-
-    contact_point = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign))
-    ball_contact = norm(contact_point - Vec3_to_vec3(ball.pos, team_sign)) < 92.75
 
     contact_point_local = nearest_point(box, Vec3_to_vec3(ball.pos, team_sign), local = True)
     bottom_face_contact = (contact_point_local[2] < - box.half_width[2] + 0.001)
 
-    nose_contact = ball_contact and bottom_face_contact
-
-    return nose_contact and ball_contact
+    return bottom_face_contact
 
 

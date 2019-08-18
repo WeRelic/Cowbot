@@ -236,7 +236,7 @@ class BooleanAlgebraCow(BaseAgent):
                 else:
                     self.RESET = 'waiting'
                 #Reset to a stationary setup when the bot is reloaded
-                ball_pos = Vec3(0, 600, 500)
+                ball_pos = Vec3(0, -1000, 500)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
                                                              vel = Vec3(0, 0, 0),
@@ -284,13 +284,13 @@ class BooleanAlgebraCow(BaseAgent):
                     not_too_early = simulation.time - test_dodge.delay < 0.05
                     dodge_timing = flip_before_contact and not_too_early
 
-                    nose_contact = front_face_contact(simulation.time,
-                                                      simulation.box,
+                    nose_contact = front_face_contact(simulation.box,
                                                       self.game_info.ball,
                                                       self.game_info.team_sign)
                     if nose_contact and dodge_timing:
+                        print(simulation.time, test_dodge.delay)
                         self.dodge = test_dodge
-                        
+
                         controller_input = self.dodge.controls                
 
             return controller_input
