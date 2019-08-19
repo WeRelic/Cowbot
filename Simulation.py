@@ -82,8 +82,6 @@ def dodge_simulation(end_condition = None,
             #TODO: give up sooner to save computation time
             return Simulation()
 
-    #I don't like this, but I don't know if it's worth a full class just for a car simulation.
-    #It's likely to keep coming up, at which point it will be worth it.
     return Simulation(ball_contact = True, car = car_copy, box = box, time = time)
 
 ##############################################################
@@ -111,7 +109,6 @@ def stationary_ball_dodge_contact(game_info, contact_height):
         time += dt
         turn.step(dt)
 
-        #ball = game_info.ball_prediction.state_at_time(game_info.game_time + time)
         controls = turn.controls
         if time <= 0.20:
             controls.jump = 1
@@ -137,6 +134,61 @@ def stationary_ball_dodge_contact(game_info, contact_height):
 
     return duration, delay, Simulation(ball_contact = True, car = car_copy, box = box, time = time)
 
+
+##############################################################
+##############################################################
+
+def falling_ball_dodge_contact(game_info):
+    '''
+    Returns dodge duration and delay so the car can reach contact_height
+    '''
+
+    ball = game_info.ball
+    contact_height = ball.pos.z - 30
+    hitbox_class = game_info.me.hitbox_class
+    car_copy = Car(game_info.utils_game.my_car)
+    turn = AerialTurn(car_copy)
+    turn.target = roll_away_from_target(ball.pos,
+                                        pi/4,
+                                        game_info)
+    box = update_hitbox(car_copy, hitbox_class)
+    time = 0
+    dt = 1/60
+    ball_contact = has_ball_contact(time, box, ball, game_info.team_sign)
+    intended_contact_point = ball_contact[1]
+
+
+    while intended_contact_point[2] < contact_height and not ball_contact[0]:
+        time += dt
+        turn.step(dt)
+
+        ball = game_info.ball_prediction.state_at_time(game_info.game_time + time)
+        contact_height = ball.pos.z - 30
+        controls = turn.controls
+        if time <= 0.20:
+            controls.jump = 1
+        controls.boost = 1
+        car_copy.step(controls, dt)
+        box = update_hitbox(car_copy, hitbox_class)
+
+        ball_contact = has_ball_contact(time, box, ball, game_info.team_sign)
+        intended_contact_point = ball_contact[1]
+        if time >= 1.45: #Max dodge time
+            return None, None, Simulation()
+
+    if not ball_contact[0]:
+        return None, None, Simulation()
+
+    if time < 0.2:
+        duration = time
+        delay = duration + 2*dt
+    else:
+        duration = 0.2
+        delay = time
+
+    delay -= 0.05 #How long before we hit the ball is acceptable to dodge
+
+    return duration, delay, Simulation(ball_contact = True, car = car_copy, box = box, time = time)
 
 ##############################################################
 #Helper functions

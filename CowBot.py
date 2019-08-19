@@ -224,7 +224,6 @@ class BooleanAlgebraCow(BaseAgent):
             current_state = self.game_info.me
             self.my_timer += self.game_info.dt
 
-
             ###
 
             #Using simulation to make solid contact
@@ -236,10 +235,10 @@ class BooleanAlgebraCow(BaseAgent):
                 else:
                     self.RESET = 'waiting'
                 #Reset to a stationary setup when the bot is reloaded
-                ball_pos = Vec3(0, -1000, 500)
+                ball_pos = Vec3(0, -1000, 400)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(0, 0, 0),
+                                                             vel = Vec3(0, 0, 600),
                                                              omega = Vec3(0,0,0))
                 car_pos = Vec3(0, -4000, 18.65)
                 car_vel = Vec3(0, 0, 0)
@@ -271,8 +270,7 @@ class BooleanAlgebraCow(BaseAgent):
                 #As we approach the ball, calculate when dodging results in a good touch
                 test_dodge = Dodge(self.game_info.utils_game.my_car)
                 
-                test_dodge.duration, test_dodge.delay, simulation = stationary_ball_dodge_contact(self.game_info,
-                                                                                                  self.game_info.ball.pos.z - 0)
+                test_dodge.duration, test_dodge.delay, simulation = falling_ball_dodge_contact(self.game_info)
                 test_dodge.target = Vec3_to_vec3(self.game_info.ball.pos, 1) #TODO: Intelligently choose this?
 
                 #Air roll shots.  TODO: intelligently choose angle
