@@ -5,6 +5,8 @@ from rlutilities.mechanics import Aerial
 
 from Conversions import vec3_to_Vec3, Vec3_to_vec3
 from CowBotVector import Vec3
+from Simulation import linear_time_to_reach
+
 
 #############################################################################################
 #
@@ -287,5 +289,42 @@ def is_ball_in_scorable_box(loc,
         return True
 
 
+
+############################################
+
 #TODO: Add time estimates for getting to the ball, and predicting when it'll roll into the center of the field.  This will let us take shots more reliably, since we'll be getting there _before_ it rolls out of reach.
+
+
+
+def prediction_binary_search(game_info, is_too_early):
+
+    '''
+    Returns the first ball prediction slice that is not "too early", judged by is_too_early
+    is_too_early takes in a CarState and a ball prediction slice
+    '''
+
+    prediction = game_info.ball_prediction
+    low = 0
+    high = len(prediction.slices) - 1
+
+    while low < high:
+        mid = (low + high) // 2
+        if is_too_early(game_info, game_info.my_index, prediction.slices[mid]):
+            low = mid + 1
+        else:
+            high = mid
+    return prediction.slices[low]
+
+
+
+
+
+def is_too_early(game_info, index, prediction_slice):
+    '''
+    Leaving index as an option so that we can check opponents and teammates too
+    '''
+    return linear_time_to_reach(game_info, prediction_slice.pos) > prediction_slice.time
+
+
+
 

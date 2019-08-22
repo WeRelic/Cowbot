@@ -1,0 +1,72 @@
+controller_input = SimpleControllerState()
+            current_state = self.game_info.me
+            self.my_timer += self.game_info.dt
+
+            ###
+
+            #Using simulation to make solid contact
+            if self.RESET == 'waiting' or self.RESET:
+
+                self.my_timer = 0
+                if self.RESET == 'waiting':
+                    self.RESET = False
+                else:
+                    self.RESET = 'waiting'
+                #Reset to a stationary setup when the bot is reloaded
+                ball_pos = Vec3(0, -1000, 400)
+                ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
+                                                             rot = Orientation(pyr = [0,0,0]),
+                                                             vel = Vec3(0, 0, 600),
+                                                             omega = Vec3(0,0,0))
+                car_pos = Vec3(0, -4000, 18.65)
+                car_vel = Vec3(0, 0, 0)
+
+                #Random starting yaw
+                car_state = self.zero_car_state.copy_state(pos = car_pos,
+                                                           vel = car_vel,
+                                                           rot = Orientation(pitch = 0,
+                                                                             yaw = pi/2,
+                                                                             roll = 0),
+                                                           boost = 100)
+
+                self.set_game_state(set_state(self.game_info,
+                                              current_state = car_state,
+                                              ball_state = ball_state))
+
+            #####
+
+            elif self.dodge != None:
+                #If we've already decided on a dodge, execute the dodge.
+                self.dodge.step(self.game_info.dt)
+                controller_input = self.dodge.controls
+                controller_input.boost = 1
+
+            else:
+                #Approach the ball, for now just by boosting.  Eventually this will be a path to follow.
+                controller_input.boost = 1
+                
+                #As we approach the ball, calculate when dodging results in a good touch
+                test_dodge = Dodge(self.game_info.utils_game.my_car)
+                
+                test_dodge.duration, test_dodge.delay, simulation = falling_ball_dodge_contact(self.game_info)
+                test_dodge.target = Vec3_to_vec3(self.game_info.ball.pos, 1) #TODO: Intelligently choose this?
+
+                #Air roll shots.  TODO: intelligently choose angle
+                test_dodge.preorientation = roll_away_from_target(test_dodge.target, pi/4, self.game_info)
+
+                #If the dodge hits the ball, check if it's a good touch
+                if simulation.ball_contact:
+                    flip_before_contact = simulation.time - test_dodge.delay > 0
+                    not_too_early = simulation.time - test_dodge.delay < 0.05
+                    dodge_timing = flip_before_contact and not_too_early
+
+                    nose_contact = front_face_contact(simulation.box,
+                                                      self.game_info.ball,
+                                                      self.game_info.team_sign)
+                    if nose_contact and dodge_timing:
+                        print(simulation.time, test_dodge.delay)
+                        self.dodge = test_dodge
+
+                        controller_input = self.dodge.controls                
+
+            return controller_input

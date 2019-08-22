@@ -6,7 +6,7 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 import rlutilities as utils
 from rlutilities.mechanics import AerialTurn, Aerial, Dodge
 
-from BallPrediction import PredictionPath #Maybe kick all this into Planning?
+from BallPrediction import PredictionPath, prediction_binary_search
 from Conversions import Vec3_to_vec3, rot_to_mat3
 from Cowculate import Cowculate #deprecate and rename planning?
 from GamePlan import GamePlan
@@ -24,7 +24,7 @@ from Simulation import * #Temporary for testing and porting to new files
 #When True, all match logic will be ignored.
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
-TESTING = True
+TESTING = False
 DEBUGGING = False
 if TESTING or DEBUGGING:
     import random
@@ -101,6 +101,7 @@ class BooleanAlgebraCow(BaseAgent):
             self.old_game_info = None
             self.RESET = True
             self.dodge = None
+            self.path_target = None
             #self.state = "Reset"
             #self.path_plan = "ArcLineArc"
             #self.path_switch = True
@@ -235,10 +236,10 @@ class BooleanAlgebraCow(BaseAgent):
                 else:
                     self.RESET = 'waiting'
                 #Reset to a stationary setup when the bot is reloaded
-                ball_pos = Vec3(0, -1000, 400)
+                ball_pos = Vec3(-2000, 4000, 100)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(0, 0, 600),
+                                                             vel = Vec3(1000, 0, 0),
                                                              omega = Vec3(0,0,0))
                 car_pos = Vec3(0, -4000, 18.65)
                 car_vel = Vec3(0, 0, 0)
@@ -257,40 +258,13 @@ class BooleanAlgebraCow(BaseAgent):
 
             #####
 
-            elif self.dodge != None:
-                #If we've already decided on a dodge, execute the dodge.
-                self.dodge.step(self.game_info.dt)
-                controller_input = self.dodge.controls
-                controller_input.boost = 1
-
             else:
-                #Approach the ball, for now just by boosting.  Eventually this will be a path to follow.
+            
+                intercept_pos = prediction_binary_search(self.game_info, is_too_early).pos
+
+                #Turn towards the intercept point and boost
+                controller_input = GroundTurn(current_state, current_state.copy_state(pos = intercept_pos)).input()
                 controller_input.boost = 1
-                
-                #As we approach the ball, calculate when dodging results in a good touch
-                test_dodge = Dodge(self.game_info.utils_game.my_car)
-                
-                test_dodge.duration, test_dodge.delay, simulation = falling_ball_dodge_contact(self.game_info)
-                test_dodge.target = Vec3_to_vec3(self.game_info.ball.pos, 1) #TODO: Intelligently choose this?
-
-                #Air roll shots.  TODO: intelligently choose angle
-                test_dodge.preorientation = roll_away_from_target(test_dodge.target, pi/4, self.game_info)
-
-                #If the dodge hits the ball, check if it's a good touch
-                if simulation.ball_contact:
-                    flip_before_contact = simulation.time - test_dodge.delay > 0
-                    not_too_early = simulation.time - test_dodge.delay < 0.05
-                    dodge_timing = flip_before_contact and not_too_early
-
-                    nose_contact = front_face_contact(simulation.box,
-                                                      self.game_info.ball,
-                                                      self.game_info.team_sign)
-                    if nose_contact and dodge_timing:
-                        print(simulation.time, test_dodge.delay)
-                        self.dodge = test_dodge
-
-                        controller_input = self.dodge.controls                
-
             return controller_input
 
 
@@ -341,6 +315,7 @@ class BooleanAlgebraCow(BaseAgent):
         framework_output.handbrake = output.handbrake
         framework_output.jump = output.jump
         return framework_output
+
 
 
 

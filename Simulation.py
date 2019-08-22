@@ -186,12 +186,92 @@ def falling_ball_dodge_contact(game_info):
         duration = 0.2
         delay = time
 
-    delay -= 0.05 #How long before we hit the ball is acceptable to dodge
+    delay -= 0.05 #Window to dodge just before ball contact
 
     return duration, delay, Simulation(ball_contact = True, car = car_copy, box = box, time = time)
 
+
+##############################################################
+##############################################################
+
+def linear_time_to_reach(game_info,
+               location):
+    '''
+    Returns how long it will take to drive to the given location.
+    Currently supports only locations more or less directly in front, holding boost while we have it.
+    '''
+
+    distance = (location.to_2d() - game_info.me.pos.to_2d()).magnitude()
+
+    sim_pos = 0
+    sim_vel = game_info.me.vel.to_2d().magnitude()
+    sim_time = game_info.game_time
+    dt = 1/60 #Doesn't need to be the FPS, just a convenient value
+    while sim_pos < distance:
+        sim_pos += sim_vel*dt
+        if game_info.me.boost > 33.3 * sim_time:
+            accel = boost_acceleration(sim_vel)
+        else:
+            accel = throttle_acceleration(sim_vel)
+        sim_vel += accel*dt
+        sim_time += dt
+    return sim_time
+
+
 ##############################################################
 #Helper functions
+##############################################################
+
+def throttle_acceleration(speed, throttle = 1.0):
+    '''
+    Returns the acceleration from a given throttle in [0,1]
+    Assume we are driving parallel to "forward", positive is forward, negative is backward
+    '''
+
+    if speed < 0:
+        return 3500
+    elif speed < 1400:
+        return 1600 - (speed*( (1600-160)/1400 ))
+    elif speed < 1410:
+        return 160 - ( speed*(160/10) )
+    else:
+        return 0
+
+def boost_acceleration(speed):
+    '''
+    Returns the acceleration from a given throttle in [0,1]
+    Assume we are driving straight in the direction of the throttle.
+    '''
+
+    if speed < 2300:
+        return 991.667 + throttle_acceleration(speed)
+    else:
+        return 0
+
+
+def roll_away_from_target(target, theta, game_info):
+    '''
+    Returns an orientation mat3 for an air roll shot.  Turns directly away from the dodge direction (target) by angle theta
+    Target can either be RLU vec3, or CowBot Vec3.
+    '''
+
+    starting_forward = game_info.utils_game.my_car.forward()
+    starting_left = game_info.utils_game.my_car.left()
+    starting_up = game_info.utils_game.my_car.up()
+    starting_orientation = mat3(starting_forward[0], starting_left[0], starting_up[0],
+                                starting_forward[1], starting_left[1], starting_up[1],
+                                starting_forward[2], starting_left[2], starting_up[2])
+    if type(target) == vec3:
+        target = vec3_to_Vec3(target, game_info.team_sign)
+    car_to_target = Vec3_to_vec3((target - game_info.me.pos).normalize(), game_info.team_sign)
+    axis = theta * cross(car_to_target, starting_up)
+    return dot(axis_to_rotation(axis), starting_orientation)
+
+
+
+
+##############################################################
+#Contact functions
 ##############################################################
 
 def has_ball_contact(time, box, ball, team_sign):
@@ -236,23 +316,7 @@ def update_hitbox(car, hitbox_class):
     box.center = dot(box.orientation, offset) + car.location
     return box
 
-def roll_away_from_target(target, theta, game_info):
-    '''
-    Returns an orientation mat3 for an air roll shot.  Turns directly away from the dodge direction (target) by angle theta
-    Target can either be RLU vec3, or CowBot Vec3.
-    '''
 
-    starting_forward = game_info.utils_game.my_car.forward()
-    starting_left = game_info.utils_game.my_car.left()
-    starting_up = game_info.utils_game.my_car.up()
-    starting_orientation = mat3(starting_forward[0], starting_left[0], starting_up[0],
-                                starting_forward[1], starting_left[1], starting_up[1],
-                                starting_forward[2], starting_left[2], starting_up[2])
-    if type(target) == vec3:
-        target = vec3_to_Vec3(target, game_info.team_sign)
-    car_to_target = Vec3_to_vec3((target - game_info.me.pos).normalize(), game_info.team_sign)
-    axis = theta * cross(car_to_target, starting_up)
-    return dot(axis_to_rotation(axis), starting_orientation)
 
 ###########################################################################
 #Face contact functions: front_face_contact, back, top, bottom.

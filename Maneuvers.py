@@ -261,7 +261,6 @@ class NavigateTo:
             controller_input.throttle = correction_sign
 
             #Correct as we wiggle so that we face goal_yaw.
-            #print(self.goal_state.rot.yaw, self.current_state.rot.yaw, angle_difference(self.goal_state.rot.yaw, self.current_state.rot.yaw))
             if angle_difference(self.goal_state.rot.yaw, self.current_state.rot.yaw) > 0:
                 angle_sign = 1
             else:

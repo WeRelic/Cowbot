@@ -9,13 +9,13 @@ Parts are definitely worth keeping though, especially the functions at the end (
 from math import atan2, pi
 
 from rlbot.agents.base_agent import SimpleControllerState
-
-from BallPrediction import get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box
+from BallPrediction import get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box, is_too_early, prediction_binary_search
 from CowBotVector import Vec3
 from GameState import Orientation
 from Maneuvers import GroundTurn, NavigateTo
 from Mechanics import aerial, aerial_rotation, AirDodge, FrontDodge
-from Miscellaneous import angles_are_close, cap_magnitude, car_coordinates_2d, linear_time_to_reach
+from Miscellaneous import angles_are_close, cap_magnitude, car_coordinates_2d
+from Simulation import linear_time_to_reach
 
 import EvilGlobals #Only needed for rendering and debugging
 
@@ -180,30 +180,15 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
             controller_input, persistent = aerial(game_info.dt,
                                                   game_info.team_sign,
                                                   persistent)
-                
+
         else:
             #TODO: Replace all of this with shooting/clearing/better code.
             #Need pathing to get to a reasonable spot, and intelligent dodges to place the ball properly.
             
-            for i in range(100):
 
-                #Adjust for Ball/Car radii
-                ball_vel = ball_prediction.slices[i].vel
-
-                try:
-                    #Evil magic numbers.  TODO: Actual timing and arrival prediction.
-                    target_pos = ball_prediction.slices[i].pos + ball_vel.normalize().scalar_multiply(150)
-                except ZeroDivisionError:
-                    target_pos = ball_prediction.slices[i].pos
-
-
-                car_target_vector =  target_pos - current_state.pos
-                turn_angle = abs(current_state.rot.yaw - atan2(car_target_vector.y , car_target_vector.x))
-                time_estimate = linear_time_to_reach(game_info, target_pos) - (ball_vel.magnitude()/50)*(turn_angle)
-                if ball_prediction.slices[i].time < time_estimate + 1/30:
-                    break
-
-            if plan.layers[1] == "Shot":
+            target_pos = prediction_binary_search(game_info, is_too_early).pos
+            
+            '''if plan.layers[1] == "Shot":
                 #If the opponent isn't close to the ball, reposition to shoot towards net
                 #Find the center of the opponent's net
                 center_of_net = Vec3(0, 5120, game_info.ball.pos.z)
@@ -214,11 +199,8 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                 else:
                     shooting_correction = - (60*(5120 - abs(game_info.ball.pos.y))) / ((game_info.ball.pos - center_of_net).magnitude())
                     
-                    target_pos = Vec3(target_pos.x + shooting_correction, target_pos.y, target_pos.z)
+                    target_pos = Vec3(target_pos.x + shooting_correction, target_pos.y, target_pos.z)'''
 
-
-            #Make sure we don't try to go to a point outside the map
-            target_pos = Vec3(cap_magnitude(target_pos.x, 4096), cap_magnitude(target_pos.y, 5120) , target_pos.z)
             #Turn towards the target
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = target_pos)).input()
     
@@ -245,4 +227,8 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
 
 
     return controller_input, persistent
+
+
+
+
 
