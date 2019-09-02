@@ -1,6 +1,6 @@
 from math import atan2
 
-from BallPrediction import get_ball_arrival, is_ball_in_front_of_net, is_ball_in_scorable_box, prediction_binary_search, is_too_early
+from BallPrediction import get_ball_arrival, is_ball_in_front_of_net, is_ball_in_scorable_box
 
 from CowBotVector import Vec3
 
@@ -92,7 +92,8 @@ def goal(plan, game_info, persistent):
     #TODO: Update what counts as "corner"
     ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
     ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
-    target_pos = prediction_binary_search(game_info, is_too_early).pos
+    target_pos = game_info.ball.pos
+    #target_pos = prediction_binary_search(game_info, is_too_early)[0].pos
 
     if persistent.aerial.initialize:
         plan.layers[0] = "Ball"

@@ -25,7 +25,7 @@ class PersistentMechanics:
         self.aerial_turn = Mechanic()
         self.aerial = Mechanic()
         self.hit_ball = Mechanic()
-
+        self.path_follower = Mechanic()
 
 
 class Mechanic:

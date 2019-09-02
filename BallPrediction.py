@@ -1,10 +1,12 @@
 from math import atan2, pi, tan
 
 import rlutilities as utils
-from rlutilities.mechanics import Aerial
+from rlutilities.mechanics import Aerial, FollowPath
 
 from Conversions import vec3_to_Vec3, Vec3_to_vec3
 from CowBotVector import Vec3
+from Miscellaneous import min_radius
+from Pathing.ArcLineArc import ArcLineArc
 from Simulation import linear_time_to_reach
 
 
@@ -91,8 +93,6 @@ class RLUPredictionSlice:
     It also handles team checking so that we can always think of ourselves as on the blue team.
     '''
 
-
-    
     def __init__(self,
                  current_slice,
                  team_sign):
@@ -309,22 +309,74 @@ def prediction_binary_search(game_info, is_too_early):
 
     while low < high:
         mid = (low + high) // 2
-        if is_too_early(game_info, game_info.my_index, prediction.slices[mid]):
+        check = is_too_early(game_info, game_info.my_index, prediction.slices[mid])
+        if check[0]:
             low = mid + 1
         else:
             high = mid
-    return prediction.slices[low]
+    return prediction.slices[low], check[1], check[2]
 
-
-
+###########################################################################################
+###########################################################################################
 
 
 def is_too_early(game_info, index, prediction_slice):
+
+    #Hit the ball forward
+    end_tangent = Vec3(0,1,0)
+
+    #Starting point
+    start_tangent = game_info.me.rot.front
+    start_location = game_info.me.pos
+
+    #Good enough for now
+    turn_radius = min_radius(1410) + 350
+
+    #Here we check which combination of turns is the shortest, and follow that path.
+    #Later we might also check if we run into walls, the post, etc.
+    #Maybe even decide based on actual strategical principles of the game o.O
+    min_length = 100000
+    path = None
+    for sign_pair in [[1,1], [1,-1], [-1,1], [-1,-1]]:
+        temp_path = ArcLineArc(start = game_info.me.pos,
+                               end = prediction_slice.pos,
+                               start_tangent = start_tangent,
+                               end_tangent = end_tangent,
+                               radius1 = sign_pair[0]*turn_radius,
+                               radius2 = sign_pair[1]*turn_radius,
+                               current_state = game_info.me)
+
+        if temp_path.length < min_length:
+            min_length = temp_path.length
+            path = temp_path
+
+    if path == None:
+        print("No path chosen!")
+
+    else:
+        path.draw_path()
+        length = path.length
+        curve = path.to_Curve(game_info.team_sign)
+        path_follower = FollowPath(game_info.utils_game.my_car)
+        path_follower.path = curve
+        path_follower.arrival_time = prediction_slice.time
+
+
+    if length / 1410 + game_info.game_time > prediction_slice.time:
+        return True, None, None
+
+    return False, curve, path_follower
+
+
+###########################################################################################
+###########################################################################################
+
+def linear_is_too_early(game_info, index, prediction_slice):
     '''
     Leaving index as an option so that we can check opponents and teammates too
     '''
-    return linear_time_to_reach(game_info, prediction_slice.pos) > prediction_slice.time
-
-
-
+    drive_time = linear_time_to_reach(game_info.me,
+                                      game_info.ball.pos,
+                                      game_info.game_time)
+    return drive_time > prediction_slice.time
 

@@ -24,10 +24,10 @@ import EvilGlobals #Only needed for rendering
 
 
 def follow_waypoints(game_info,
-                         starting_path,
-                         waypoint_list,
-                         waypoint_index,
-                         path_following_state):
+                     starting_path,
+                     waypoint_list,
+                     waypoint_index,
+                     path_following_state):
     '''
     This function will take a list of Vec3 waypoints and choose paths so that 
     the bot goes through the points in a reasonably efficient way.
@@ -161,4 +161,3 @@ def follow_waypoints(game_info,
         waypoint_index = (waypoint_index + 1) % len(waypoint_list)
 
     return path, path_following_state, waypoint_index
-                

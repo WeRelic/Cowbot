@@ -1,11 +1,12 @@
-from math import pi
+from math import pi, atan2
 
-from rlutilities.mechanics import AerialTurn, Aerial, Dodge
-from rlutilities.simulation import Car
+from rlutilities.mechanics import AerialTurn, Aerial, Dodge, Jump
+from rlutilities.simulation import Car, Input
 from rlutilities.linear_algebra import axis_to_rotation, cross, dot, mat3, norm, vec3
 
 from Conversions import vec3_to_Vec3, Vec3_to_vec3, rot_to_mat3
-
+from Maneuvers import GroundTurn
+from Miscellaneous import angle_to
 
 
 
@@ -194,22 +195,23 @@ def falling_ball_dodge_contact(game_info):
 ##############################################################
 ##############################################################
 
-def linear_time_to_reach(game_info,
-               location):
+def linear_time_to_reach(current_state,
+                         location,
+                         game_time):
     '''
     Returns how long it will take to drive to the given location.
     Currently supports only locations more or less directly in front, holding boost while we have it.
     '''
 
-    distance = (location.to_2d() - game_info.me.pos.to_2d()).magnitude()
+    distance = (location.to_2d() - current_state.pos.to_2d()).magnitude()
 
     sim_pos = 0
-    sim_vel = game_info.me.vel.to_2d().magnitude()
-    sim_time = game_info.game_time
+    sim_vel = current_state.vel.to_2d().magnitude()
+    sim_time = game_time
     dt = 1/60 #Doesn't need to be the FPS, just a convenient value
     while sim_pos < distance:
         sim_pos += sim_vel*dt
-        if game_info.me.boost > 33.3 * sim_time:
+        if current_state.boost > 33.3 * sim_time:
             accel = boost_acceleration(sim_vel)
         else:
             accel = throttle_acceleration(sim_vel)
@@ -217,6 +219,33 @@ def linear_time_to_reach(game_info,
         sim_time += dt
     return sim_time
 
+##############################################################
+##############################################################
+
+'''def ground_turn_simulation(game_info, target):
+    car_copy = Car(game_info.utils_game.my_car)
+    time = 0
+    dt = 1/30
+    controls = Input()
+    yaw = atan2(car_copy.forward()[1], car_copy.forward()[0])
+    correction_angle = angle_to(target, vec3_to_Vec3(car_copy.location, game_info.team_sign), yaw)
+    
+    while abs(angle_to(target, vec3_to_Vec3(car_copy.location, game_info.team_sign), yaw)) > pi/20:
+        print(car_copy.location, 'yaw = ', yaw)
+        time += dt
+        if time > 1:
+            return None, None
+
+        correction_angle = angle_to(target, vec3_to_Vec3(car_copy.location, game_info.team_sign), yaw)
+        if correction_angle > 0:
+            controls.steer = 1
+        else:
+            controls.steer = -1
+        controls.boost = 1
+        car_copy.step(controls, dt)
+        yaw = atan2(car_copy.forward()[1], car_copy.forward()[0])
+
+    return time, vec3_to_Vec3(car_copy.location, game_info.team_sign)'''
 
 ##############################################################
 #Helper functions

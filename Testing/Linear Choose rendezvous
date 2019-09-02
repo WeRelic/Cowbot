@@ -1,0 +1,45 @@
+controller_input = SimpleControllerState()
+            current_state = self.game_info.me
+            self.my_timer += self.game_info.dt
+
+            ###
+
+            #Using simulation to make solid contact
+            if self.RESET == 'waiting' or self.RESET:
+
+                self.my_timer = 0
+                if self.RESET == 'waiting':
+                    self.RESET = False
+                else:
+                    self.RESET = 'waiting'
+                #Reset to a stationary setup when the bot is reloaded
+                ball_pos = Vec3(-2000, 0, 100)
+                ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
+                                                             rot = Orientation(pyr = [0,0,0]),
+                                                             vel = Vec3(1000, 0, 0),
+                                                             omega = Vec3(0,0,0))
+                car_pos = Vec3(0, -4000, 18.65)
+                car_vel = Vec3(0, 0, 0)
+
+                #Random starting yaw
+                car_state = self.zero_car_state.copy_state(pos = car_pos,
+                                                           vel = car_vel,
+                                                           rot = Orientation(pitch = 0,
+                                                                             yaw = pi/2,
+                                                                             roll = 0),
+                                                           boost = 100)
+
+                self.set_game_state(set_state(self.game_info,
+                                              current_state = car_state,
+                                              ball_state = ball_state))
+
+            #####
+
+            else:
+            
+                intercept_pos = prediction_binary_search(self.game_info, linear_is_too_early).pos
+
+                #Turn towards the intercept point and boost
+                controller_input = GroundTurn(current_state, current_state.copy_state(pos = intercept_pos)).input()
+                controller_input.boost = 1
+            return controller_input

@@ -172,7 +172,7 @@ class GroundTurn:
                                      (-(correction_vector.x*sin(theta))) + (correction_vector.y * cos(theta)),
                                      0)
 
-        if self.can_reverse and facing_vector.dot(car_to_target) < - pi/8:
+        if self.can_reverse and facing_vector.dot(car_to_target) < - 0.5:
             correction_angle = atan2(rel_correction_vector.y, rel_correction_vector.x)
             
             controller_input.throttle = - 1.0

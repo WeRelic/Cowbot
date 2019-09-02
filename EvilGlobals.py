@@ -12,8 +12,9 @@ def draw_arc_3d( center, radius, start_angle, delta_angle, steps ):
     locations = [ [first_point.x, first_point.y , 50] ]
 
 
-    for theta in range(steps):
-        next_point = center + Vec3(cos(start_angle + (delta_angle*(theta/steps))), sin(start_angle + (delta_angle*(theta/steps))),0).scalar_multiply(radius)
+    for step in range(1, steps+1):
+        next_angle = start_angle + delta_angle*(step/steps)
+        next_point = center + Vec3(cos(next_angle), sin(next_angle),0).scalar_multiply(radius)
         locations.append([ next_point.x, next_point.y, 50 ])
 
     return locations

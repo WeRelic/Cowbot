@@ -1,10 +1,11 @@
-from math import pi
+from math import pi, ceil
 import random
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 import rlutilities as utils
-from rlutilities.mechanics import AerialTurn, Aerial, Dodge
+from rlutilities.mechanics import AerialTurn, Aerial, Dodge, FollowPath
+from rlutilities.simulation import Curve
 
 from BallPrediction import PredictionPath, prediction_binary_search
 from Conversions import Vec3_to_vec3, rot_to_mat3
@@ -24,7 +25,7 @@ from Simulation import * #Temporary for testing and porting to new files
 #When True, all match logic will be ignored.
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
-TESTING = False
+TESTING = True
 DEBUGGING = False
 if TESTING or DEBUGGING:
     import random
@@ -35,6 +36,7 @@ if TESTING or DEBUGGING:
     from StateSetting import *
     from BallPrediction import *
     from Maneuvers import GroundTurn
+    from Pathing.ArcLineArc import ArcLineArc
 
 
 class BooleanAlgebraCow(BaseAgent):
@@ -108,7 +110,6 @@ class BooleanAlgebraCow(BaseAgent):
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
 
-
         ###############################################################################################
         #Startup info - run once at start
         ###############################################################################################
@@ -162,7 +163,7 @@ class BooleanAlgebraCow(BaseAgent):
                                     opponent_indices = self.opponent_indices,
                                     my_old_inputs = self.old_inputs,
                                     hitboxes = self.car_hitboxes )
-        
+
         ###############################################################################################
         #Planning
         ###############################################################################################
@@ -212,6 +213,16 @@ class BooleanAlgebraCow(BaseAgent):
             self.persistent.aerial.action = None
         self.persistent.aerial.check = False
         ###
+        if self.persistent.path_follower.initialize:
+            self.persistent.path_follower.initialize = False
+            self.persistent.path_follower.action = FollowPath(self.game_info.utils_game.my_car)
+
+            #NEED MORE STUFF HERE TO MAKE IT WORK
+
+        elif not self.persistent.path_follower.check:
+            self.persistent.path_follower.action = None
+        self.persistent.path_follower.check = False
+        ###
 
         ###############################################################################################
         #Testing 
@@ -223,48 +234,50 @@ class BooleanAlgebraCow(BaseAgent):
             #Copy-paste from a testing file here
             controller_input = SimpleControllerState()
             current_state = self.game_info.me
-            self.my_timer += self.game_info.dt
 
             ###
 
             #Using simulation to make solid contact
-            if self.RESET == 'waiting' or self.RESET:
-
-                self.my_timer = 0
-                if self.RESET == 'waiting':
-                    self.RESET = False
-                else:
-                    self.RESET = 'waiting'
+            if self.RESET == True:
+                controller_input = SimpleControllerState()
+                self.my_timer = self.game_info.game_time
+                self.RESET = False                    
+                
                 #Reset to a stationary setup when the bot is reloaded
-                ball_pos = Vec3(-2000, 4000, 100)
+                ball_pos = Vec3(-2000, 0, 300)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(1000, 0, 0),
+                                                             vel = Vec3(1500, 0, 0),
                                                              omega = Vec3(0,0,0))
                 car_pos = Vec3(0, -4000, 18.65)
-                car_vel = Vec3(0, 0, 0)
+                car_vel = Vec3(1410, 0, 0)
 
                 #Random starting yaw
                 car_state = self.zero_car_state.copy_state(pos = car_pos,
                                                            vel = car_vel,
                                                            rot = Orientation(pitch = 0,
-                                                                             yaw = pi/2,
+                                                                             yaw = 0,
                                                                              roll = 0),
                                                            boost = 100)
-
+                
                 self.set_game_state(set_state(self.game_info,
                                               current_state = car_state,
                                               ball_state = ball_state))
+            elif self.game_info.game_time - self.my_timer < 0.05:
+                controller_input = SimpleControllerState()
 
             #####
 
             else:
-            
-                intercept_pos = prediction_binary_search(self.game_info, is_too_early).pos
 
-                #Turn towards the intercept point and boost
-                controller_input = GroundTurn(current_state, current_state.copy_state(pos = intercept_pos)).input()
-                controller_input.boost = 1
+                if self.path == None:
+                    intercept_slice, self.path, self.path_follower = prediction_binary_search(self.game_info,
+                                                                                              is_too_early)
+                          
+                else:
+                    #Follow the ArcLineArc path
+                    self.path_follower.step(self.game_info.dt)
+                    controller_input = self.path_follower.controls
             return controller_input
 
 
@@ -319,3 +332,10 @@ class BooleanAlgebraCow(BaseAgent):
 
 
 
+        
+
+
+
+
+
+    

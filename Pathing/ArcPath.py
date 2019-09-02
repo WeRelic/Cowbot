@@ -4,10 +4,13 @@ The class for calculating an Arc path, given the parameters.
 
 '''
 
-from math import pi, asin, sqrt, acos
+from math import pi, asin, sqrt, acos, atan2, ceil, cos, sin
 
 from rlbot.agents.base_agent import SimpleControllerState
+from rlutilities.linear_algebra import vec3
+from rlutilities.simulation import Curve
 
+from Conversions import Vec3_to_vec3
 from CowBotVector import Vec3
 from Pathing.Pathing import GroundPath, PathPiece
 
@@ -67,14 +70,16 @@ class ArcPath(GroundPath):
         if (center_to_end_unit_vector.dot(self.start_tangent)) < 0:
             self.phi = abs(self.phi-(2*pi))
 
-        length_circle = self.phi * abs(self.radius)
+        self.length = self.phi * abs(self.radius)
 
-        #self.draw_path()
+        self.draw_path()
 
 
     def draw_path( self ):
 
-        start_angle = atan2( (self.start - self.center).y , (self.start - self.center).x )
+        starting_point = self.start - self.center
+
+        start_angle = atan2( starting_point.y , starting_point.x )
 
         #+1 for CW, -1 for CCW
         direction = - ( self.start_tangent.cross(self.center - self.start) ).normalize().z
@@ -85,3 +90,48 @@ class ArcPath(GroundPath):
         EvilGlobals.renderer.draw_polyline_3d( EvilGlobals.draw_arc_3d(self.center, self.radius, start_angle, - direction*self.phi, 60), EvilGlobals.renderer.red())
         EvilGlobals.renderer.end_rendering()
 
+
+
+    def update_path(self, current_state):
+        path = ArcPath(start = self.start,
+                       start_tangent = self.start_tangent,
+                       end = self.end,
+                       end_tangent = self.end_tangent,
+                       radius = self.radius,
+                       current_state = current_state)
+            
+        if (self.current_state.pos - path.end).magnitude() < 150:
+            path = None
+
+        return path
+
+
+    #############################################################################################
+        
+    def to_Curve(self, team_sign):
+
+        control_points = []
+
+        steps = ceil((30*self.phi) / (2*pi))
+        delta = self.phi / steps
+        center = Vec3_to_vec3(self.center, team_sign)
+     
+        for i in range(steps):
+            angle = self.phi + delta*i
+            next_point = center + self.radius*vec3(cos(angle), sin(angle),0)
+            normal = normalize(next_point - center)
+
+            next_control_point = ControlPoint()
+            next_control_point.p = next_point
+            next_control_point.t = cross(normal)
+            next_control_point.n = normal
+            control_points.append(next_control_point)
+
+
+        curve = Curve(control_points)
+        return curve
+       
+
+
+
+   
