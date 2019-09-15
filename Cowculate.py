@@ -9,7 +9,7 @@ Parts are definitely worth keeping though, especially the functions at the end (
 from math import atan2, pi
 
 from rlbot.agents.base_agent import SimpleControllerState
-from BallPrediction import get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box, is_too_early, prediction_binary_search
+from BallPrediction import get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box, prediction_binary_search, prediction_binary_search_on_bounce
 from CowBotVector import Vec3
 from GameState import Orientation
 from Maneuvers import GroundTurn, NavigateTo
@@ -31,7 +31,7 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
     controller_input = SimpleControllerState()
     current_state = game_info.me
 
-############################################################################# 
+    ############################################################################# 
 
     if plan.layers[0] == "Boost":
         '''
@@ -168,12 +168,6 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                                                                game_info.ball.pos - current_state.pos),
                                             current_state.jumped_last_frame).input()
 
-                '''
-        elif plan.layers[1] == "Save" and plan.layers[2] == "Backwards":
-                controller_input = GroundTurn(current_state,
-                                              current_state.copy_state(pos = game_info.ball.pos),
-                                              can_reverse = True).input()
-                '''
 
         elif plan.layers[2] == "Aerial":
 
@@ -181,34 +175,14 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                                                   game_info.team_sign,
                                                   persistent)
 
-        else:
-            #TODO: Replace all of this with shooting/clearing/better code.
-            #Need pathing to get to a reasonable spot, and intelligent dodges to place the ball properly.
-            
+        elif plan.layers[1] == "Shot":
 
-            target_pos = prediction_binary_search(game_info, is_too_early).pos
-            
-            '''if plan.layers[1] == "Shot":
-                #If the opponent isn't close to the ball, reposition to shoot towards net
-                #Find the center of the opponent's net
-                center_of_net = Vec3(0, 5120, game_info.ball.pos.z)
+            if plan.layers[2] == "Path":
+                #Follow the ArcLineArc path
+                persistent.path_follower.action.step(game_info.dt)
+                controller_input = persistent.path_follower.action.controls
 
-                #If the ball is left, go right, and vice versa.  
-                if game_info.ball.pos.x > 0:
-                    shooting_correction = (60*(5120 - abs(game_info.ball.pos.y))) / ((game_info.ball.pos - center_of_net).magnitude())
-                else:
-                    shooting_correction = - (60*(5120 - abs(game_info.ball.pos.y))) / ((game_info.ball.pos - center_of_net).magnitude())
-                    
-                    target_pos = Vec3(target_pos.x + shooting_correction, target_pos.y, target_pos.z)'''
 
-            #Turn towards the target
-            controller_input = GroundTurn(current_state, current_state.copy_state(pos = target_pos)).input()
-    
-            #If we're not supersonic, and we're facing roughly towards the ball, boost.
-            ball_angle = atan2((game_info.ball.pos - current_state.pos).y,
-                               (game_info.ball.pos - current_state.pos).x)
-            if current_state.vel.magnitude() < 2250 and current_state.wheel_contact and angles_are_close(current_state.rot.yaw, ball_angle, pi/4):
-                controller_input.boost = 1
 
 
         #############################################################################

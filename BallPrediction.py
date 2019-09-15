@@ -57,8 +57,7 @@ class PredictionPath:
 
 
     ######################
-    #TODO: Check bouncing?
- 
+    #TODO: Check rolling
 
     def state_at_time(self, time):
         #Return the slice closest to the given time.
@@ -77,7 +76,22 @@ class PredictionPath:
                 return "Attacking"
             elif abs(step.x) < 800 and step.y < -5120 - 92.75:
                 return "Defending"
-        return False
+        return Falsei
+
+
+
+    def check_bounces(self):
+        '''
+        Return the times when the ball is bouncing
+        TODO: General bounce, not just on flat ground
+        '''
+
+        bounces = []
+
+        for i in range(1, len(self.slices)):
+            if abs(self.slices[i].vel.z - self.slices[i-1].vel.z) > 50:
+                bounces.append(self.slices[i])
+        return bounces
 
 
 
@@ -292,11 +306,8 @@ def is_ball_in_scorable_box(loc,
 
 ############################################
 
-#TODO: Add time estimates for getting to the ball, and predicting when it'll roll into the center of the field.  This will let us take shots more reliably, since we'll be getting there _before_ it rolls out of reach.
 
-
-
-def prediction_binary_search(game_info, is_too_early):
+def prediction_binary_search(game_info = None, is_too_early = None):
 
     '''
     Returns the first ball prediction slice that is not "too early", judged by is_too_early
@@ -316,60 +327,32 @@ def prediction_binary_search(game_info, is_too_early):
             high = mid
     return prediction.slices[low], check[1], check[2]
 
-###########################################################################################
-###########################################################################################
+############################################
 
 
-def is_too_early(game_info, index, prediction_slice):
+def prediction_binary_search_on_bounce(game_info = None, is_too_early = None):
 
-    #Hit the ball forward
-    end_tangent = Vec3(0,1,0)
+    '''
+    Returns the first ball prediction slice that is a bounce and is not "too early", judged by is_too_early
+    is_too_early takes in a CarState and a ball prediction slice
+    '''
 
-    #Starting point
-    start_tangent = game_info.me.rot.front
-    start_location = game_info.me.pos
+    prediction = game_info.ball_prediction.check_bounces()
+    low = 0
+    high = len(prediction) - 1
 
-    #Good enough for now
-    turn_radius = min_radius(1410) + 350
-
-    #Here we check which combination of turns is the shortest, and follow that path.
-    #Later we might also check if we run into walls, the post, etc.
-    #Maybe even decide based on actual strategical principles of the game o.O
-    min_length = 100000
-    path = None
-    for sign_pair in [[1,1], [1,-1], [-1,1], [-1,-1]]:
-        temp_path = ArcLineArc(start = game_info.me.pos,
-                               end = prediction_slice.pos,
-                               start_tangent = start_tangent,
-                               end_tangent = end_tangent,
-                               radius1 = sign_pair[0]*turn_radius,
-                               radius2 = sign_pair[1]*turn_radius,
-                               current_state = game_info.me)
-
-        if temp_path.length < min_length:
-            min_length = temp_path.length
-            path = temp_path
-
-    if path == None:
-        print("No path chosen!")
-
-    else:
-        path.draw_path()
-        length = path.length
-        curve = path.to_Curve(game_info.team_sign)
-        path_follower = FollowPath(game_info.utils_game.my_car)
-        path_follower.path = curve
-        path_follower.arrival_time = prediction_slice.time
-
-
-    if length / 1410 + game_info.game_time > prediction_slice.time:
-        return True, None, None
-
-    return False, curve, path_follower
-
+    while low < high:
+        mid = (low + high) // 2
+        check = is_too_early(game_info, game_info.my_index, prediction[mid])
+        if check[0]:
+            low = mid + 1
+        else:
+            high = mid
+    return prediction[low], check[1], check[2]
 
 ###########################################################################################
 ###########################################################################################
+
 
 def linear_is_too_early(game_info, index, prediction_slice):
     '''
@@ -379,4 +362,18 @@ def linear_is_too_early(game_info, index, prediction_slice):
                                       game_info.ball.pos,
                                       game_info.game_time)
     return drive_time > prediction_slice.time
+
+###############################################
+
+def find_next_bounce(prediction, time):
+    '''
+    Returns the first bounce in the ball prediction after the current time
+    '''
+
+    bounces = prediction.check_bounces()
+    for i in range(len(bounces)):
+        if bounces[i].time > time:
+            return bounces[i]
+
+
 

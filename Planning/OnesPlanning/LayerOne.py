@@ -6,7 +6,6 @@ from GameState import Orientation
 from Pathing.WaypointPath import WaypointPath
 
 
-
 def boost(plan, game_info, persistent):
     '''
     Once we've decided to go for boost, this function controls which boosts we go for.
@@ -75,9 +74,7 @@ def ball(plan, game_info, persistent):
     '''
 
     current_state = game_info.me
-
     ball_distance = (game_info.ball.pos - current_state.pos).magnitude()
-    
     #TODO: Make this better
     if game_info.ball.vel.magnitude() != 0 and current_state.vel.magnitude() != 0:        
         ball_car_dot = current_state.vel.normalize().dot(game_info.ball.vel.normalize())
@@ -86,15 +83,15 @@ def ball(plan, game_info, persistent):
         
     #########
         
-    if ball_distance < 450 - 100*ball_car_dot and game_info.ball.pos.z < 250 and plan.old_plan[2] != "Aerial":
+    if ball_distance < 450 - 100*ball_car_dot and game_info.ball.pos.z < 200 and plan.old_plan[2] != "Aerial":
         #If we were going for the ball, and we're close to it, flip into it.
         plan.layers[1] = "Challenge"
-    elif game_info.ball.pos.y > 0 and is_ball_in_front_of_net(game_info.ball.pos):
+    elif game_info.ball.pos.y > 0 and abs(game_info.ball.pos.x < 3000):
         #TODO: Predict when it'll get there
         plan.layers[1] = "Shot"
     else:
         plan.layers[1] = "Clear"
-        
+
     return plan, persistent
 
 #######################################################################################################

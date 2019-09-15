@@ -130,7 +130,7 @@ class ArcLineArc(GroundPath):
         in the order they're traversed.
         '''
         
-        length_line = (self.start - self.end).magnitude()
+        length_line = (self.transition2 - self.transition1).magnitude()
         
         #All vectors normalized here
         start_normal = (self.start - self.center1).normalize()
@@ -209,6 +209,9 @@ class ArcLineArc(GroundPath):
     #############################################################################################
         
     def to_Curve(self, team_sign):
+        '''
+        Converts the path to an RLU Curve object that can be followed
+        '''
 
         control_points = []
 
@@ -217,7 +220,7 @@ class ArcLineArc(GroundPath):
         delta = self.phi1 / steps
         center1 = Vec3_to_vec3(self.center1, team_sign)
      
-        for i in range(1, steps + 1):
+        for i in range(1, steps - 2):
             angle = self.phi1 + delta*i
             next_point = center1 + self.radius1*vec3(cos(angle), sin(angle),0)
             normal = normalize(next_point - center1)
@@ -228,30 +231,22 @@ class ArcLineArc(GroundPath):
             next_control_point.n = normal
             control_points.append(next_control_point)
 
+
         #The line
-        steps = max(3, ceil(self.length_line / 25))
+        steps = max(10, ceil(self.length_line / 300))
         delta = self.length_line / steps
         tangent = Vec3_to_vec3((self.transition2 - self.transition1).normalize(), team_sign)
         normal = cross(tangent)
 
-        for i in range(1, steps + 1):
-            next_point = Vec3_to_vec3(self.transition1, team_sign) + delta*tangent
+        for i in range(0, steps + 1):
+            next_point = Vec3_to_vec3(self.transition1, team_sign) + delta*tangent*i
 
             next_control_point = ControlPoint()
             next_control_point.p = next_point
             next_control_point.t = tangent
             next_control_point.n = normal
             control_points.append(next_control_point)
-
-        next_point = Vec3_to_vec3(self.transition2, team_sign)
-
-        next_control_point = ControlPoint()
-        next_control_point.p = next_point
-        next_control_point.t = tangent
-        next_control_point.n = normal
-        control_points.append(next_control_point)
-
-
+            
         #The second arc
         direction2 = self.transition2 - self.center2
         starting_angle = atan2( direction2.y, direction2.x )
@@ -272,4 +267,6 @@ class ArcLineArc(GroundPath):
 
 
         curve = Curve(control_points)
+        
+
         return curve

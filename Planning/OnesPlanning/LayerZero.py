@@ -31,12 +31,12 @@ def ball(plan, game_info, persistent):
         #If we were going for the ball, but the ball is behind us, go for boost.
         plan.layers[0] = "Boost"
     elif ball_in_offensive_corner and game_info.me.boost < 60:
-        #Maybe try to center?
+        #Don't attack the ball in their corner
         plan.layers[0] = "Boost"
     elif (ball_in_defensive_corner or ball_in_offensive_corner) and plan.old_plan[2] != "Aerial" and plan.old_plan[2] != "Hit ball":
         #TODO: Wrap up all the checks into one 'mechanic lock'?
         plan.layers[0] = "Goal"
-    elif plan.old_plan[2] == "Aerial" and game_info.game_time > 0.3 + persistent.aerial.target_time:
+    elif plan.old_plan[2] == "Aerial" and game_info.game_time > 0.2 + persistent.aerial.target_time:
         #TODO: Add a check to see if another car touches the ball
         plan.layers[0] = "Recover"
 

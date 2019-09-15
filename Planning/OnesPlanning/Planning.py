@@ -5,8 +5,6 @@ import Planning.OnesPlanning.LayerOne as LayerOne
 import Planning.OnesPlanning.LayerTwo as LayerTwo
 
 
-
-
 def make_plan(game_info,
               old_plan,
               old_path,
@@ -106,7 +104,7 @@ def make_plan(game_info,
         #######################################################################
 
 
-    if plan.layers[0] == "Goal":
+    elif plan.layers[0] == "Goal":
         plan, persistent = LayerTwo.goal(plan, game_info, persistent)
 
     #######################################################################

@@ -3,19 +3,47 @@
 Currently the final layer of planning.  
 Planning only gets this far in a few branches now, but eventually this will be used more.
 
-
 '''
 
+from functools import partial
 
-from BallPrediction import choose_stationary_takeoff_time, get_ball_arrival, is_ball_in_scorable_box#, rendezvous_prediction
+from BallPrediction import choose_stationary_takeoff_time, get_ball_arrival, is_ball_in_scorable_box, prediction_binary_search_on_bounce, prediction_binary_search
+from CowBotVector import Vec3
+from Pathing.PathPlanning import shortest_arclinearc
 
 
+def ball(plan = None,
+         game_info = None,
+         persistent = None):
 
-def ball(plan, game_info, persistent):
     if persistent.aerial.check:
         plan.layers[2] = "Aerial"
+
     elif plan.layers[1] == "Save":
         pass
+
+    elif plan.layers[1] == "Shot":
+
+        plan.layers[2] = "Path"
+        persistent.path_follower.check = True
+        plan.path_lock = True
+
+        if plan.path == None:
+            #Pick a path to line up a shot
+            rough_time_estimate = game_info.game_time + ((game_info.ball.pos - game_info.me.pos).magnitude() / 1410)
+            rough_rendezvous_point = game_info.ball_prediction.state_at_time(rough_time_estimate).pos
+            end_tangent = Vec3(0, 5120, 0) - rough_rendezvous_point
+
+            intercept_slice, plan.path, persistent.path_follower.action = prediction_binary_search(game_info, partial(shortest_arclinearc, end_tangent = end_tangent))
+
+        else:
+            #update once we're close to the ball to take a real shot
+            pass
+
+
+#################
+
+
     elif plan.old_plan[2] == "Hit ball":
         plan.layers[2] = "Hit ball"
 
