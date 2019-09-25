@@ -1,5 +1,3 @@
-from rlbot.agents.base_agent import SimpleControllerState
-
 from CowBotVector import Vec3
 import Kickoffs.Default_Kickoffs
 import Kickoffs.Fast_Kickoffs
@@ -72,21 +70,22 @@ class Kickoff():
 
         if self.position == "Far Back":
             #Run the straight kickoff
-            controller_input = Kickoffs.Default_Kickoffs.far_back(self.game_info,
-                                                               self.game_info.opponent_distance)
+            controller_input, self.persistent = Kickoffs.Default_Kickoffs.far_back(self.game_info,
+                                                                                   self.game_info.opponent_distance,
+                                                                                   self.persistent)
 
         elif self.position == "Back Left" or self.position == "Back Right":
             #Run the offcenter kickoff
-            controller_input = Kickoffs.Default_Kickoffs.offcenter(self.game_info,
-                                                                   self.game_info.opponent_distance,
-                                                                   x_sign)
+            controller_input, self.persistent = Kickoffs.Default_Kickoffs.offcenter(self.game_info,
+                                                                                    x_sign,
+                                                                                    self.persistent)
 
             
         elif self.position == "Right" or self.position == "Left":
             #Run the diagonal kickoff
-            controller_input = Kickoffs.Default_Kickoffs.diagonal(self.game_info,
-                                                               self.game_info.opponent_distance,
-                                                               x_sign)
+            controller_input, self.persistent = Kickoffs.Fast_Kickoffs.diagonal(self.game_info,
+                                                                                x_sign,
+                                                                                self.persistent)
 
         return controller_input, self.persistent
 

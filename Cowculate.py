@@ -175,12 +175,16 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                                                   game_info.team_sign,
                                                   persistent)
 
-        elif plan.layers[1] == "Shot":
-
-            if plan.layers[2] == "Path":
+        elif (plan.layers[1] == "Shot" or plan.layers[1] == "Clear") and plan.layers[2] == "Path":
+            if persistent.path_follower.action != None:
                 #Follow the ArcLineArc path
                 persistent.path_follower.action.step(game_info.dt)
                 controller_input = persistent.path_follower.action.controls
+
+
+        elif (plan.layers[1] == "Shot" or plan.layers[1] == "Clear") and plan.layers[2] == "Chase":
+            controller_input = GroundTurn(current_state, current_state.copy_state(pos = game_info.ball.pos)).input()
+
 
 
 

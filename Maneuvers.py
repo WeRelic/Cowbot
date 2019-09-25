@@ -47,7 +47,6 @@ class FastDodge:
 
     def __init__(self, current_state,
                  goal_state,
-                 old_state,
                  direction = 1,
                  oversteer = True,
                  boost_threshold = None):
@@ -56,7 +55,6 @@ class FastDodge:
         '''
         
         self.current_state = current_state
-        self.old_state = old_state
         self.goal_state = goal_state
         self.boost = self.current_state.boost
         self.direction = left_or_right(current_state, goal_state.pos)

@@ -22,7 +22,7 @@ def ball(plan = None,
     elif plan.layers[1] == "Save":
         pass
 
-    elif plan.layers[1] == "Shot":
+    elif plan.layers[1] == "Shot" or (plan.layers[1] == "Clear" and (game_info.ball.pos - game_info.opponents[0].pos).magnitude() > 1000) :
 
         plan.layers[2] = "Path"
         persistent.path_follower.check = True
@@ -31,14 +31,18 @@ def ball(plan = None,
         if plan.path == None:
             #Pick a path to line up a shot
             rough_time_estimate = game_info.game_time + ((game_info.ball.pos - game_info.me.pos).magnitude() / 1410)
-            rough_rendezvous_point = game_info.ball_prediction.state_at_time(rough_time_estimate).pos
-            end_tangent = Vec3(0, 5120, 0) - rough_rendezvous_point
+            estimated_slice = game_info.ball_prediction.state_at_time(rough_time_estimate)
+            if estimated_slice != None:
+                rough_rendezvous_point = estimated_slice.pos
+                end_tangent = Vec3(0, 5120, 0) - rough_rendezvous_point
 
-            intercept_slice, plan.path, persistent.path_follower.action = prediction_binary_search(game_info, partial(shortest_arclinearc, end_tangent = end_tangent))
+                #TODO: Dynamically update end_tangent as well
+
+                intercept_slice, plan.path, persistent.path_follower.action = prediction_binary_search(game_info, partial(shortest_arclinearc, end_tangent = end_tangent))
 
         else:
             #update once we're close to the ball to take a real shot
-            pass
+            plan.layers[2] = "Chase"
 
 
 #################

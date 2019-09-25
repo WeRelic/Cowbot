@@ -105,7 +105,9 @@ class AirDodge:
     '''
 
 
-    def __init__(self, direction, jumped_last_frame):
+    def __init__(self,
+                 direction,
+                 jumped_last_frame):
         '''
         'direction' is a Vec3 in the direction we want to dodge, relative to the car.
         "Forward" is the +x direction, with +y to the right, and +z up.
@@ -114,9 +116,6 @@ class AirDodge:
 
         self.jumped_last_frame = jumped_last_frame
         self.direction = direction
-
-
-
 
     def input(self):
         '''
@@ -136,7 +135,7 @@ class AirDodge:
                 controller_input.jump = 1
                 controller_input.yaw = plane_direction_normalized.y
                 controller_input.pitch = - plane_direction_normalized.x
-                
+
         return controller_input
 
 
@@ -150,7 +149,10 @@ class JumpTurn:
     This mechanic is to jump and turn to face a given direction.
     '''
 
-    def __init__(self, current_state, jump_height, turn_direction):
+    def __init__(self,
+                 current_state,
+                 jump_height,
+                 turn_direction):
         self.jump_height = jump_height
         self.current_state = current_state
 
@@ -193,7 +195,9 @@ class QuickTurn:
     Might be useful for shooting as well.
     '''
 
-    def __init__(self, direction, boost):
+    def __init__(self,
+                 direction,
+                 boost):
         '''
         +1 direction for right, -1 for left
         boost is a boolean
@@ -228,8 +232,10 @@ class CancelledFastDodge:
     '''
 
 
-    def __init__(self, current_state, dodge_direction):
-        #Dodge direction is 1 for right, -1 for left
+    def __init__(self,
+                 current_state,
+                 dodge_direction):
+        #Dodge direction is a Vec3
         self.double_jumped = current_state.double_jumped
         self.dodge_direction = dodge_direction
         self.current_state = current_state

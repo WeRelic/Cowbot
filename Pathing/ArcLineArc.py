@@ -90,9 +90,9 @@ class ArcLineArc(GroundPath):
             #print("A circle center is contained in the other circle.")
         elif ((net_radius)**2) / ((center_separation)**2) >= 0.97:
             self.is_valid = False
-            self.is_valid = False
             #print("ArcLineArc Path is not valid")
         else:
+            self.is_valid = True
             #Find the offsets of the transition points from the centers
             e1 = (self.center2 - self.center1).normalize()
             e2 = e1.normal_2d().scalar_multiply(-self.sgn1)

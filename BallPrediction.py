@@ -264,6 +264,41 @@ def is_ball_in_front_of_net(location):
     #and if z is below (goal height + ball radius- (fudge factor to avoid the crossbar))
     return (abs(location.x) < 893+92.75) and location.z < 642.775+92.75-20
 
+
+############################################
+
+def when_is_ball_shootable(current_state = None,
+                           prediction = None,
+                           condition = None):
+
+    '''
+    Checks if we will be able to shoot the ball in the near future, and returns the prediction slice
+    of the rendezvous.
+    condition should take in current_state and a ball_slice and return a Boolean for 
+    whether we can reach the ball to take a shot
+    '''
+
+    #TODO: Binary search
+    for ball_slice in prediction.slices:
+        if condition(current_state = current_state, ball_slice = ball_slice):
+            return True, ball_slice
+    return False, None
+
+
+############################################
+
+def is_ball_shootable(current_state = None,
+                      ball_slice = None):
+
+    '''
+    Checks if a ball prediction slice is shootable on net given our car's current state.
+    This will need to be improved over time.  I'm starting with a very coarse approximation.
+    '''
+
+    relative_ball_position = (ball_slice.pos - current_state.pos)
+    return is_ball_in_front_of_net(ball_slice.pos) and relative_ball_position.y > 100
+
+
 ############################################
 
 def is_ball_in_scorable_box(loc,
@@ -317,13 +352,15 @@ def prediction_binary_search(game_info = None, is_too_early = None):
     prediction = game_info.ball_prediction
     low = 0
     high = len(prediction.slices) - 1
+    check = None, None, None
 
     while low < high:
         mid = (low + high) // 2
-        check = is_too_early(game_info, game_info.my_index, prediction.slices[mid])
-        if check[0]:
+        new_check = is_too_early(game_info, game_info.my_index, prediction.slices[mid])
+        if new_check[0]:
             low = mid + 1
         else:
+            check = new_check
             high = mid
     return prediction.slices[low], check[1], check[2]
 
@@ -340,15 +377,17 @@ def prediction_binary_search_on_bounce(game_info = None, is_too_early = None):
     prediction = game_info.ball_prediction.check_bounces()
     low = 0
     high = len(prediction) - 1
+    check = None, None, None
 
     while low < high:
         mid = (low + high) // 2
-        check = is_too_early(game_info, game_info.my_index, prediction[mid])
-        if check[0]:
+        new_check = is_too_early(game_info, game_info.my_index, prediction[mid])
+        if new_check[0]:
             low = mid + 1
         else:
+            check = new_check
             high = mid
-    return prediction[low], check[1], check[2]
+    return prediction.slices[low], check[1], check[2]
 
 ###########################################################################################
 ###########################################################################################

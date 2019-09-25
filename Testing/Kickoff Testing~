@@ -1,0 +1,47 @@
+if self.RESET == True:
+
+                controller_input = SimpleControllerState()
+                self.my_timer = self.game_info.game_time
+                self.RESET = False                    
+                
+                #Right diagonal
+                ball_state = self.zero_ball_state.copy_state(pos = Vec3(0,0,92.75),
+                                                             vel = Vec3(0,0,0),
+                                                             omega = Vec3(0,0,0))
+                car_pos = Vec3(-2048, -2560, 18.65)
+                car_vel = Vec3(0, 0, 0)
+                car_rot = Orientation(yaw = 0.25*pi, roll = 0, pitch = 0)
+                car_state = self.zero_car_state.copy_state(pos = car_pos,
+                                                           vel = car_vel,
+                                                           rot = car_rot,
+                                                           boost = 33)
+                self.set_game_state(set_state(self.game_info,
+                                              current_state = car_state,
+                                              ball_state = ball_state))
+
+            elif self.game_info.game_time - self.my_timer < 4:
+                pass
+
+if self.RESET == True:
+
+                controller_input = SimpleControllerState()
+                self.my_timer = self.game_info.game_time
+                self.RESET = False                    
+                
+                #Left diagonal
+                ball_state = self.zero_ball_state.copy_state(pos = Vec3(0,0,92.75),
+                                                             vel = Vec3(0,0,0),
+                                                             omega = Vec3(0,0,0))
+                car_pos = Vec3(2048, -2560, 18.65)
+                car_vel = Vec3(0, 0, 0)
+                car_rot = Orientation(yaw = 0.25*pi, roll = 0, pitch = 0)
+                car_state = self.zero_car_state.copy_state(pos = car_pos,
+                                                           vel = car_vel,
+                                                           rot = car_rot,
+                                                           boost = 33)
+                self.set_game_state(set_state(self.game_info,
+                                              current_state = car_state,
+                                              ball_state = ball_state))
+
+            elif self.game_info.game_time - self.my_timer < 4:
+                pass

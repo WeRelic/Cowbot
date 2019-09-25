@@ -14,7 +14,7 @@ from Cowculate import Cowculate #deprecate and rename planning?
 from GamePlan import GamePlan
 from GameState import BallState, CarState, GameState, Hitbox, Orientation
 from Kickoffs.Kickoff import Kickoff, update_kickoff_position
-from Mechanics import PersistentMechanics
+from Mechanics import PersistentMechanics, FrontDodge
 from Miscellaneous import predict_for_time
 from Pathing.PathPlanning import shortest_arclinearc
 import Planning.OnesPlanning.Planning as OnesPlanning
@@ -36,6 +36,7 @@ if TESTING or DEBUGGING:
     import EvilGlobals #Only needed for rendering.
     from StateSetting import *
     from BallPrediction import *
+    from Mechanics import CancelledFastDodge, aerial_rotation
     from Maneuvers import GroundTurn
     from Pathing.ArcLineArc import ArcLineArc
 
@@ -194,7 +195,6 @@ class BooleanAlgebraCow(BaseAgent):
         #Update RLU Mechanics as needed
         ###############################################################################################
 
-
         #If we're in the first frame of an RLU mechanic, start up the object.
         #If we're finished with it, reset it to None
         ###
@@ -234,50 +234,112 @@ class BooleanAlgebraCow(BaseAgent):
             current_state = self.game_info.me
 
             ###
-
-            #Using simulation to make solid contact
+            
             if self.RESET == True:
+
                 controller_input = SimpleControllerState()
                 self.my_timer = self.game_info.game_time
                 self.RESET = False                    
                 
-                #Reset to a stationary setup when the bot is reloaded
-                ball_pos = Vec3(-2000, 0, 800)
-                ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
-                                                             rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(1000, 0, -500),
+                #Right diagonal
+                ball_state = self.zero_ball_state.copy_state(pos = Vec3(0,0,92.75),
+                                                             vel = Vec3(0,0,0),
                                                              omega = Vec3(0,0,0))
-                car_pos = Vec3(0, -4000, 18.65)
+                car_pos = Vec3(-2048, -2560, 18.65)
                 car_vel = Vec3(0, 0, 0)
-
-                #Random starting yaw
+                car_rot = Orientation(yaw = 0.25*pi, roll = 0, pitch = 0)
                 car_state = self.zero_car_state.copy_state(pos = car_pos,
                                                            vel = car_vel,
-                                                           rot = Orientation(pitch = 0,
-                                                                             yaw = 0,
-                                                                             roll = 0),
-                                                           boost = 100)
-
+                                                           rot = car_rot,
+                                                           boost = 33)
                 self.set_game_state(set_state(self.game_info,
                                               current_state = car_state,
                                               ball_state = ball_state))
 
-            elif self.game_info.game_time - self.my_timer < 0.05:
+            elif self.game_info.game_time - self.my_timer < 4:
                 pass
 
             #####
 
             else:
-
-                if self.path == None:
-                    intercept_slice, self.path, self.path_follower = prediction_binary_search_on_bounce(self.game_info,
-                                                                                                        partial(shortest_arclinearc, end_tangent = Vec3(-1,1,0)))
-
+                x_sign = 1
+                ball_angle = atan2((self.game_info.ball.pos - current_state.pos).y,
+                                   (self.game_info.ball.pos - current_state.pos).x)
+                offset = Vec3(x_sign*self.game_info.team_sign*750,0,0)
+             
+                #Set which boost we want based on team and side.
+                if self.game_info.team_sign == 1:
+                    if x_sign == -1:
+                        first_boost = 11
+                    else:
+                        first_boost = 10
                 else:
-                    #Follow the ArcLineArc path
-                    self.path_follower.step(self.game_info.dt)
-                    controller_input = self.path_follower.controls
-            return controller_input
+                    if x_sign == -1:
+                        first_boost = 22
+                    else:
+                        first_boost = 23
+
+
+                if self.game_info.boosts[first_boost].is_active:
+                    #If we haven't taken the small boost yet, drive towards it
+                    controller_input = GroundTurn(current_state,
+                                                  current_state.copy_state(pos = Vec3(0, -1000, 0))).input()
+                    controller_input.boost = 1
+             
+                elif abs(current_state.pos.y) > 1100 and current_state.wheel_contact:
+                    controller_input.jump = 1
+                    controller_input.boost = 1
+             
+                elif abs(current_state.pos.y) > 1100 and current_state.pos.z < 40:
+                    controller_input.jump = 1
+                    controller_input.boost = 1
+             
+                elif abs(current_state.pos.y) > 500 and not current_state.double_jumped:
+                    #If we've taken the boost but are still far away, fast dodge to speed up
+                    controller_input = CancelledFastDodge(current_state, Vec3(x_sign, 1, 0)).input()
+
+                elif abs(current_state.pos.y) > 250 and not current_state.wheel_contact:
+                    if self.persistent.aerial_turn.action == None:
+                        self.persistent.aerial_turn.initialize = True
+                        target_rot = Orientation(pitch = pi/3,
+                                                 yaw = current_state.rot.yaw,
+                                                 roll = 0)
+                        self.persistent.aerial_turn.target_orientation = target_rot
+             
+                    else:
+                        controller_input, self.persistent = aerial_rotation(self.game_info.dt,
+                                                                            self.persistent)
+                    controller_input.boost = 1
+                    controller_input.steer = x_sign #Turn into the ball
+
+                elif abs(current_state.pos.y) > 250:
+                    controller_input.throttle = 1
+                    controller_input.boost = 1
+                    controller_input.steer = x_sign
+
+                else: 
+                    controller_input = FrontDodge(current_state).input()
+
+            output = controller_input
+            self.old_kickoff_data = self.kickoff_data
+            self.old_inputs = output
+            
+            #####################################
+            #End of frame stuff that needs to be in the testing block as well
+            if output.throttle == 0:
+                output.throttle = 0.01
+                
+            #Making sure that RLU output is interpreted properly as an input for RLBot
+            framework_output = SimpleControllerState()
+            framework_output.throttle = output.throttle
+            framework_output.steer = output.steer
+            framework_output.yaw = output.yaw
+            framework_output.pitch = output.pitch
+            framework_output.roll = output.roll
+            framework_output.boost = output.boost
+            framework_output.handbrake = output.handbrake
+            framework_output.jump = output.jump
+            return framework_output
 
 
         ###############################################################################################

@@ -50,7 +50,7 @@ def shortest_arclinearc(game_info = None,
                                radius2 = sign_pair[1]*turn_radius,
                                current_state = game_info.me)
 
-        if temp_path.length < min_length:
+        if temp_path.is_valid and temp_path.length < min_length:
             min_length = temp_path.length
             path = temp_path
 
@@ -59,7 +59,7 @@ def shortest_arclinearc(game_info = None,
         return True, None, None
 
     else:
-        if path.length / 1410 + game_info.game_time > prediction_slice.time:
+        if path.length / 1610 + game_info.game_time > prediction_slice.time:
             return True, None, None
         #path.draw_path()
         curve = path.to_Curve(game_info.team_sign)

@@ -119,8 +119,8 @@ def goal(plan, game_info, persistent):
     ball_arrival = get_ball_arrival(game_info, is_ball_in_scorable_box)
 
     #TODO: Update what counts as "corner"
-    ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 1500)
-    ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 1500)
+    ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 2500)
+    ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 2500)
 
     if distance_to_net > 500:
         plan.layers[1] = "Go to net"
@@ -157,7 +157,7 @@ def recover(plan, game_info, persistent):
 def check_pads(game_info):
     '''
     Decide which path of boost pads to go through, once we've decided to pick up pads.
-    This is going to get very complicated, and will probably warrant its own file eventually.
+    This is going to get ugly, and will probably warrant its own file eventually.
     '''
 
     current_state = game_info.me

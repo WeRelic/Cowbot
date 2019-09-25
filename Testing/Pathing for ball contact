@@ -1,0 +1,50 @@
+            controller_input = SimpleControllerState()
+            current_state = self.game_info.me
+
+            ###
+
+            
+            if self.RESET == True:
+                controller_input = SimpleControllerState()
+                self.my_timer = self.game_info.game_time
+                self.RESET = False                    
+                
+                #Reset to a stationary setup when the bot is reloaded
+                ball_pos = Vec3(-2000, 0, 800)
+                ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
+                                                             rot = Orientation(pyr = [0,0,0]),
+                                                             vel = Vec3(1000, 0, -500),
+                                                             omega = Vec3(0,0,0))
+                car_pos = Vec3(0, -4000, 18.65)
+                car_vel = Vec3(0, 0, 0)
+
+                #Random starting yaw
+                car_state = self.zero_car_state.copy_state(pos = car_pos,
+                                                           vel = car_vel,
+                                                           rot = Orientation(pitch = 0,
+                                                                             yaw = 0,
+                                                                             roll = 0),
+                                                           boost = 100)
+
+                self.set_game_state(set_state(self.game_info,
+                                              current_state = car_state,
+                                              ball_state = ball_state))
+
+            elif self.game_info.game_time - self.my_timer < 0.05:
+                pass
+
+            #####
+
+            else:
+
+                if self.path == None:
+                    intercept_slice, self.path, self.path_follower = prediction_binary_search_on_bounce(self.game_info,
+                                                                                                        partial(shortest_arclinearc, end_tangent = Vec3(-1,1,0)))
+
+                else:
+                    #Follow the ArcLineArc path
+                    self.path_follower.step(self.game_info.dt)
+                    controller_input = self.path_follower.controls
+            return controller_input
+
+
