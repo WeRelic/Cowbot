@@ -13,27 +13,6 @@ def make_plan(game_info,
     The function that is currently handling decision making.  This will need to 
     split as it grows and becomes more complicated.  Takes in the plan from the previous 
     frame and the current game state and makes a new plan decision.
-    Possible top-level plan states are:
-    Kickoff
-    Ball:
-        Save
-        Clear
-        Shot
-        Challenge
-    Boost:
-        Back Boost+
-        Back Boost-
-        Mid Boost+
-        Mid Boost-
-    Goal:
-        Go to net
-        Wait in net
-        Far post
-        Far Boost
-        Prep for Aerial
-    Recover:
-        Ground
-        Air
     '''
 
     plan = GamePlan()

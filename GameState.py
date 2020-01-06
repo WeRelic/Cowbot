@@ -46,12 +46,12 @@ class GameState:
         self.ball_prediction = ball_prediction
 
         #My car info
-        self.me = Car(packet,
-                      rigid_body_tick,
-                      hitboxes,
-                      me_jumped_last_frame,
-                      my_index,
-                      self.team_sign)
+        self.me = Car(packet = packet,
+                      rigid_body_tick = rigid_body_tick,
+                      hitboxes = hitboxes,
+                      jumped_last_frame = me_jumped_last_frame,
+                      index = my_index,
+                      team_sign = self.team_sign)
         self.my_index = my_index
 
         #Other car info
@@ -61,19 +61,17 @@ class GameState:
         for i in range(packet.num_cars):
             if i != my_index:
                 if i in teammate_indices:
-                    self.teammates.append(Car(packet,
-                                              rigid_body_tick,
-                                              hitboxes,
-                                              None,
-                                              i,
-                                              self.team_sign))
+                    self.teammates.append(Car(packet = packet,
+                                              rigid_body_tick = rigid_body_tick,
+                                              hitboxes = hitboxes,
+                                              index = i,
+                                              team_sign = self.team_sign))
                 else:
-                    self.opponents.append(Car(packet,
-                                              rigid_body_tick,
-                                              hitboxes,
-                                              None,
-                                              i,
-                                              self.team_sign))
+                    self.opponents.append(Car(packet = packet,
+                                              rigid_body_tick = rigid_body_tick,
+                                              hitboxes = hitboxes,
+                                              index = i,
+                                              team_sign = self.team_sign))
         self.team_mode = None
         if len(self.teammates) == 0:
             self.team_mode = "1v1"
@@ -346,12 +344,12 @@ class BallState:
 #Car
 ##################################################################################
 
-def Car(packet,
-        rigid_body_tick,
-        hitboxes,
-        jumped_last_frame,
-        index,
-        team_sign):
+def Car(packet = None,
+        rigid_body_tick = None,
+        hitboxes = None,
+        jumped_last_frame = None,
+        index = None,
+        team_sign = None):
 
     '''
     Gets the game info for a given car, and returns the values.  Should be fed into a CarState object.
@@ -385,7 +383,7 @@ def Car(packet,
     double_jumped = this_car.double_jumped
     boost = this_car.boost
 
-    hitbox_class = hitboxes[index]
+    hitbox_class = Hitbox(this_car)
     return CarState( pos = pos,
                      rot = rot,
                      vel = vel,
@@ -503,36 +501,9 @@ class Boostpad:
 class Hitbox:
 
     def __init__( self,
-                  body_id = None ):
-
-        octane_ids = [21, 23, 25, 26, 27, 30, 402, 404, 523, 607, 625, 723, 1295, 1300, 1475, 1478, 1533, 1568, 1623, 2313, 2665, 2853, 2919, 2949, 4284, 4318, 4319, 4320]
-        dominus_ids = [29, 403, 597, 600, 1018, 1171, 1172, 1286, 1675, 1883, 2268, 2666, 2950, 2951, 3155, 3156, 3157, 3265, 3875, 3879, 3880, 4014, 4155]
-        plank_ids = [24, 803, 1603, 1691, 1919, 3594, 3614, 3622]
-        breakout_ids = [22, 1416, 1932, 2070, 2298, 3031]
-        hybrid_ids = [28, 31, 1159, 1317, 1624, 1856, 2269, 3451]
+                  car = None ):
 
 
-        if body_id in octane_ids:
-            self.widths = [118.01, 84.20, 36.16]
-            self.offset = Vec3(13.88, 0, 20.75)
-            self.resting_height = 17.00
-        elif body_id in dominus_ids:
-            self.widths = [127.93, 83.28, 31.30]
-            self.offset = Vec3(9.00, 0, 15.75)
-            self.resting_height = 17.05
-        elif body_id in plank_ids:
-            self.widths = [128.82, 84.67, 29.39]
-            self.offset = Vec3(9.01, 0, 12.09,)
-            self.resting_height = 18.65
-        elif body_id in breakout_ids:
-            self.widths = [131.49, 80.52, 30.30]
-            self.offset = Vec3(12.50, 0, 11.75)
-            self.resting_height = 18.33
-        elif body_id in hybrid_ids:
-            self.widths = [127.02, 82.19, 34.16]
-            self.offset = Vec3(13.88, 0, 20.75)
-            self.resting_height = 17.01
-        else:
-            raise AttributeError('Car body ID not recognized')
-
+        self.widths = [ car.hitbox.length, car.hitbox.width, car.hitbox.height ]
+        self.offset = [ car.hitbox_offset.x, car.hitbox_offset.y, car.hitbox_offset.z ]
         self.half_widths = [ width / 2 for width in self.widths ]

@@ -11,12 +11,13 @@ def ball(plan, game_info, persistent):
 
     current_state = game_info.me
 
+    ball_arrival = get_ball_arrival(game_info, is_ball_in_scorable_box)
     relative_ball_position = (game_info.ball.pos - game_info.me.pos)
     ball_distance = relative_ball_position.magnitude()
     we_hit_ball = check_ball_contact(game_info, current_state)
     #TODO: Update what counts as "corner"
-    ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 2500)
-    ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 2500)
+    ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 3500)
+    ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 3500)
     if game_info.ball.pos.x > 0:
         ball_x_sign = 1
     else:
@@ -37,7 +38,7 @@ def ball(plan, game_info, persistent):
                                 prediction = game_info.ball_prediction,
                                 condition = is_ball_shootable)[0]:
         plan.layers[0] = "Ball"
-    elif (ball_in_defensive_corner or ball_in_offensive_corner) and plan.old_plan[2] != "Aerial" and plan.old_plan[2] != "Hit ball":
+    elif (ball_in_defensive_corner or ball_in_offensive_corner) and plan.old_plan[2] != "Aerial" and plan.old_plan[2] != "Hit ball" and (not when_is_ball_shootable(current_state = current_state, prediction = game_info.ball_prediction, condition = is_ball_shootable)[0]) and ball_arrival == None: 
         #TODO: Wrap up all the checks into one 'mechanic lock'?
         plan.layers[0] = "Goal"
     elif plan.old_plan[2] == "Aerial" and game_info.game_time > 0.2 + persistent.aerial.target_time:
@@ -92,8 +93,8 @@ def goal(plan, game_info, persistent):
     ball_arrival = get_ball_arrival(game_info, is_ball_in_scorable_box)
     relative_ball_position = (game_info.ball.pos - game_info.me.pos)
     #TODO: Update what counts as "corner"
-    ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 2500)
-    ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 2500)
+    ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 3500)
+    ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 3500)
     target_pos = game_info.ball.pos
 
     if persistent.aerial.initialize:
@@ -140,7 +141,6 @@ def recover(plan, game_info, persistent):
         else:
             plan.layers[0] = "Goal"
 
-
     elif plan.path != None:
         plan.path_lock = True
         plan.layers[0] = "Recover"
@@ -169,7 +169,6 @@ def kickoff(plan, game_info, persistent):
         plan.layers[1] = "Mid Boost-"
 
     return plan, persistent
-
 
 ###########################
 

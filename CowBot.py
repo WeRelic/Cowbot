@@ -26,8 +26,9 @@ from Simulation import * #Temporary for testing and porting to new files
 #When True, all match logic will be ignored.
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
-TESTING = False
-DEBUGGING = False
+
+TESTING = True
+DEBUGGING = True
 if TESTING or DEBUGGING:
     import random
     from math import sqrt
@@ -94,6 +95,9 @@ class BooleanAlgebraCow(BaseAgent):
 
         self.persistent = PersistentMechanics()
         self.my_timer = 0
+
+        #Exception variables that hopefully don't get used
+        self.Body_ID_Exception = False
         
         #Put testing-only variables here
         if TESTING:
@@ -113,6 +117,13 @@ class BooleanAlgebraCow(BaseAgent):
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
 
         ###############################################################################################
+        #Exception handling - better keep track of when things might go wrong,
+        #but in a way we want our bot to ignore.
+        ###############################################################################################
+
+        #I guess we don't need this anymore, because someone finally decided to tell me information they should've told me a month ago when I asked... I'll keep it because it's a good structure to have in case we need it in the future.
+
+        ###############################################################################################
         #Startup info - run once at start
         ###############################################################################################
 
@@ -125,11 +136,8 @@ class BooleanAlgebraCow(BaseAgent):
             #Find teammates and opponents
             self.teammate_indices = []
             self.opponent_indices = []
-            self.car_hitboxes = []
     
             for i in range(packet.num_cars):
-                self.car_hitboxes.append(Hitbox(self.match_settings.PlayerConfigurations(i).Loadout().CarId()))
-
                 if i == self.index:
                     pass
                 elif packet.game_cars[i].team == self.team:
@@ -165,8 +173,7 @@ class BooleanAlgebraCow(BaseAgent):
                                     ball_prediction = self.prediction,
                                     teammate_indices = self.teammate_indices,
                                     opponent_indices = self.opponent_indices,
-                                    my_old_inputs = self.old_inputs,
-                                    hitboxes = self.car_hitboxes )
+                                    my_old_inputs = self.old_inputs )
 
         ###############################################################################################
         #Planning
@@ -178,7 +185,7 @@ class BooleanAlgebraCow(BaseAgent):
                                                             self.plan.old_plan,
                                                             self.plan.path,
                                                             self.persistent)
-        '''     
+        '''
         else:
             self.plan, self.persistent = TeamPlanning.make_plan(self.game_info,
                                                                 self.plan.old_plan,
@@ -230,100 +237,51 @@ class BooleanAlgebraCow(BaseAgent):
         if TESTING:
 
             #Copy-paste from a testing file here
-            controller_input = SimpleControllerState()
+            output = SimpleControllerState()
             current_state = self.game_info.me
 
             ###
-            
-            if self.RESET == True:
 
-                controller_input = SimpleControllerState()
+            if self.RESET == True:
+                output = SimpleControllerState()
                 self.my_timer = self.game_info.game_time
                 self.RESET = False                    
                 
-                #Right diagonal
-                ball_state = self.zero_ball_state.copy_state(pos = Vec3(0,0,92.75),
-                                                             vel = Vec3(0,0,0),
+                #Reset to a stationary setup when the bot is reloaded
+                ball_pos = Vec3(-2000, 0, 150)
+                ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
+                                                             rot = Orientation(pyr = [0,0,0]),
+                                                             vel = Vec3(1200, 0, -1000),
                                                              omega = Vec3(0,0,0))
-                car_pos = Vec3(-2048, -2560, 18.65)
-                car_vel = Vec3(0, 0, 0)
-                car_rot = Orientation(yaw = 0.25*pi, roll = 0, pitch = 0)
+                car_pos = Vec3(0, -4000, 18.65)
+                car_vel = Vec3(1410, 0, 0)
+
+                #Random starting yaw
                 car_state = self.zero_car_state.copy_state(pos = car_pos,
                                                            vel = car_vel,
-                                                           rot = car_rot,
-                                                           boost = 33)
+                                                           rot = Orientation(pitch = 0,
+                                                                             yaw = 0,
+                                                                             roll = 0),
+                                                           boost = 100)
                 self.set_game_state(set_state(self.game_info,
                                               current_state = car_state,
                                               ball_state = ball_state))
 
-            elif self.game_info.game_time - self.my_timer < 4:
+            elif self.game_info.game_time - self.my_timer < 0.2:
                 pass
 
             #####
 
             else:
-                x_sign = 1
-                ball_angle = atan2((self.game_info.ball.pos - current_state.pos).y,
-                                   (self.game_info.ball.pos - current_state.pos).x)
-                offset = Vec3(x_sign*self.game_info.team_sign*750,0,0)
-             
-                #Set which boost we want based on team and side.
-                if self.game_info.team_sign == 1:
-                    if x_sign == -1:
-                        first_boost = 11
-                    else:
-                        first_boost = 10
+                if self.path == None:
+                    intercept_slice, self.path, self.path_follower = prediction_binary_search(self.game_info,
+                                                                                              partial(shortest_arclinearc, end_tangent = Vec3(1,-1,0)))
+
                 else:
-                    if x_sign == -1:
-                        first_boost = 22
-                    else:
-                        first_boost = 23
+                    #Follow the ArcLineArc path
+                    self.path_follower.step(self.game_info.dt)
+                    output = self.path_follower.controls
 
-
-                if self.game_info.boosts[first_boost].is_active:
-                    #If we haven't taken the small boost yet, drive towards it
-                    controller_input = GroundTurn(current_state,
-                                                  current_state.copy_state(pos = Vec3(0, -1000, 0))).input()
-                    controller_input.boost = 1
-             
-                elif abs(current_state.pos.y) > 1100 and current_state.wheel_contact:
-                    controller_input.jump = 1
-                    controller_input.boost = 1
-             
-                elif abs(current_state.pos.y) > 1100 and current_state.pos.z < 40:
-                    controller_input.jump = 1
-                    controller_input.boost = 1
-             
-                elif abs(current_state.pos.y) > 500 and not current_state.double_jumped:
-                    #If we've taken the boost but are still far away, fast dodge to speed up
-                    controller_input = CancelledFastDodge(current_state, Vec3(x_sign, 1, 0)).input()
-
-                elif abs(current_state.pos.y) > 250 and not current_state.wheel_contact:
-                    if self.persistent.aerial_turn.action == None:
-                        self.persistent.aerial_turn.initialize = True
-                        target_rot = Orientation(pitch = pi/3,
-                                                 yaw = current_state.rot.yaw,
-                                                 roll = 0)
-                        self.persistent.aerial_turn.target_orientation = target_rot
-             
-                    else:
-                        controller_input, self.persistent = aerial_rotation(self.game_info.dt,
-                                                                            self.persistent)
-                    controller_input.boost = 1
-                    controller_input.steer = x_sign #Turn into the ball
-
-                elif abs(current_state.pos.y) > 250:
-                    controller_input.throttle = 1
-                    controller_input.boost = 1
-                    controller_input.steer = x_sign
-
-                else: 
-                    controller_input = FrontDodge(current_state).input()
-
-            output = controller_input
-            self.old_kickoff_data = self.kickoff_data
-            self.old_inputs = output
-            
             #####################################
             #End of frame stuff that needs to be in the testing block as well
             if output.throttle == 0:

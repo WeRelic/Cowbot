@@ -9,7 +9,7 @@ Parts are definitely worth keeping though, especially the functions at the end (
 from math import atan2, pi
 
 from rlbot.agents.base_agent import SimpleControllerState
-from BallPrediction import get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box, prediction_binary_search, prediction_binary_search_on_bounce
+from BallPrediction import get_ball_arrival, choose_stationary_takeoff_time, is_ball_in_scorable_box, prediction_binary_search
 from CowBotVector import Vec3
 from GameState import Orientation
 from Maneuvers import GroundTurn, NavigateTo
@@ -18,7 +18,6 @@ from Miscellaneous import angles_are_close, cap_magnitude, car_coordinates_2d
 from Simulation import linear_time_to_reach
 
 import EvilGlobals #Only needed for rendering and debugging
-
 
 
 def Cowculate(plan, game_info, ball_prediction, persistent):
@@ -54,7 +53,7 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
             facing_boost = angles_are_close(angle_to_boost, current_state.rot.yaw, pi/12)
             grounded_facing_boost = facing_boost and current_state.wheel_contact
 
-            #Turn towards boostI
+            #Turn towards boost
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = target_boost.pos)).input()
 
             if 1000 < current_state.vel.magnitude() < 2250 and facing_boost and wobble < epsilon and (current_state.pos - target_boost.pos).magnitude() > 1000 and abs(current_state.omega.z) < epsilon:
@@ -112,7 +111,6 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
             far_post = Vec3(1150, -5120+300, 0)
             far_boost = game_info.boosts[4].pos
 
-
         if plan.layers[1] == "Go to net":
             #Turn towards the center of our net
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = center_of_net)).input()
@@ -168,7 +166,6 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                                                                game_info.ball.pos - current_state.pos),
                                             current_state.jumped_last_frame).input()
 
-
         elif plan.layers[2] == "Aerial":
 
             controller_input, persistent = aerial(game_info.dt,
@@ -184,9 +181,6 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
 
         elif (plan.layers[1] == "Shot" or plan.layers[1] == "Clear") and plan.layers[2] == "Chase":
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = game_info.ball.pos)).input()
-
-
-
 
 
         #############################################################################

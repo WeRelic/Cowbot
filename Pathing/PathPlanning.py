@@ -61,7 +61,7 @@ def shortest_arclinearc(game_info = None,
     else:
         if path.length / 1610 + game_info.game_time > prediction_slice.time:
             return True, None, None
-        #path.draw_path()
+        path.draw_path()
         curve = path.to_Curve(game_info.team_sign)
         path_follower = FollowPath(game_info.utils_game.my_car)
         path_follower.path = curve

@@ -173,8 +173,6 @@ class FrameworkPredictionSlice:
         self.time = current_slice.game_seconds
 
 
-
-
 ###############################################################################################
 #Useful prediction functions - unrelated to the above classes.
 ###############################################################################################
@@ -338,7 +336,6 @@ def is_ball_in_scorable_box(loc,
         return True
 
 
-
 ############################################
 
 
@@ -349,32 +346,10 @@ def prediction_binary_search(game_info = None, is_too_early = None):
     is_too_early takes in a CarState and a ball prediction slice
     '''
 
-    prediction = game_info.ball_prediction
-    low = 0
-    high = len(prediction.slices) - 1
-    check = None, None, None
-
-    while low < high:
-        mid = (low + high) // 2
-        new_check = is_too_early(game_info, game_info.my_index, prediction.slices[mid])
-        if new_check[0]:
-            low = mid + 1
-        else:
-            check = new_check
-            high = mid
-    return prediction.slices[low], check[1], check[2]
-
-############################################
-
-
-def prediction_binary_search_on_bounce(game_info = None, is_too_early = None):
-
-    '''
-    Returns the first ball prediction slice that is a bounce and is not "too early", judged by is_too_early
-    is_too_early takes in a CarState and a ball prediction slice
-    '''
-
-    prediction = game_info.ball_prediction.check_bounces()
+    #if len(game_info.ball_prediction.check_bounces()) == 0:
+    prediction = game_info.ball_prediction.slices
+    #else:
+    #    prediction = game_info.ball_prediction.check_bounces()
     low = 0
     high = len(prediction) - 1
     check = None, None, None
@@ -387,7 +362,9 @@ def prediction_binary_search_on_bounce(game_info = None, is_too_early = None):
         else:
             check = new_check
             high = mid
-    return prediction.slices[low], check[1], check[2]
+    return prediction[low], check[1], check[2]
+
+
 
 ###########################################################################################
 ###########################################################################################

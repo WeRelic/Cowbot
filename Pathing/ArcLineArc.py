@@ -153,6 +153,9 @@ class ArcLineArc(GroundPath):
 
         return length_circle1, length_line, length_circle2
 
+
+    
+
     #############################################################################################
 
     def draw_path( self ):
@@ -161,7 +164,6 @@ class ArcLineArc(GroundPath):
 
         direction1 = self.start - self.center1
         angle1 = atan2( direction1.y , direction1.x )
-        print(self.phi2)
         direction2 = self.transition2 - self.center2
         angle2 = atan2( direction2.y , direction2.x )
 
@@ -216,13 +218,15 @@ class ArcLineArc(GroundPath):
         control_points = []
 
         #The first arc
-        steps = ceil((30*self.phi1) / (2*pi))
-        delta = self.phi1 / steps
+        direction1 = self.start - self.center1
+        starting_angle = atan2( direction1.y, direction1.x )
+        steps = ceil(30*(self.phi1 / (2*pi)))
+        delta = - self.sgn1 * self.phi1 / steps
         center1 = Vec3_to_vec3(self.center1, team_sign)
-     
-        for i in range(1, steps - 2):
-            angle = self.phi1 + delta*i
-            next_point = center1 + self.radius1*vec3(cos(angle), sin(angle),0)
+
+        for i in range(1, steps+1):
+            angle = starting_angle + delta*i
+            next_point = center1 + abs(self.radius1)*vec3(cos(angle), sin(angle),0)
             normal = normalize(next_point - center1)
 
             next_control_point = ControlPoint()
@@ -230,7 +234,6 @@ class ArcLineArc(GroundPath):
             next_control_point.t = cross(normal)
             next_control_point.n = normal
             control_points.append(next_control_point)
-
 
         #The line
         steps = max(10, ceil(self.length_line / 300))
@@ -246,12 +249,12 @@ class ArcLineArc(GroundPath):
             next_control_point.t = tangent
             next_control_point.n = normal
             control_points.append(next_control_point)
-            
+
         #The second arc
         direction2 = self.transition2 - self.center2
         starting_angle = atan2( direction2.y, direction2.x )
-        steps = ceil((30*self.phi2) / (2*pi))
-        delta = self.phi2 / steps
+        steps = ceil(30*(self.phi2 / (2*pi)))
+        delta = - self.sgn2 * self.phi2 / steps
         center2 = Vec3_to_vec3(self.center2, team_sign)
 
         for i in range(1, steps + 1):

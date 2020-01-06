@@ -80,13 +80,13 @@ def ball(plan, game_info, persistent):
         ball_car_dot = current_state.vel.normalize().dot(game_info.ball.vel.normalize())
     else:
         ball_car_dot = 0
-        
+
     #########
         
-    if ball_distance < 450 - 100*ball_car_dot and game_info.ball.pos.z < 200 and plan.old_plan[2] != "Aerial":
+    if (ball_distance < 450 - 100*ball_car_dot) and (game_info.ball.pos.z < 200) and (plan.old_plan[2] != "Aerial"):
         #If we were going for the ball, and we're close to it, flip into it.
         plan.layers[1] = "Challenge"
-    elif game_info.ball.pos.y > 0 and abs(game_info.ball.pos.x < 3000):
+    elif game_info.ball.pos.y > 0 and abs(game_info.ball.pos.x) < 3000:
         #TODO: Predict when it'll get there
         plan.layers[1] = "Shot"
     else:
@@ -98,7 +98,6 @@ def ball(plan, game_info, persistent):
 
 def kickoff(plan, game_info, persistent):
     return plan, persistent
-
 
 
 #######################################################################################################
@@ -122,6 +121,8 @@ def goal(plan, game_info, persistent):
     ball_in_defensive_corner = not (game_info.ball.pos.y > -1500 or abs(game_info.ball.pos.x) < 2500)
     ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 2500)
 
+    ########
+
     if distance_to_net > 500:
         plan.layers[1] = "Go to net"
     elif ball_in_defensive_corner or ball_in_offensive_corner:
@@ -132,7 +133,7 @@ def goal(plan, game_info, persistent):
     return plan, persistent
 
         
-        #######################################################################
+#######################################################################
 
 def recover(plan, game_info, persistent):
     current_state = game_info.me
@@ -146,8 +147,6 @@ def recover(plan, game_info, persistent):
         persistent.aerial_turn.target_orientation = Orientation(pyr = [0, atan2(current_state.vel.y, current_state.vel.x), 0])
 
     return plan, persistent
-
-
 
 
 #######################################################################

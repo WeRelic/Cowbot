@@ -5,6 +5,8 @@ This file will hold functions for choosing which path to take.  It will be inter
 
 Arc_line_arc is the first pathing we use, but could be replaced later.
 
+This entire file might be obsolete because RLU does it better
+
 '''
 
 from math import pi, asin, sqrt, acos, atan2
@@ -38,6 +40,7 @@ class GroundPath:
         Keep track of those in path planning or this will not work.
         '''
         #Once we know the type of path, follow it
+        #I think this is obsolete thanks to RLU path following
         if self.piece.shape == "Waypoint":
             return self.follow_waypoint()
         elif self.piece.shape == "Arc":
@@ -50,6 +53,7 @@ class GroundPath:
     #############################################################################################
 
     def follow_arc(self):
+        #Also obsolete thanks to RLU
         controller_input = SimpleControllerState()
 
         try:
