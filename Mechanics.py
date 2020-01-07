@@ -46,6 +46,7 @@ class Mechanic:
         self.action = None
         self.data = None
         self.initialize = False
+        self.end = None
 
         #Aerial Turn
         self.target_orientation = None

@@ -346,10 +346,10 @@ def prediction_binary_search(game_info = None, is_too_early = None):
     is_too_early takes in a CarState and a ball prediction slice
     '''
 
-    #if len(game_info.ball_prediction.check_bounces()) == 0:
-    prediction = game_info.ball_prediction.slices
-    #else:
-    #    prediction = game_info.ball_prediction.check_bounces()
+    if len(game_info.ball_prediction.check_bounces()) == 0:
+        prediction = game_info.ball_prediction.slices
+    else:
+        prediction = game_info.ball_prediction.check_bounces()
     low = 0
     high = len(prediction) - 1
     check = None, None, None
@@ -390,6 +390,25 @@ def find_next_bounce(prediction, time):
     for i in range(len(bounces)):
         if bounces[i].time > time:
             return bounces[i]
+
+###############################################
+
+def ball_changed_course(game_info = None,
+                        plan = None,
+                        persistent = None):
+    '''
+    Returns True if the ball is no longer going to be within reach of our current path
+    by time we get there.
+    '''
+
+    expected_target = persistent.path_follower.end
+    expected_target_time = persistent.path_follower.action.arrival_time
+
+    #Where is the ball actually going to be when we're expecting to hit it?
+    #One of these could be None in some situations?
+    actual_target = game_info.ball_prediction.state_at_time(expected_target_time)
+
+    return (expected_target - actual_target).magnitude() > 50
 
 
 

@@ -13,7 +13,7 @@ from rlutilities.simulation import Curve, ControlPoint
 from Conversions import Vec3_to_vec3
 from CowBotVector import Vec3
 import EvilGlobals
-from Miscellaneous import cap_magnitude, min_radius
+from Miscellaneous import cap_magnitude, min_radius, max_coords_for_arc
 from Pathing.Pathing import GroundPath, PathPiece
 from Pathing.ArcPath import ArcPath
 from Pathing.LineArcPath import LineArcPath
@@ -92,7 +92,6 @@ class ArcLineArc(GroundPath):
             self.is_valid = False
             #print("ArcLineArc Path is not valid")
         else:
-            self.is_valid = True
             #Find the offsets of the transition points from the centers
             e1 = (self.center2 - self.center1).normalize()
             e2 = e1.normal_2d().scalar_multiply(-self.sgn1)
@@ -119,6 +118,13 @@ class ArcLineArc(GroundPath):
                                    end_tangent = (self.transition1 - self.start).normalize(),
                                    direction = direction)
 
+            if self.path_is_out_of_bounds():
+                print('out of bounds')
+                self.is_valid = False
+            else:
+                self.is_valid = True
+
+                
             #self.draw_path()
 
 
@@ -153,8 +159,6 @@ class ArcLineArc(GroundPath):
 
         return length_circle1, length_line, length_circle2
 
-
-    
 
     #############################################################################################
 
@@ -224,7 +228,7 @@ class ArcLineArc(GroundPath):
         delta = - self.sgn1 * self.phi1 / steps
         center1 = Vec3_to_vec3(self.center1, team_sign)
 
-        for i in range(1, steps+1):
+        for i in range(1, steps-2):
             angle = starting_angle + delta*i
             next_point = center1 + abs(self.radius1)*vec3(cos(angle), sin(angle),0)
             normal = normalize(next_point - center1)
@@ -268,8 +272,62 @@ class ArcLineArc(GroundPath):
             next_control_point.n = normal
             control_points.append(next_control_point)
 
-
         curve = Curve(control_points)
-        
 
         return curve
+
+
+    #############################################################################################
+
+
+    def path_is_out_of_bounds( self ):
+        '''
+        Returns a Boolean for whether or not the given goes outside the stadium.
+        For now, we count walls and curves as out of bounds.
+        '''
+        
+        #TODO: Get this from field info somehow rather than hardcoding it
+        wall_curve_radius = 160 #Best guess
+        side_wall_distance = 4096 #from center of field
+        back_wall_distance = 5120 #from midfield
+        car_radius = 80 #Rough overestimate to be safe
+        goal_width = 893 #from center
+        goal_depth = 200 #Rough underestimate for now
+
+        #Check if the first arc goes out of bounds
+        start_direction1 = self.start - self.center1
+        start_angle1 = atan2(start_direction1.y, start_direction1.x)
+        end_direction1 = self.transition1 - self.center1
+        end_angle1 = atan2(end_direction1.y, end_direction1.x)
+
+        max_x1, min_x1, max_y1, min_y1 = max_coords_for_arc(self.center1,
+                                                        self.radius1,
+                                                        start_angle1,
+                                                        end_angle1)
+
+        start_direction2 = self.transition2 - self.center2
+        start_angle2 = atan2(start_direction2.y, start_direction2.x)
+        end_direction2 = self.end - self.center2
+        end_angle2 = atan2(end_direction2.y, end_direction2.x)
+
+        max_x2, min_x2, max_y2, min_y2 = max_coords_for_arc(self.center2,
+                                                        self.radius2,
+                                                        start_angle2,
+                                                        end_angle2)
+
+        
+        if max_x1 > side_wall_distance or -min_x1 > side_wall_distance:
+            print('x1')
+            return True
+        if max_y1 > back_wall_distance:
+            print('max y1')
+        if -min_y1 > back_wall_distance:
+            print('min y1')
+            return True
+        if max_x2 > side_wall_distance or -min_x2 > side_wall_distance:
+            print('x2')
+            return True
+        if max_y2 > back_wall_distance or -min_y2 > back_wall_distance:
+            print('y2')
+            return True
+        return False

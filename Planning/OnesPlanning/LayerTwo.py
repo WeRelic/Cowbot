@@ -7,7 +7,7 @@ Planning only gets this far in a few branches now, but eventually this will be u
 
 from functools import partial
 
-from BallPrediction import choose_stationary_takeoff_time, get_ball_arrival, is_ball_in_scorable_box, prediction_binary_search
+from BallPrediction import choose_stationary_takeoff_time, get_ball_arrival, is_ball_in_scorable_box, prediction_binary_search, ball_changed_course
 from CowBotVector import Vec3
 from Pathing.PathPlanning import shortest_arclinearc
 
@@ -26,13 +26,18 @@ def ball(plan = None,
 
     #################
 
-    elif plan.layers[1] == "Shot" or (plan.layers[1] == "Clear" and (game_info.ball.pos - game_info.opponents[0].pos).magnitude() > 1000):
+    elif plan.layers[1] == "Shot" or plan.layers[1] == "Clear":# and (game_info.ball.pos - game_info.opponents[0].pos).magnitude() > 1000):
 
         plan.layers[2] = "Path"
         persistent.path_follower.check = True
         plan.path_lock = True
 
+        if persistent.path_follower.action != None:
+            if ball_changed_course(game_info, plan, persistent):
+                plan.path = None
+
         if plan.path == None:
+            #Not an else so that we can reset our path if the ball is hit
             #Pick a path to line up a shot
             rough_time_estimate = game_info.game_time + ((game_info.ball.pos - game_info.me.pos).magnitude() / 1610)
             estimated_slice = game_info.ball_prediction.state_at_time(rough_time_estimate)
@@ -43,6 +48,7 @@ def ball(plan = None,
                 #TODO: Dynamically update end_tangent as well
 
                 intercept_slice, plan.path, persistent.path_follower.action = prediction_binary_search(game_info, partial(shortest_arclinearc, end_tangent = end_tangent))
+                persistent.path_follower.end = intercept_slice.pos
 
     #################
 

@@ -226,3 +226,86 @@ def condition(pred = None, max_time = None):
 def predict_for_time(time):
     return partial(condition, max_time = time)
 
+
+###########################
+
+
+def max_coords_for_arc(center = None,
+                       radius = None,
+                       start_angle = None,
+                       end_angle = None):
+
+    '''
+    Returns the maximum and minimum x and y coordinates of a given circular arc
+    Radius > 0 for clockwise (increasing angle)
+    Radius < 0 for counterclockwise (decreasing angle)
+    '''
+
+
+    #Moving Clockwise
+    if radius > 0:
+        if start_angle >= end_angle:
+            end_angle += 2*pi 
+        #Check +x direction
+        if (start_angle <= 0 and 0 <= end_angle) or (start_angle >= 0 and 2*pi <= end_angle):
+            max_x = center.x + abs(radius)
+        else:
+            max_x = center.x + max(cos(start_angle), cos(end_angle))*abs(radius)
+
+        #Check -x direction
+        if end_angle >= pi:
+            min_x = center.x - abs(radius)
+        else:
+            min_x = center.x + min(cos(start_angle), cos(end_angle))*abs(radius)
+
+        #Check +y direction
+        if (start_angle <= pi/2 and pi/2 <= end_angle) or (start_angle >= pi/2 and end_angle >= 5*pi/2):
+            max_y = center.y + abs(radius)
+        else:
+            max_y = center.y + max(sin(start_angle), sin(end_angle))*abs(radius)
+
+        #Check -y direction
+        if (start_angle <= -pi/2 and -pi/2 <= end_angle) or (start_angle >= -pi/2 and end_angle >= 3*pi/2):
+            min_y = center.y - abs(radius)
+        else:
+            min_y = center.y + min(sin(start_angle), sin(end_angle))*abs(radius)
+
+    elif radius < 0:
+        if start_angle <= end_angle:
+            end_angle -= 2*pi
+        #Check +x direction
+        if (start_angle >= 0 and 0 >= end_angle) or (start_angle <= 0 and end_angle <= - 2*pi):
+            max_x = center.x + abs(radius)
+        else:
+            max_x = center.x + max(cos(start_angle), cos(end_angle))*abs(radius)
+
+        #Check -x direction
+        if end_angle <= - pi:
+            min_x = center.x - abs(radius)
+        else:
+            min_x = center.x + min(cos(start_angle), cos(end_angle))*abs(radius)
+
+        #Check +y direction
+        if (start_angle >= pi/2 and pi/2 >= end_angle) or (start_angle <= pi/2 and end_angle <= -3*pi/2):
+            max_y = center.y + abs(radius)
+        else:
+            max_y = center.y + max(sin(start_angle), sin(end_angle))*abs(radius)
+
+        #Check -y direction
+        if (start_angle >= -pi/2 and -pi/2 >= end_angle) or (start_angle <= -pi/2 and end_angle <= -5*pi/2):
+            min_y = center.y - abs(radius)
+        else:
+            min_y = center.y + min(sin(start_angle), sin(end_angle))*abs(radius)
+
+    else:
+        print("?")
+        max_x = center.x
+        min_x = center.x
+        max_y = center.y
+        min_y = center.y
+
+    return max_x, min_x, max_y, min_y
+
+
+
+

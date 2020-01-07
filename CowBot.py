@@ -27,7 +27,7 @@ from Simulation import * #Temporary for testing and porting to new files
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
 
-TESTING = True
+TESTING = False
 DEBUGGING = True
 if TESTING or DEBUGGING:
     import random
@@ -251,7 +251,7 @@ class BooleanAlgebraCow(BaseAgent):
                 ball_pos = Vec3(-2000, 0, 150)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(1200, 0, -1000),
+                                                             vel = Vec3(1000, 0, -1000),
                                                              omega = Vec3(0,0,0))
                 car_pos = Vec3(0, -4000, 18.65)
                 car_vel = Vec3(1410, 0, 0)
@@ -275,7 +275,7 @@ class BooleanAlgebraCow(BaseAgent):
             else:
                 if self.path == None:
                     intercept_slice, self.path, self.path_follower = prediction_binary_search(self.game_info,
-                                                                                              partial(shortest_arclinearc, end_tangent = Vec3(1,-1,0)))
+                                                                                              partial(shortest_arclinearc, end_tangent = Vec3(0,1,0)))
 
                 else:
                     #Follow the ArcLineArc path
