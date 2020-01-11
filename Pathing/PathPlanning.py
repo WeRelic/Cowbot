@@ -48,7 +48,8 @@ def shortest_arclinearc(game_info = None,
                                end_tangent = end_tangent,
                                radius1 = sign_pair[0]*turn_radius,
                                radius2 = sign_pair[1]*turn_radius,
-                               current_state = game_info.me)
+                               current_state = game_info.me,
+                               team_sign = game_info.team_sign)
 
         if temp_path.is_valid and temp_path.length < min_length:
             min_length = temp_path.length
@@ -62,12 +63,11 @@ def shortest_arclinearc(game_info = None,
         if path.length / 1610 + game_info.game_time > prediction_slice.time:
             return True, None, None
         path.draw_path()
-        curve = path.to_Curve(game_info.team_sign)
         path_follower = FollowPath(game_info.utils_game.my_car)
-        path_follower.path = curve
+        path_follower.path = path.RLU_curve
         path_follower.arrival_time = prediction_slice.time
 
-    return False, curve, path_follower
+    return False, path.RLU_curve, path_follower
 
 
 ###########################################################################################

@@ -16,7 +16,7 @@ from rlbot.agents.base_agent import SimpleControllerState
 from CowBotVector import Vec3
 from Maneuvers import GroundTurn
 from Mechanics import FrontDodge
-from Miscellaneous import angles_are_close, cap_magnitude, min_radius
+from Miscellaneous import angles_are_close, cap_magnitude, min_radius, is_drivable_point
 
 import EvilGlobals
 
@@ -32,6 +32,12 @@ class GroundPath:
         self.waypoints = []
         self.current_state = current_state
         self.finished = False
+
+        #A list of vec3 for the path
+        self.discrete_path = None
+
+        #The RLU Curve object for the path follower
+        self.RLU_curve = None
 
     def input(self):
         '''
@@ -129,6 +135,18 @@ class GroundPath:
 
     #############################################################################################
 
+    def path_is_out_of_bounds( self ):
+        '''
+        Returns a Boolean for whether or not the given goes outside the stadium.
+        For now, we count walls and curves as out of bounds.
+        '''
+
+        for point in self.discretized_path:
+            if is_drivable_point(point):
+                continue
+            else:
+                return True
+        return False
 
 
 #############################################################################################
