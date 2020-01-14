@@ -7,6 +7,7 @@ from Conversions import vec3_to_Vec3, Vec3_to_vec3
 from CowBotVector import Vec3
 from Miscellaneous import min_radius
 from Pathing.ArcLineArc import ArcLineArc
+from Pathing.PathPlanning import shortest_arclinearc
 from Simulation import linear_time_to_reach
 
 
@@ -78,7 +79,7 @@ class PredictionPath:
                 return "Defending"
         return Falsei
 
-
+    ######################
 
     def check_bounces(self):
         '''
@@ -152,7 +153,6 @@ class FrameworkPredictionSlice:
 
     def __init__(self, current_slice,
                  team_sign):
-
 
         #Position, rotation, velocity, omega for the current slice
         self.x = current_slice.physics.location.x * team_sign
@@ -356,7 +356,47 @@ def prediction_binary_search(game_info = None, is_too_early = None):
 
     while low < high:
         mid = (low + high) // 2
-        new_check = is_too_early(game_info, game_info.my_index, prediction[mid])
+        new_check = is_too_early(game_info = game_info,
+                                 index = game_info.my_index,
+                                 target_time = prediction[mid].time,
+                                 target_pos = prediction[mid].pos)
+        if new_check[0]:
+            low = mid + 1
+        else:
+            check = new_check
+            high = mid
+    return prediction[low], check[1], check[2]
+
+
+
+############################################
+
+
+def ball_contact_binary_search(game_info = None,
+                               end_tangent = None):
+
+    '''
+    Finds a point we can path to, such that we can hand off to the ball contact code 
+    in time for that to run properly
+    '''
+    bounce_list = game_info.ball_prediction.check_bounces()
+    if len(bounce_list) == 0:
+        prediction = game_info.ball_prediction.slices
+    else:
+        prediction = bounce_list
+    low = 0
+    high = len(prediction) - 1
+    check = None, None, None
+
+    while low < high:
+        mid = (low + high) // 2
+        #TODO: Take car velocity into account
+        target_time, target_pos = find_handoff_point(prediction[mid], end_tangent)
+
+        new_check = shortest_arclinearc(game_info = game_info,
+                                        target_time = target_time,
+                                        target_pos = target_pos,
+                                        end_tangent = end_tangent)
         if new_check[0]:
             low = mid + 1
         else:
@@ -409,6 +449,19 @@ def ball_changed_course(game_info = None,
     actual_target = game_info.ball_prediction.state_at_time(expected_target_time)
 
     return (expected_target - actual_target).magnitude() > 50
+
+
+###############################################
+
+
+def find_handoff_point(ball_slice, direction):
+    takeoff_distance = 400#ball_slice.pos.z / (tan(pi/4))
+    position = ball_slice.pos - Vec3(0,1,0).scalar_multiply(takeoff_distance)
+    time = ball_slice.time + 0.1
+
+    return time, position
+
+
 
 
 

@@ -5,10 +5,13 @@ from functools import partial
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 import rlutilities as utils
-from rlutilities.mechanics import AerialTurn, Aerial, Dodge, FollowPath
+from rlutilities.mechanics import AerialTurn as RLU_AerialTurn
+from rlutilities.mechanics import Aerial as RLU_Aerial
+from rlutilities.mechanics import Dodge as RLU_Dodge
+from rlutilities.mechanics import FollowPath as RLU_FollowPath
 from rlutilities.simulation import Curve
 
-from BallPrediction import PredictionPath, prediction_binary_search
+from BallPrediction import PredictionPath, ball_contact_binary_search
 from Conversions import Vec3_to_vec3, rot_to_mat3
 from Cowculate import Cowculate #deprecate and rename planning?
 from GamePlan import GamePlan
@@ -18,7 +21,6 @@ from Mechanics import PersistentMechanics, FrontDodge
 from Miscellaneous import predict_for_time
 from Pathing.PathPlanning import shortest_arclinearc
 import Planning.OnesPlanning.Planning as OnesPlanning
-from Simulation import * #Temporary for testing and porting to new files
 #import Planning.TeamPlanning.Planning as TeamPlanning  #Team planning is no longer in this version due to bugs.  Copy from Ones planning and update team strategy at some point before the next team event.
 
 
@@ -27,7 +29,7 @@ from Simulation import * #Temporary for testing and porting to new files
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
 
-TESTING = False
+TESTING = True
 DEBUGGING = True
 if TESTING or DEBUGGING:
     import random
@@ -40,6 +42,8 @@ if TESTING or DEBUGGING:
     from Mechanics import CancelledFastDodge, aerial_rotation
     from Maneuvers import GroundTurn
     from Pathing.ArcLineArc import ArcLineArc
+    from Simulation import *
+
 
 
 class BooleanAlgebraCow(BaseAgent):
@@ -179,24 +183,25 @@ class BooleanAlgebraCow(BaseAgent):
         #Planning
         ###############################################################################################
 
-        #For now everything is a 1v1.  I'll fix team code again in the future.
-        #if self.game_info.team_mode == "1v1":
-        self.plan, self.persistent = OnesPlanning.make_plan(self.game_info,
-                                                            self.plan.old_plan,
-                                                            self.plan.path,
-                                                            self.persistent)
-        '''
-        else:
-            self.plan, self.persistent = TeamPlanning.make_plan(self.game_info,
+        if not TESTING:
+            #For now everything is a 1v1.  I'll fix team code again in the future.
+            #if self.game_info.team_mode == "1v1":
+            self.plan, self.persistent = OnesPlanning.make_plan(self.game_info,
                                                                 self.plan.old_plan,
                                                                 self.plan.path,
                                                                 self.persistent)
-        '''
 
+            '''
+            else:
+                self.plan, self.persistent = TeamPlanning.make_plan(self.game_info,
+                                                                    self.plan.old_plan,
+                                                                    self.plan.path,
+                                                                    self.persistent)
+            '''
 
-        #Check if it's a kickoff.  If so, we'll run kickoff code later on.
-        self.kickoff_position = update_kickoff_position(self.game_info,
-                                                        self.kickoff_position)
+            #Check if it's a kickoff.  If so, we'll run kickoff code later on.
+            self.kickoff_position = update_kickoff_position(self.game_info,
+                                                            self.kickoff_position)
 
         ###############################################################################################
         #Update RLU Mechanics as needed
@@ -207,7 +212,7 @@ class BooleanAlgebraCow(BaseAgent):
         ###
         if self.persistent.aerial_turn.initialize:
             self.persistent.aerial_turn.initialize = False
-            self.persistent.aerial_turn.action = AerialTurn(self.game_info.utils_game.my_car)
+            self.persistent.aerial_turn.action = RLU_AerialTurn(self.game_info.utils_game.my_car)
             self.persistent.aerial_turn.action.target = rot_to_mat3(self.persistent.aerial_turn.target_orientation, self.game_info.team_sign)
         elif not self.persistent.aerial_turn.check:
             self.persistent.aerial_turn.action = None
@@ -215,7 +220,7 @@ class BooleanAlgebraCow(BaseAgent):
         ###
         if self.persistent.aerial.initialize:
             self.persistent.aerial.initialize = False
-            self.persistent.aerial.action = Aerial(self.game_info.utils_game.my_car)
+            self.persistent.aerial.action = RLU_Aerial(self.game_info.utils_game.my_car)
             self.persistent.aerial.action.target = Vec3_to_vec3(self.persistent.aerial.target_location, self.game_info.team_sign)
             self.persistent.aerial.action.arrival_time = self.persistent.aerial.target_time
             self.persistent.aerial.action.up = Vec3_to_vec3(self.persistent.aerial.target_up, self.game_info.team_sign)
@@ -228,6 +233,9 @@ class BooleanAlgebraCow(BaseAgent):
             self.persistent.path_follower.action = None
         self.persistent.path_follower.check = False
         ###
+        if not self.persistent.dodge.check:
+            self.persistent.dodge.action = None
+        self.persistent.dodge.check = False
 
         ###############################################################################################
         #Testing 
@@ -239,10 +247,12 @@ class BooleanAlgebraCow(BaseAgent):
             #Copy-paste from a testing file here
             output = SimpleControllerState()
             current_state = self.game_info.me
+            ball_distance = (self.game_info.ball.pos - current_state.pos).magnitude()
 
             ###
 
-            if self.RESET == True:
+            #Reset the testing position
+            if self.state == "Reset":
                 output = SimpleControllerState()
                 self.my_timer = self.game_info.game_time
                 self.RESET = False                    
@@ -251,12 +261,12 @@ class BooleanAlgebraCow(BaseAgent):
                 ball_pos = Vec3(-2000, 0, 150)
                 ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
                                                              rot = Orientation(pyr = [0,0,0]),
-                                                             vel = Vec3(1000, 0, -1000),
+                                                             vel = Vec3(1000, 0, 1000),
                                                              omega = Vec3(0,0,0))
                 car_pos = Vec3(0, -4000, 18.65)
-                car_vel = Vec3(1410, 0, 0)
+                car_vel = Vec3(0, 0, 0)
 
-                #Random starting yaw
+                #Set car state
                 car_state = self.zero_car_state.copy_state(pos = car_pos,
                                                            vel = car_vel,
                                                            rot = Orientation(pitch = 0,
@@ -267,20 +277,65 @@ class BooleanAlgebraCow(BaseAgent):
                                               current_state = car_state,
                                               ball_state = ball_state))
 
-            elif self.game_info.game_time - self.my_timer < 0.2:
-                pass
+                self.state = "Wait"
 
-            #####
+            ###
 
-            else:
-                if self.path == None:
-                    intercept_slice, self.path, self.path_follower = prediction_binary_search(self.game_info,
-                                                                                              partial(shortest_arclinearc, end_tangent = Vec3(0,1,0)))
+            elif self.state == "Wait":
+                #Wait for state setting to work
+                output = SimpleControllerState()
+                if self.game_info.game_time - self.my_timer < 0.2:
+                    self.state = "Choose path"
+                
 
-                else:
-                    #Follow the ArcLineArc path
-                    self.path_follower.step(self.game_info.dt)
-                    output = self.path_follower.controls
+            ###   
+
+            elif self.state == "Choose path":
+                EvilGlobals.draw_ball_path(self.game_info.ball_prediction)
+                #If we don't already have a path, plan one
+                self.persistent.path_follower.check = True
+                intercept_slice, self.persistent.path_follower.path, self.persistent.path_follower.action = ball_contact_binary_search(self.game_info, end_tangent = Vec3(0,1,0))
+                if self.persistent.path_follower.action != None:
+                    self.state = "Follow path"
+
+            ###
+
+            elif self.state == "Follow path":
+                print("following: ", self.persistent.path_follower.path.end)
+                #If we're far from the end of the path, follow the path
+                #Follow the ArcLineArc path
+                self.persistent.path_follower.check = True
+                self.persistent.path_follower.action.step(self.game_info.dt)
+                output = self.persistent.path_follower.action.controls
+                if (current_state.pos - self.persistent.path_follower.path.end).magnitude() < 500:
+                    self.state = "Choose dodge"
+
+            ###
+
+            elif self.state == "Choose dodge":
+                #If we don't already have a dodge planned, plan one
+                self.persistent.dodge.check = True
+                dodge_simulation_results = moving_ball_dodge_contact(self.game_info)
+                self.persistent.dodge.action = RLU_Dodge(self.game_info.utils_game.my_car)
+                self.persistent.dodge.action.duration = dodge_simulation_results[0]
+                self.persistent.dodge.action.delay = dodge_simulation_results[1]
+                self.persistent.dodge.action.target = Vec3_to_vec3(self.game_info.ball.pos, self.game_info.team_sign)
+                self.persistent.dodge.action.preorientation = roll_away_from_target(self.persistent.dodge.action.target,
+                                                                                    pi/4,
+                                                                                    self.game_info)            
+                if self.persistent.dodge.action != None:
+                    self.state = "Dodge"
+
+            ###
+
+            elif self.state == "Dodge":
+                #If we've planned a dodge, do it
+                self.persistent.dodge.check = True
+                self.persistent.dodge.action.step(self.game_info.dt)
+                output = self.persistent.dodge.action.controls
+                output.boost = 1
+
+
 
             #####################################
             #End of frame stuff that needs to be in the testing block as well

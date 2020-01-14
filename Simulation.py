@@ -1,7 +1,11 @@
 from math import pi, atan2
 
-from rlutilities.mechanics import AerialTurn, Aerial, Dodge, Jump
-from rlutilities.simulation import Car, Input
+from rlutilities.mechanics import AerialTurn as RLU_AerialTurn
+from rlutilities.mechanics import Aerial as RLU_Aerial
+from rlutilities.mechanics import Jump as RLU_Jump
+from rlutilities.mechanics import Dodge as RLU_Dodge
+from rlutilities.simulation import Input
+from rlutilities.simulation import Car as RLU_Car
 from rlutilities.linear_algebra import axis_to_rotation, cross, dot, mat3, norm, vec3
 
 from Conversions import vec3_to_Vec3, Vec3_to_vec3, rot_to_mat3
@@ -14,13 +18,13 @@ class Simulation:
 
     def __init__( self,
                   time = None,
-                  box = None,
+                  hitbox = None,
                   ball_contact = False,
                   car = None):
 
         self.time = time
         self.car = car
-        self.box = box
+        self.hitbox = hitbox
         self.ball_contact = ball_contact
 
 
@@ -45,23 +49,23 @@ def dodge_simulation(end_condition = None,
     #Copy everything we need and set constants
     time = 0
     dt = 1/60
-    car_copy = Car(car)
-    copy = Dodge(car_copy)
+    car_copy = RLU_Car(car)
+    dodge_copy = RLU_Dodge(car_copy)
     if dodge.target != None:
-        copy.target = dodge.target        
+        dodge_copy.target = dodge.target        
     if dodge.direction != None:
-        copy.direction = dodge.direction
+        dodge_copy.direction = dodge.direction
     if dodge.preorientation != None:
-        copy.preorientation = dodge.preorientation
+        dodge_copy.preorientation = dodge.preorientation
     if dodge.duration != None:
-        copy.duration = dodge.duration
+        dodge_copy.duration = dodge.duration
     else:
-        copy.duration = 0
+        dodge_copy.duration = 0
     #Make sure there's time between the jump and the dodge so that we don't just keep holding jump   
     if dodge.delay != None:
-        copy.delay = dodge.delay
+        dodge_copy.delay = dodge.delay
     else:
-        copy.delay = max(copy.duration + 2*dt, 0.05)
+        dodge_copy.delay = max(dodge_copy.duration + 2*dt, 0.05)
 
     #Adjust for non-octane hitboxes
     box = update_hitbox(car_copy, hitbox_class)
@@ -71,19 +75,22 @@ def dodge_simulation(end_condition = None,
 
         #Update simulations and adjust hitbox again
         time += dt
-        copy.step(dt)
-        controls = copy.controls
+        dodge_copy.step(dt)
+        controls = dodge_copy.controls
         if boost:
             controls.boost = 1
         car_copy.step(controls, dt)
         box = update_hitbox(car_copy, hitbox_class)
 
-        if copy.finished:
+        if dodge_copy.finished:
             #If the dodge never triggers condition, give up and move on
             #TODO: give up sooner to save computation time
             return Simulation()
 
-    return Simulation(ball_contact = True, car = car_copy, box = box, time = time)
+    return Simulation(ball_contact = True,
+                      car = car_copy,
+                      box = box,
+                      time = time)
 
 ##############################################################
 
@@ -94,8 +101,8 @@ def stationary_ball_dodge_contact(game_info, contact_height):
 
     ball = game_info.ball
     hitbox_class = game_info.me.hitbox_class
-    car_copy = Car(game_info.utils_game.my_car)
-    turn = AerialTurn(car_copy)
+    car_copy = RLU_Car(game_info.utils_game.my_car)
+    turn = RLU_AerialTurn(car_copy)
     turn.target = roll_away_from_target(ball.pos,
                                         pi/4,
                                         game_info)
@@ -109,11 +116,11 @@ def stationary_ball_dodge_contact(game_info, contact_height):
     while intended_contact_point[2] < contact_height and not ball_contact[0]:
         time += dt
         turn.step(dt)
-
         controls = turn.controls
         if time <= 0.20:
             controls.jump = 1
         controls.boost = 1
+
         car_copy.step(controls, dt)
         box = update_hitbox(car_copy, hitbox_class)
         ball_contact = has_ball_contact(time, box, ball, game_info.team_sign)
@@ -130,25 +137,24 @@ def stationary_ball_dodge_contact(game_info, contact_height):
         duration = 0.2
         delay = time
 
-    if ball_contact[0]:
-        delay -= 0.05 #How long before we hit the ball is acceptable to dogge
+    delay -= 0.05 #How long before we hit the ball is acceptable to dodge
 
-    return duration, delay, Simulation(ball_contact = True, car = car_copy, box = box, time = time)
+    return duration, delay, Simulation(ball_contact = True, car = car_copy, hitbox = box, time = time)
 
 
 ##############################################################
 ##############################################################
 
-def falling_ball_dodge_contact(game_info):
+def moving_ball_dodge_contact(game_info):
     '''
     Returns dodge duration and delay so the car can reach contact_height
     '''
 
     ball = game_info.ball
-    contact_height = ball.pos.z - 30
+    contact_height = ball.pos.z - 20
     hitbox_class = game_info.me.hitbox_class
-    car_copy = Car(game_info.utils_game.my_car)
-    turn = AerialTurn(car_copy)
+    car_copy = RLU_Car(game_info.utils_game.my_car)
+    turn = RLU_AerialTurn(car_copy)
     turn.target = roll_away_from_target(ball.pos,
                                         pi/4,
                                         game_info)
@@ -161,14 +167,15 @@ def falling_ball_dodge_contact(game_info):
 
     while intended_contact_point[2] < contact_height and not ball_contact[0]:
         time += dt
-        turn.step(dt)
-
         ball = game_info.ball_prediction.state_at_time(game_info.game_time + time)
+
+        turn.step(dt)
         contact_height = ball.pos.z - 30
         controls = turn.controls
         if time <= 0.20:
             controls.jump = 1
         controls.boost = 1
+
         car_copy.step(controls, dt)
         box = update_hitbox(car_copy, hitbox_class)
 
@@ -189,7 +196,7 @@ def falling_ball_dodge_contact(game_info):
 
     delay -= 0.05 #Window to dodge just before ball contact
 
-    return duration, delay, Simulation(ball_contact = True, car = car_copy, box = box, time = time)
+    return duration, delay, Simulation(ball_contact = True, car = car_copy, hitbox = box, time = time)
 
 
 ##############################################################
@@ -219,33 +226,6 @@ def linear_time_to_reach(current_state,
         sim_time += dt
     return sim_time
 
-##############################################################
-##############################################################
-
-'''def ground_turn_simulation(game_info, target):
-    car_copy = Car(game_info.utils_game.my_car)
-    time = 0
-    dt = 1/30
-    controls = Input()
-    yaw = atan2(car_copy.forward()[1], car_copy.forward()[0])
-    correction_angle = angle_to(target, vec3_to_Vec3(car_copy.location, game_info.team_sign), yaw)
-    
-    while abs(angle_to(target, vec3_to_Vec3(car_copy.location, game_info.team_sign), yaw)) > pi/20:
-        print(car_copy.location, 'yaw = ', yaw)
-        time += dt
-        if time > 1:
-            return None, None
-
-        correction_angle = angle_to(target, vec3_to_Vec3(car_copy.location, game_info.team_sign), yaw)
-        if correction_angle > 0:
-            controls.steer = 1
-        else:
-            controls.steer = -1
-        controls.boost = 1
-        car_copy.step(controls, dt)
-        yaw = atan2(car_copy.forward()[1], car_copy.forward()[0])
-
-    return time, vec3_to_Vec3(car_copy.location, game_info.team_sign)'''
 
 ##############################################################
 #Helper functions
@@ -341,7 +321,9 @@ def update_hitbox(car, hitbox_class):
     box.half_width = vec3(hitbox_class.half_widths[0],
                           hitbox_class.half_widths[1],
                           hitbox_class.half_widths[2])
-    offset = Vec3_to_vec3(hitbox_class.offset, 1) #We don't want this to rotate for orange: used coordinates
+    offset = vec3(hitbox_class.offset[0],
+                  hitbox_class.offset[1],
+                  hitbox_class.offset[2])
     box.center = dot(box.orientation, offset) + car.location
     return box
 

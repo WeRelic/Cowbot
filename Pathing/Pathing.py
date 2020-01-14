@@ -34,7 +34,7 @@ class GroundPath:
         self.finished = False
 
         #A list of vec3 for the path
-        self.discrete_path = None
+        self.discretized_path = None
 
         #The RLU Curve object for the path follower
         self.RLU_curve = None

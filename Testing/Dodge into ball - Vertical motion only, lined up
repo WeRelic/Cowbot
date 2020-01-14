@@ -48,7 +48,7 @@ controller_input = SimpleControllerState()
                 #As we approach the ball, calculate when dodging results in a good touch
                 test_dodge = Dodge(self.game_info.utils_game.my_car)
                 
-                test_dodge.duration, test_dodge.delay, simulation = falling_ball_dodge_contact(self.game_info)
+                test_dodge.duration, test_dodge.delay, simulation = moving_ball_dodge_contact(self.game_info)
                 test_dodge.target = Vec3_to_vec3(self.game_info.ball.pos, self.game_info.team_sign) #TODO: Intelligently choose this?
 
                 #Air roll shots.  TODO: intelligently choose angle
@@ -56,14 +56,14 @@ controller_input = SimpleControllerState()
 
                 #If the dodge hits the ball, check if it's a good touch
                 if simulation.ball_contact:
-                    flip_before_contact = simulation.time - test_dodge.delay > 0
-                    not_too_early = simulation.time - test_dodge.delay < 0.05
-                    dodge_timing = flip_before_contact and not_too_early
+                    flip_before_contact = (simulation.time - test_dodge.delay > 0)
+                    not_too_early = (simulation.time - test_dodge.delay < 0.05)
+                    correct_dodge_timing = flip_before_contact and not_too_early
 
                     nose_contact = front_face_contact(simulation.box,
                                                       self.game_info.ball,
                                                       self.game_info.team_sign)
-                    if nose_contact and dodge_timing:
+                    if nose_contact and correct_dodge_timing:
                         print(simulation.time, test_dodge.delay)
                         self.dodge = test_dodge
 
