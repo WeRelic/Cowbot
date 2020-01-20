@@ -379,6 +379,8 @@ def ball_contact_binary_search(game_info = None,
     Finds a point we can path to, such that we can hand off to the ball contact code 
     in time for that to run properly
     '''
+
+    end_tangent = end_tangent.normalize()
     bounce_list = game_info.ball_prediction.check_bounces()
     if len(bounce_list) == 0:
         prediction = game_info.ball_prediction.slices
@@ -391,7 +393,8 @@ def ball_contact_binary_search(game_info = None,
     while low < high:
         mid = (low + high) // 2
         #TODO: Take car velocity into account
-        target_time, target_pos = find_handoff_point(prediction[mid], end_tangent)
+        #prediction is only bounces if ball is bouncing
+        target_time, target_pos = find_handoff_point(game_info.ball_prediction, prediction, mid, end_tangent)
 
         new_check = shortest_arclinearc(game_info = game_info,
                                         target_time = target_time,
@@ -446,7 +449,13 @@ def ball_changed_course(game_info = None,
 
     #Where is the ball actually going to be when we're expecting to hit it?
     #One of these could be None in some situations?
+
+    if game_info.game_time > expected_target_time:
+        return True
     actual_target = game_info.ball_prediction.state_at_time(expected_target_time)
+
+    print("actual: ", actual_target)
+    print("Expected: ", expected_target)
 
     return (expected_target - actual_target).magnitude() > 50
 
@@ -454,10 +463,19 @@ def ball_changed_course(game_info = None,
 ###############################################
 
 
-def find_handoff_point(ball_slice, direction):
-    takeoff_distance = 400#ball_slice.pos.z / (tan(pi/4))
-    position = ball_slice.pos - Vec3(0,1,0).scalar_multiply(takeoff_distance)
-    time = ball_slice.time + 0.1
+def find_handoff_point(ball_prediction, candidates, index, direction):
+    '''
+    ball_prediction will be the entire prediction for the ball's path
+    candidates will be the points we're considering hitting (e.g., bounces)
+    '''
+
+    position = candidates[index].pos
+    time = candidates[index].time - 0.2
+
+    ball_slice = ball_prediction.state_at_time(time+0.1)
+    if ball_slice != None:
+        takeoff_distance = ball_slice.pos.z / (tan(pi/4))
+        position = ball_slice.pos - direction.scalar_multiply(takeoff_distance)
 
     return time, position
 

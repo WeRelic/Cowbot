@@ -29,7 +29,7 @@ import Planning.OnesPlanning.Planning as OnesPlanning
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
 
-TESTING = True
+TESTING = False
 DEBUGGING = True
 if TESTING or DEBUGGING:
     import random
@@ -288,7 +288,7 @@ class BooleanAlgebraCow(BaseAgent):
                     self.state = "Choose path"
                 
 
-            ###   
+            ###
 
             elif self.state == "Choose path":
                 EvilGlobals.draw_ball_path(self.game_info.ball_prediction)

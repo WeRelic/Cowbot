@@ -7,7 +7,7 @@ Planning only gets this far in a few branches now, but eventually this will be u
 
 from functools import partial
 
-from BallPrediction import choose_stationary_takeoff_time, get_ball_arrival, is_ball_in_scorable_box, prediction_binary_search, ball_changed_course
+from BallPrediction import choose_stationary_takeoff_time, get_ball_arrival, is_ball_in_scorable_box, ball_contact_binary_search, ball_changed_course
 from CowBotVector import Vec3
 from Pathing.PathPlanning import shortest_arclinearc
 
@@ -34,20 +34,19 @@ def ball(plan = None,
 
         if persistent.path_follower.action != None:
             if ball_changed_course(game_info, plan, persistent):
-                plan.path = None
+                persistent.path_follower.path = None
 
-        if plan.path == None:
+        if persistent.path_follower.action == None:
             #Not an else so that we can reset our path if the ball is hit
             #Pick a path to line up a shot
             rough_time_estimate = game_info.game_time + ((game_info.ball.pos - game_info.me.pos).magnitude() / 1610)
             estimated_slice = game_info.ball_prediction.state_at_time(rough_time_estimate)
             if estimated_slice != None:
                 rough_rendezvous_point = estimated_slice.pos
-                end_tangent = Vec3(0, 5120, 0) - rough_rendezvous_point
+                end_tangent = (Vec3(0, 5120, 0) - rough_rendezvous_point).to_2d().normalize()
 
                 #TODO: Dynamically update end_tangent as well
-
-                intercept_slice, plan.path, persistent.path_follower.action = prediction_binary_search(game_info, partial(shortest_arclinearc, end_tangent = end_tangent))
+                intercept_slice, persistent.path_follower.path, persistent.path_follower.action = ball_contact_binary_search(game_info, end_tangent = end_tangent)
                 persistent.path_follower.end = intercept_slice.pos
 
     #################
@@ -59,7 +58,7 @@ def ball(plan = None,
 
     else:
         #update once we're close to the ball to take a real shot
-        plan.layers[2] = "Chase"
+        plan.layers[2] = "Hit ball"
 
     return plan, persistent
 

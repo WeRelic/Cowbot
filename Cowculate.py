@@ -177,7 +177,25 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                 #Follow the ArcLineArc path
                 persistent.path_follower.action.step(game_info.dt)
                 controller_input = persistent.path_follower.action.controls
+            else:
+                controller_input = jump_turn() #When facing walls, all paths go about of bounds.  Turn around first.
 
+        elif (plan.layers[1] == "Shot" or plan.layers[1] == "Clear") and plan.layers[2] == "Hit ball":
+            if persistent.doddge.action == None:
+                persistent.dodge.check = True
+                dodge_simulation_results = moving_ball_dodge_contact(game_info)
+                persistent.dodge.action = RLU_Dodge(game_info.utils_game.my_car)
+                persistent.dodge.action.duration = dodge_simulation_results[0]
+                persistent.dodge.action.delay = dodge_simulation_results[1]
+                persistent.dodge.action.target = Vec3_to_vec3(game_info.ball.pos, game_info.team_sign)
+                persistent.dodge.action.preorientation = roll_away_from_target(persistent.dodge.action.target,
+                                                                                    pi/4,
+                                                                                    game_info)            
+            else:
+                persistent.dodge.check = True
+                persistent.dodge.action.step(game_info.dt)
+                output = persistent.dodge.action.controls
+                output.boost = 1
 
         elif (plan.layers[1] == "Shot" or plan.layers[1] == "Clear") and plan.layers[2] == "Chase":
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = game_info.ball.pos)).input()

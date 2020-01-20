@@ -162,10 +162,10 @@ def moving_ball_dodge_contact(game_info):
     time = 0
     dt = 1/60
     ball_contact = has_ball_contact(time, box, ball, game_info.team_sign)
-    intended_contact_point = ball_contact[1]
+    closest_point = ball_contact[1]
 
 
-    while intended_contact_point[2] < contact_height and not ball_contact[0]:
+    while closest_point[2] < contact_height and not ball_contact[0]:
         time += dt
         ball = game_info.ball_prediction.state_at_time(game_info.game_time + time)
 
@@ -180,7 +180,7 @@ def moving_ball_dodge_contact(game_info):
         box = update_hitbox(car_copy, hitbox_class)
 
         ball_contact = has_ball_contact(time, box, ball, game_info.team_sign)
-        intended_contact_point = ball_contact[1]
+        closest_point = ball_contact[1]
         if time >= 1.45: #Max dodge time
             return None, None, Simulation()
 
