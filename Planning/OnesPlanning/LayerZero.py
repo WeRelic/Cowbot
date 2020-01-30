@@ -1,6 +1,7 @@
 from math import atan2
 
 from BallPrediction import get_ball_arrival, when_is_ball_shootable, is_ball_in_scorable_box, is_ball_shootable
+from Miscellaneous import is_drivable_point
 
 from CowBotVector import Vec3
 
@@ -22,12 +23,16 @@ def ball(plan, game_info, persistent):
         ball_x_sign = 1
     else:
         ball_x_sign = -1
-
+    on_net = game_info.ball_prediction.check_on_net()
         ############
 
-    if we_hit_ball:
+    if not is_drivable_point(current_state.pos + current_state.rot.front.scalar_multiply(500)):
+        plan.layers[0] = "Goal"
+    elif we_hit_ball:
         #Once we touch the ball, go Recover.
         plan.layers[0] = "Recover"
+    elif on_net[0] == -1:
+        plan.layers[0] = "Ball"
     elif relative_ball_position.y < -250:
         #If we were going for the ball, but the ball is behind us, go for boost.
         plan.layers[0] = "Boost"
@@ -59,10 +64,17 @@ def ball(plan, game_info, persistent):
 def boost(plan, game_info, persistent):
     '''
     Decides when to break from "Boost" state.
+    TODO: Time to get to boost and time saved by having boost.
+    TODO: Time until the ball reaches our net?
+    TODO: Time until opponent gets to ball
+    TODO: Time until ball gets to a dangerous position
     '''
 
     current_state = game_info.me
-    if current_state.boost > 60:
+    on_net = game_info.ball_prediction.check_on_net()
+    if on_net[0] == -1:
+        plan.layers[0] = "Ball"
+    elif current_state.boost > 60:
         #If we were going for boost, but have enough boost, go to net.
         plan.layers[0] = "Goal"
     elif plan.path != None and plan.path.finished:
@@ -97,7 +109,9 @@ def goal(plan, game_info, persistent):
     ball_in_offensive_corner = not (game_info.ball.pos.y < 950 or abs(game_info.ball.pos.x) < 3500)
     target_pos = game_info.ball.pos
 
-    if persistent.aerial.initialize:
+    if not is_drivable_point(current_state.pos + current_state.rot.front.scalar_multiply(500)):
+        plan.layers[0] = "Goal"
+    elif persistent.aerial.initialize:
         plan.layers[0] = "Ball"
 
     elif ball_arrival != None and ball_arrival[1].z < 150:
@@ -108,7 +122,6 @@ def goal(plan, game_info, persistent):
     elif when_is_ball_shootable(current_state = current_state,
                                 prediction = game_info.ball_prediction,
                                 condition = is_ball_shootable)[0]:
-        #TODO: Predict when the ball will be in front of the net, path-to-ball code
         plan.layers[0] = "Ball"
 
     elif ball_in_defensive_corner or ball_in_offensive_corner:

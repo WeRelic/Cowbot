@@ -148,7 +148,7 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                 target_state = current_state.copy_state(pos = center_of_net, rot = rot)
                 controller_input = NavigateTo(current_state, target_state).input()
 
-            #############################################################################
+    #############################################################################
 
     elif plan.layers[0] == "Ball":
         '''
@@ -166,6 +166,15 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                                                                game_info.ball.pos - current_state.pos),
                                             current_state.jumped_last_frame).input()
 
+
+        elif plan.layers[1] == "Save":
+            if persistent.path_follower.action != None:
+                #Follow the ArcLineArc path
+                persistent.path_follower.action.step(game_info.dt)
+                controller_input = persistent.path_follower.action.controls
+            #else:
+            #    controller_input = jump_turn() #TODO: When facing walls, all paths go about of bounds.  Turn around first.
+
         elif plan.layers[2] == "Aerial":
 
             controller_input, persistent = aerial(game_info.dt,
@@ -177,8 +186,8 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
                 #Follow the ArcLineArc path
                 persistent.path_follower.action.step(game_info.dt)
                 controller_input = persistent.path_follower.action.controls
-            else:
-                controller_input = jump_turn() #When facing walls, all paths go about of bounds.  Turn around first.
+            #else:
+            #    controller_input = jump_turn() #TODO: When facing walls, all paths go about of bounds.  Turn around first.
 
         elif (plan.layers[1] == "Shot" or plan.layers[1] == "Clear") and plan.layers[2] == "Hit ball":
             if persistent.doddge.action == None:
@@ -201,7 +210,7 @@ def Cowculate(plan, game_info, ball_prediction, persistent):
             controller_input = GroundTurn(current_state, current_state.copy_state(pos = game_info.ball.pos)).input()
 
 
-        #############################################################################
+    #############################################################################
 
     elif plan.layers[0] == "Recover":
         if plan.layers[1] == "Air":

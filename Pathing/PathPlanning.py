@@ -34,7 +34,7 @@ def shortest_arclinearc(game_info = None,
     start_location = game_info.me.pos
 
     #Good enough for now
-    turn_radius = min_radius(1410) + 350 #TODO: Improve using actual turn radius
+    turn_radius = min_radius(2300) + 300#TODO: Improve using actual turn radius
     end_tangent = end_tangent.normalize()
 
     #Here we check which combination of turns is the shortest, and follow that path.
@@ -64,6 +64,7 @@ def shortest_arclinearc(game_info = None,
         RLU_path_follower = FollowPath(game_info.utils_game.my_car)
         RLU_path_follower.path = path.RLU_curve
         RLU_path_follower.arrival_time = target_time
+        RLU_path_follower.arrival_speed = 1800 #TODO: Choose intelligently
 
     return False, path, RLU_path_follower
 

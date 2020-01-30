@@ -15,34 +15,38 @@ def boost(plan, game_info, persistent):
 
     current_state = game_info.me
 
-    if game_info.ball.pos.x > 0:
+    if game_info.ball.pos.x > 1500:
         #Boost indices
-        far_opp_boost = 29
-        near_opp_boost = 30
+        far_front_boost = 29
+        near_front_boost = 30
         far_mid_boost = 15
         near_mid_boost = 18
         far_back_boost = 3
         near_back_boost = 4
-    else:
-        far_opp_boost = 30
-        near_opp_boost = 29
+    elif game_info.ball.pos.x < -1500:
+        far_front_boost = 30
+        near_front_boost = 29
         far_mid_boost = 18
         near_mid_boost = 15
         far_back_boost = 4
         near_back_boost = 3
-  
-    '''
-    if current_state.pos.y > -2000 and game_info.boosts[far_mid_boost].is_active:
-        plan.layers[1] = far_mid_boost
-    elif game_info.boosts[far_back_boost].is_active:
-        plan.layers[1] = far_back_boost
-    elif game_info.ball.pos.y > 0 and game_info.boosts[near_back_boost].is_active:
-        plan.layers[1] = near_back_boost
-    else:
-        #Break and go to goal, since we're not smart enough to get pads yet
-        plan.layers[1] = "Pads"
-        plan.path = WaypointPath(check_pads(game_info), current_state)
-    '''
+    elif abs(game_info.ball.pos.x) < 1400:
+        if game_info.ball.pos.y < 0:
+            plan.layers[1] = "Pads"
+        elif current_state.pos.y < 0:
+            if current_state.pos.x > 0: #Careful of flipflops
+                target_boost = 4
+            else:
+                target_boost = 3
+        else:
+            if current_state.pos.x > 0: #Careful of flipflops
+                target_boost = 18
+            else:
+                target_boost = 15
+
+    else: #Otherwise do what we were doing before
+        #TODO: Use the values from before the flop
+        pass
 
     plan.layers[1] = "Pads"
     if plan.path_lock:
@@ -59,9 +63,6 @@ def boost(plan, game_info, persistent):
         elif current_state.pos.y < -3000:
             plan.layers[0] = "Goal"
             plan.layers[1] = "Go to net"
-        else:
-            print("confusion?")
-            #plan.path = WaypointPath([Vec3(0,-5120,0)], current_state)
 
     return plan, persistent
 
@@ -80,10 +81,12 @@ def ball(plan, game_info, persistent):
         ball_car_dot = current_state.vel.normalize().dot(game_info.ball.vel.normalize())
     else:
         ball_car_dot = 0
-
+    on_net = game_info.ball_prediction.check_on_net()
     #########
-        
-    if (ball_distance < 450 - 100*ball_car_dot) and (game_info.ball.pos.z < 200) and (plan.old_plan[2] != "Aerial"):
+
+    if on_net[0] == -1:
+        plan.layers[1] = "Save"
+    elif (ball_distance < 450 - 100*ball_car_dot) and (game_info.ball.pos.z < 200) and (plan.old_plan[2] != "Aerial"):
         #If we were going for the ball, and we're close to it, flip into it.
         plan.layers[1] = "Challenge"
     elif game_info.ball.pos.y > 0 and abs(game_info.ball.pos.x) < 3000:

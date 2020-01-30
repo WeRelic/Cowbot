@@ -1,0 +1,108 @@
+output = SimpleControllerState()
+            current_state = self.game_info.me
+            ball_distance = (self.game_info.ball.pos - current_state.pos).magnitude()
+
+            ###
+
+            #Reset the testing position
+            if self.state == "Reset":
+                output = SimpleControllerState()
+                self.my_timer = self.game_info.game_time
+                self.RESET = False                    
+                
+                #Reset to a stationary setup when the bot is reloaded
+                ball_pos = Vec3(-2000, 0, 150)
+                ball_state = self.zero_ball_state.copy_state(pos = ball_pos,
+                                                             rot = Orientation(pyr = [0,0,0]),
+                                                             vel = Vec3(1000, 0, 1000),
+                                                             omega = Vec3(0,0,0))
+                car_pos = Vec3(0, -4000, 18.65)
+                car_vel = Vec3(0, 0, 0)
+
+                #Set car state
+                car_state = self.zero_car_state.copy_state(pos = car_pos,
+                                                           vel = car_vel,
+                                                           rot = Orientation(pitch = 0,
+                                                                             yaw = 0,
+                                                                             roll = 0),
+                                                           boost = 100)
+                self.set_game_state(set_state(self.game_info,
+                                              current_state = car_state,
+                                              ball_state = ball_state))
+
+                self.state = "Wait"
+
+            ###
+
+            elif self.state == "Wait":
+                #Wait for state setting to work
+                output = SimpleControllerState()
+                if self.game_info.game_time - self.my_timer < 0.2:
+                    self.state = "Choose path"
+                
+
+            ###
+
+            elif self.state == "Choose path":
+                EvilGlobals.draw_ball_path(self.game_info.ball_prediction)
+                #If we don't already have a path, plan one
+                self.persistent.path_follower.check = True
+                intercept_slice, self.persistent.path_follower.path, self.persistent.path_follower.action = ball_contact_binary_search(self.game_info, end_tangent = Vec3(0,1,0))
+                if self.persistent.path_follower.action != None:
+                    self.state = "Follow path"
+
+            ###
+
+            elif self.state == "Follow path":
+                print("following: ", self.persistent.path_follower.path.end)
+                #If we're far from the end of the path, follow the path
+                #Follow the ArcLineArc path
+                self.persistent.path_follower.check = True
+                self.persistent.path_follower.action.step(self.game_info.dt)
+                output = self.persistent.path_follower.action.controls
+                if (current_state.pos - self.persistent.path_follower.path.end).magnitude() < 500:
+                    self.state = "Choose dodge"
+
+            ###
+
+            elif self.state == "Choose dodge":
+                #If we don't already have a dodge planned, plan one
+                self.persistent.dodge.check = True
+                dodge_simulation_results = moving_ball_dodge_contact(self.game_info)
+                self.persistent.dodge.action = RLU_Dodge(self.game_info.utils_game.my_car)
+                self.persistent.dodge.action.duration = dodge_simulation_results[0]
+                self.persistent.dodge.action.delay = dodge_simulation_results[1]
+                self.persistent.dodge.action.target = Vec3_to_vec3(self.game_info.ball.pos, self.game_info.team_sign)
+                self.persistent.dodge.action.preorientation = roll_away_from_target(self.persistent.dodge.action.target,
+                                                                                    pi/4,
+                                                                                    self.game_info)            
+                if self.persistent.dodge.action != None:
+                    self.state = "Dodge"
+
+            ###
+
+            elif self.state == "Dodge":
+                #If we've planned a dodge, do it
+                self.persistent.dodge.check = True
+                self.persistent.dodge.action.step(self.game_info.dt)
+                output = self.persistent.dodge.action.controls
+                output.boost = 1
+
+
+
+            #####################################
+            #End of frame stuff that needs to be in the testing block as well
+            if output.throttle == 0:
+                output.throttle = 0.01
+                
+            #Making sure that RLU output is interpreted properly as an input for RLBot
+            framework_output = SimpleControllerState()
+            framework_output.throttle = output.throttle
+            framework_output.steer = output.steer
+            framework_output.yaw = output.yaw
+            framework_output.pitch = output.pitch
+            framework_output.roll = output.roll
+            framework_output.boost = output.boost
+            framework_output.handbrake = output.handbrake
+            framework_output.jump = output.jump
+            return framework_output

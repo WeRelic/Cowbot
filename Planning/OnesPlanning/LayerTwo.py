@@ -22,7 +22,29 @@ def ball(plan = None,
     #################
 
     elif plan.layers[1] == "Save":
-        pass
+        plan.layers[2] = "Path"
+        persistent.path_follower.check = True
+        plan.path_lock = True
+
+        if persistent.path_follower.action != None:
+            if ball_changed_course(game_info, plan, persistent):
+                persistent.path_follower.path = None
+
+        if persistent.path_follower.action == None:
+            #Not an else so that we can reset our path if the ball is hit
+            #Pick a path to line up a shot
+            rough_time_estimate = game_info.game_time + ((game_info.ball.pos - game_info.me.pos).magnitude() / 1610)
+            estimated_slice = game_info.ball_prediction.state_at_time(rough_time_estimate)
+            if estimated_slice != None:
+                rough_rendezvous_point = estimated_slice.pos
+                if game_info.me.pos.x > 0:
+                    end_tangent = Vec3(-1, 0, 0)
+                else:
+                    end_tangent = Vec3(1, 0, 0)
+
+                #TODO: Dynamically update end_tangent as well
+                intercept_slice, persistent.path_follower.path, persistent.path_follower.action = ball_contact_binary_search(game_info, end_tangent = end_tangent)
+                persistent.path_follower.end = intercept_slice.pos
 
     #################
 

@@ -123,7 +123,6 @@ class ArcLineArc(GroundPath):
 
             self.to_Curve(team_sign)
             if self.path_is_out_of_bounds():
-                print('out of bounds')
                 self.is_valid = False
             else:
                 self.is_valid = True

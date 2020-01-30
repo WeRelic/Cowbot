@@ -36,6 +36,7 @@ class PredictionPath:
         '''
 
         team_sign = (team - (1/2)) * (-2)
+        self.ball_radius = 92.75
 
         if source == "RLU":
             prediction = utils.simulation.Ball(utils_game.ball)
@@ -73,11 +74,11 @@ class PredictionPath:
     def check_on_net(self):
         #Check if at some point the ball is between the posts and behind the goal line.
         for step in self.slices:
-            if abs(step.x) < 800 and step.y > 5120 - 92.75:
-                return "Attacking"
-            elif abs(step.x) < 800 and step.y < -5120 - 92.75:
-                return "Defending"
-        return Falsei
+            if abs(step.x) < 800 and step.y > 5120 + self.ball_radius:
+                return 1, step.time
+            elif abs(step.x) < 800 and step.y < -5120 - self.ball_radius:
+                return -1, step.time
+        return False, None
 
     ######################
 
@@ -95,6 +96,15 @@ class PredictionPath:
         return bounces
 
 
+     ######################
+
+    def check_rolling(self):
+        #TODO: Make this work in more general circumstances
+        rolling = []
+        for i in range(1, len(self.slices)):
+            if abs(self.slices[i].omega.magnitude() * self.ball_radius - self.slices[i].vel.magnitude()) < 10:
+                rolling.append(self.slices[i])
+        return rolling
 
 #############################################################################################
 #
@@ -258,9 +268,10 @@ def is_ball_in_front_of_net(location):
     Returns whether or not the ball is in front of the net, disregarding y-coordinates.
     '''
 
+    ball_radius = 92.75
     #Check if x is between +/- (goal width + ball radius)
     #and if z is below (goal height + ball radius- (fudge factor to avoid the crossbar))
-    return (abs(location.x) < 893+92.75) and location.z < 642.775+92.75-20
+    return (abs(location.x) < 893+ball_radius) and location.z < 642.775+ball_radius-20
 
 
 ############################################
@@ -382,10 +393,12 @@ def ball_contact_binary_search(game_info = None,
 
     end_tangent = end_tangent.normalize()
     bounce_list = game_info.ball_prediction.check_bounces()
+    rolling_list = game_info.ball_prediction.check_rolling()
     if len(bounce_list) == 0:
         prediction = game_info.ball_prediction.slices
     else:
         prediction = bounce_list
+        prediction.extend(rolling_list)
     low = 0
     high = len(prediction) - 1
     check = None, None, None
@@ -394,11 +407,11 @@ def ball_contact_binary_search(game_info = None,
         mid = (low + high) // 2
         #TODO: Take car velocity into account
         #prediction is only bounces if ball is bouncing
-        target_time, target_pos = find_handoff_point(game_info.ball_prediction, prediction, mid, end_tangent)
+        #target_time, target_pos = find_handoff_point(game_info.ball_prediction, prediction, mid, end_tangent)
 
         new_check = shortest_arclinearc(game_info = game_info,
-                                        target_time = target_time,
-                                        target_pos = target_pos,
+                                        target_time = prediction[mid].time, #target_time,
+                                        target_pos = prediction[mid].pos, #target_pos,
                                         end_tangent = end_tangent)
         if new_check[0]:
             low = mid + 1
@@ -406,7 +419,6 @@ def ball_contact_binary_search(game_info = None,
             check = new_check
             high = mid
     return prediction[low], check[1], check[2]
-
 
 
 ###########################################################################################
