@@ -1,6 +1,6 @@
+from functools import partial
 from math import pi, ceil
 import random
-from functools import partial
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
@@ -21,6 +21,7 @@ from Mechanics import PersistentMechanics, FrontDodge
 from Miscellaneous import predict_for_time
 from Pathing.PathPlanning import shortest_arclinearc
 import Planning.OnesPlanning.Planning as OnesPlanning
+from States import *
 #import Planning.TeamPlanning.Planning as TeamPlanning  #Team planning is no longer in this version due to bugs.  Copy from Ones planning and update team strategy at some point before the next team event.
 
 
@@ -29,7 +30,7 @@ import Planning.OnesPlanning.Planning as OnesPlanning
 #Planning will still take place, but can be overridden,
 #and no action will be taken outside of the "if TESTING:" blocks.
 
-TESTING = False
+TESTING = True
 DEBUGGING = True
 if TESTING or DEBUGGING:
     import random
@@ -105,13 +106,12 @@ class BooleanAlgebraCow(BaseAgent):
         
         #Put testing-only variables here
         if TESTING:
-            self.state = "Reset"
+            self.state = TESTINGSTATES['RESET']
             self.target_loc = None
             self.target_time = None
             self.takeoff_time = None
             self.start_time = None
             self.old_game_info = None
-            self.RESET = True
             self.dodge = None
             self.path_target = None
             #self.state = "Reset"
@@ -168,7 +168,6 @@ class BooleanAlgebraCow(BaseAgent):
 
         #Game state info
         self.game_info = GameState( packet = packet,
-                                    rigid_body_tick = self.get_rigid_body_tick(),
                                     utils_game = self.utils_game,
                                     field_info = self.field_info,
                                     match_settings = self.match_settings,
@@ -252,7 +251,7 @@ class BooleanAlgebraCow(BaseAgent):
             ###
 
             #Reset the testing position
-            if self.state == "Reset":
+            if self.state == TESTINGSTATES['RESET']:
                 output = SimpleControllerState()
                 self.my_timer = 0
                 self.RESET = False                    
@@ -277,11 +276,11 @@ class BooleanAlgebraCow(BaseAgent):
                                               current_state = car_state,
                                               ball_state = ball_state))
 
-                self.state = "Wait"
+                self.state = TESTINGSTATES['WAIT']
 
             ###
 
-            elif self.state == "Wait":
+            elif self.state == TESTINGSTATES['WAIT']:
                 self.my_timer += 0.00833
                 #Wait for state setting to work
                 output = SimpleControllerState()
@@ -306,28 +305,21 @@ class BooleanAlgebraCow(BaseAgent):
                                                   current_state = car_state,
                                                   ball_state = ball_state))
                 else:
-                    self.state = "Choose path"
-
-
-                '''
-                if self.game_info.ball.vel.magnitude() > 10:
-                    self.state = "Choose path"
-                '''
+                    self.state = TESTINGSTATES['CHOOSEPATH']
 
             ###
 
-            elif self.state == "Choose path":
+            elif self.state == TESTINGSTATES['CHOOSEPATH']:
                 EvilGlobals.draw_ball_path(self.game_info.ball_prediction)
                 #If we don't already have a path, plan one
                 self.persistent.path_follower.check = True
                 intercept_slice, self.persistent.path_follower.path, self.persistent.path_follower.action = ball_contact_binary_search(self.game_info, end_tangent = Vec3(0,1,0))
                 if self.persistent.path_follower.action != None:
-                    self.state = "Follow path"
+                    self.state = TESTINGSTATES['FOLLOWPATH']
 
             ###
 
-            elif self.state == "Follow path":
-                print("following: ", self.persistent.path_follower.path.end)
+            elif self.state == TESTINGSTATES['FOLLOWPATH']:
                 #If we're far from the end of the path, follow the path
                 #Follow the ArcLineArc path
                 self.persistent.path_follower.check = True

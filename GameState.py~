@@ -8,6 +8,7 @@ class GameState:
 
     def __init__( self,
                   packet = None,
+                  rigid_body_tick = None,
                   utils_game = None,
                   field_info = None,
                   match_settings = None,
@@ -46,6 +47,7 @@ class GameState:
 
         #My car info
         self.me = Car(packet = packet,
+                      rigid_body_tick = rigid_body_tick,
                       hitboxes = hitboxes,
                       jumped_last_frame = me_jumped_last_frame,
                       index = my_index,
@@ -60,11 +62,13 @@ class GameState:
             if i != my_index:
                 if i in teammate_indices:
                     self.teammates.append(Car(packet = packet,
+                                              rigid_body_tick = rigid_body_tick,
                                               hitboxes = hitboxes,
                                               index = i,
                                               team_sign = self.team_sign))
                 else:
                     self.opponents.append(Car(packet = packet,
+                                              rigid_body_tick = rigid_body_tick,
                                               hitboxes = hitboxes,
                                               index = i,
                                               team_sign = self.team_sign))
@@ -111,6 +115,7 @@ class GameState:
             self.utils_game = utils_game
             self.dt = utils_game.time_delta
             self.utils_game.read_game_information(packet,
+                                                  rigid_body_tick,
                                                   field_info)
         else:
             self.dt = 1/120
@@ -340,6 +345,7 @@ class BallState:
 ##################################################################################
 
 def Car(packet = None,
+        rigid_body_tick = None,
         hitboxes = None,
         jumped_last_frame = None,
         index = None,

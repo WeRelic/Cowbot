@@ -3,7 +3,7 @@ from GamePlan import GamePlan
 import Planning.OnesPlanning.LayerZero as LayerZero
 import Planning.OnesPlanning.LayerOne as LayerOne
 import Planning.OnesPlanning.LayerTwo as LayerTwo
-import States
+
 
 def make_plan(game_info,
               old_plan,
@@ -25,64 +25,65 @@ def make_plan(game_info,
     #######################################################################
 
     if game_info.is_kickoff_pause:
-        plan.layers[0] = States.KickoffState.KICKOFF
+        plan.layers[0] = "Kickoff"
 
-    elif old_plan[0] == States.KickoffState.KICKOFF:
+    elif old_plan[0] == "Kickoff":
         plan, persistent = LayerZero.kickoff(plan, game_info, persistent)
 
         #######################################################################
 
-    elif type(old_plan[0]) == States.BallState:
+    elif old_plan[0] == "Ball":
         plan, persistent = LayerZero.ball(plan, game_info, persistent)
 
         #######################################################################
 
-    elif type(old_plan[0]) == States.BoostState:
+    elif old_plan[0] == "Boost":
         plan, persistent = LayerZero.boost(plan, game_info, persistent)
 
         #######################################################################
 
-    elif type(old_plan[0]) == States.GoalState:
+    elif old_plan[0] == "Goal":
         plan, persistent = LayerZero.goal(plan, game_info, persistent)
 
-    elif type(old_plan[0]) == States.RecoveryState:
+    elif old_plan[0] == "Recover":
         plan, persistent = LayerZero.recover(plan, game_info, persistent)
 
     #######################################################################
     #Layer 1
     #######################################################################
 
-    if type(plan.layers[0]) == States.BoostState:
+    if plan.layers[0] == "Boost":
         plan, persistent = LayerOne.boost(plan, game_info, persistent)
 
         #######################################################################
         
-    elif type(plan.layers[0]) == States.BallState:
+    elif plan.layers[0] == "Ball":
         plan, persistent = LayerOne.ball(plan, game_info, persistent)
 
         #######################################################################
-    elif type(plan.layers[0]) == States.KickoffState:
+    elif plan.layers[0] == "Kickoff":
         plan, persistent = LayerOne.kickoff(plan, game_info, persistent)
 
         #######################################################################
-    elif type(plan.layers[0]) == States.GoalState:
+    elif plan.layers[0] == "Goal":
         plan, persistent = LayerOne.goal(plan, game_info, persistent)
 
         #######################################################################
 
-    elif type(plan.layers[0]) == States.RecoveryState:
+    elif plan.layers[0] == "Recover":
         plan, persistent = LayerOne.recover(plan, game_info, persistent)
 
     #######################################################################
     #Layer 2
     #######################################################################
 
-    if type(plan.layers[0]) == States.BallState:
+    if plan.layers[0] == "Ball":
         plan, persistent = LayerTwo.ball(plan, game_info, persistent)
 
         #######################################################################
 
-    elif type(plan.layers[0]) == States.GoalState:
+
+    elif plan.layers[0] == "Goal":
         plan, persistent = LayerTwo.goal(plan, game_info, persistent)
 
     #######################################################################
